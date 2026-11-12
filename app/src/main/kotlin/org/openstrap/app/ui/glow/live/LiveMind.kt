@@ -46,7 +46,11 @@ import org.openstrap.app.ui.glow.PlainLine
 import org.openstrap.app.ui.glow.ProgressRing
 import org.openstrap.app.ui.glow.activeSecondsState
 import org.openstrap.app.ui.glow.workoutClock
-import org.openstrap.app.ui.theme.MetricColors
+import org.openstrap.app.ui.theme.Blends
+import org.openstrap.app.ui.glow.DotMatrixText
+import org.openstrap.app.ui.glow.dotClock
+import org.openstrap.app.ui.glow.dotFitScale
+import org.openstrap.app.ui.glow.draw.DotSize
 import androidx.compose.foundation.gestures.detectTapGestures
 import org.openstrap.app.presentation.WorkoutCopy
 import androidx.compose.ui.res.stringResource
@@ -108,7 +112,10 @@ internal fun LiveMindScreen(
             }
         },
     ) {
-        LiveFrame(r, MindColor.copy(alpha = 0.5f), connected, contentPadding, controls, time = null, quiet = true, fill = true, tapHint = !compact) {
+        LiveFrame(
+            r, Blends.MindAndBody, connected, contentPadding, controls, time = null, quiet = true, fill = true, tapHint = !compact,
+            lightAngle = 90f, lightStrength = 0.5f, lightY = 40f,
+        ) {
             Spacer(Modifier.weight(0.6f))
             MindRing({ active.value }, length, ring = !compact, onClock = { clock.value = it })
             Spacer(Modifier.weight(0.5f))
@@ -120,18 +127,20 @@ internal fun LiveMindScreen(
             val values = remember(recent) { bucketRecent(recent, now) }
             // Lower on a short screen (a phone on its side), so the heart rate line under it still fits beside the buttons.
             // The heart rate as one thin violet line edge to edge, with a dot at now: no axis, no numbers.
-            PlainLine(
-                values, MindColor.copy(alpha = 0.7f), if (compact) 40.dp else 64.dp, smooth = false, dots = LineDots.Last, stroke = 2.dp,
-            )
-            val first = values.firstOrNull { it != null }?.toInt()
-            Text(
-                bpm?.let { b ->
-                    first?.minus(b)?.takeIf { it > 0 }?.let { stringResource(R.string.workout_live_mind_heart_down, b, it) }
-                        ?: stringResource(R.string.workout_live_mind_heart, b)
-                } ?: WorkoutCopy.noHeartRate(r.paused, connected),
-                color = Color.White.copy(alpha = 0.8f), style = GlowType.body,
-                modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center,
-            )
+            LiveStrip(Modifier.fillMaxWidth()) {
+                PlainLine(
+                    values, MindColor, if (compact) 40.dp else 64.dp, smooth = false, dots = LineDots.Last, stroke = 2.dp,
+                )
+                val first = values.firstOrNull { it != null }?.toInt()
+                Text(
+                    bpm?.let { b ->
+                        first?.minus(b)?.takeIf { it > 0 }?.let { stringResource(R.string.workout_live_mind_heart_down, b, it) }
+                            ?: stringResource(R.string.workout_live_mind_heart, b)
+                    } ?: WorkoutCopy.noHeartRate(r.paused, connected),
+                    color = Color.White.copy(alpha = 0.8f), style = GlowType.body,
+                    modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center,
+                )
+            }
             Spacer(Modifier.weight(0.6f))
         }
         // Dimmed, the first touch only lights the screen: the veil takes it.
@@ -162,8 +171,10 @@ internal fun MindRing(time: () -> Long, length: Long?, ring: Boolean = true, onC
 private fun MindClock(time: () -> Long, length: Long?, onClock: (Rect) -> Unit) {
     val active = time()
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(
-            workoutClock(active), color = Color.White.copy(alpha = 0.9f), style = GlowType.mindClock, maxLines = 1,
+        // The live dots, shrunk only as far as the ring's inside needs.
+        val text = dotClock(active)
+        DotMatrixText(
+            text, dot = DotSize.Live, color = Color.White.copy(alpha = 0.9f), scale = dotFitScale(text, DotSize.Live, MindDotsWidth),
             modifier = Modifier.onGloballyPositioned { onClock(it.boundsInRoot()) },
         )
         Text(
@@ -198,5 +209,8 @@ private fun DrawScope.drawVeil(alpha: Float, clock: Rect) {
     }
 }
 
-/** Mind and body's colour: the evening violet, never a zone's. */
-private val MindColor = MetricColors.evening
+/** The clock's room inside the ring. */
+private val MindDotsWidth = 220.dp
+
+/** Mind and body's colour: the evening violet (as a mark on dark), never a zone's. */
+private val MindColor = Blends.MindAndBody.chart

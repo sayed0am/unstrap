@@ -31,7 +31,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -78,7 +77,14 @@ import org.openstrap.app.ui.components.pressClickable
 import org.openstrap.app.ui.dashboard.ScreenList
 import org.openstrap.app.ui.theme.AppIcons
 import org.openstrap.app.ui.theme.SportIcons
-import org.openstrap.app.ui.workout.familyColor
+import org.openstrap.app.ui.workout.sportBlend
+import org.openstrap.app.ui.theme.Blend
+import org.openstrap.app.ui.theme.Blends
+import org.openstrap.app.ui.theme.GlowShapes
+import org.openstrap.app.ui.theme.ScreenLight
+import org.openstrap.app.ui.theme.tintedGlass
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.unit.sp
 
 /* ---------------------------------------------- Choose ----------------------------------------------- */
 
@@ -169,6 +175,8 @@ private fun ChooseBody(
     onMore: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    // The usual sport's family lights the screen from the top left (board WorkoutChoose); with none, the distance lime.
+    val light = remember(usual?.type) { ScreenLight(usual?.let { sportBlend(it.type) } ?: Blends.Distance, 135f, 0.85f, 170f) }
     val header: @Composable () -> Unit = {
         Row(verticalAlignment = Alignment.CenterVertically) {
             RoundIcon(AppIcons.X, stringResource(R.string.glow_close), onBack)
@@ -198,7 +206,7 @@ private fun ChooseBody(
         // Unfolded (spec 2.4): the rest of the sports, A to Z, in a column of their own beside the tiles, each side
         // scrolling by itself, so none is a tap away behind More sports.
         if (maxWidth >= GlowLayout.TwoColumnWidth) CompositionLocalProvider(LocalPageColumn provides GlowLayout.MaxContentWidth) {
-            WorkoutPage(Color.Transparent, contentPadding, scroll = false) {
+            WorkoutPage(light, contentPadding, scroll = false) {
                 header()
                 Row(Modifier.weight(1f).fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(GlowLayout.ColumnGap * 2)) {
                     Column(Modifier.weight(1f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(14.dp), content = choose)
@@ -208,7 +216,7 @@ private fun ChooseBody(
                     }
                 }
             }
-        } else WorkoutPage(Color.Transparent, contentPadding) {
+        } else WorkoutPage(light, contentPadding) {
             header()
             choose()
             MoreSportsRow(onMore)
@@ -222,41 +230,54 @@ private fun ChooseBody(
  */
 @Composable
 private fun UsualRow(s: ChooseSport, onStart: () -> Unit, onOpen: () -> Unit) {
-    val color = familyColor(Workouts.family(s.type))
+    val blend = sportBlend(s.type)
     val haptics = org.openstrap.app.ui.components.rememberHaptics()
-    PictureCard(color, Modifier.fillMaxWidth(), onClick = onOpen, contentPadding = PaddingValues(start = 18.dp, top = 14.dp, end = 14.dp, bottom = 14.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Column(Modifier.weight(1f)) {
-                Text(
-                    stringResource(R.string.glow_choose_your_usual), color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA),
-                    style = GlowType.secondary,
-                )
-                Text(
-                    Workouts.sportName(s.type), color = Color.White, style = GlowType.headerDate, maxLines = 1, overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.padding(top = 2.dp),
-                )
-                if (s.line.isNotEmpty()) Text(
-                    s.line, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary,
-                    maxLines = 1, overflow = TextOverflow.Ellipsis,
-                )
-            }
-            Spacer(Modifier.width(12.dp))
-            PageButton(
-                stringResource(R.string.glow_choose_start),
-                { haptics.perform(org.openstrap.app.ui.components.HapticEvent.WorkoutStart); onStart() },
-                primary = true, icon = AppIcons.PlayFill,
+    // Tinted glass in the usual sport's family blend: the one lit card on Choose.
+    Row(
+        Modifier.fillMaxWidth().clip(GlowShapes.Card).tintedGlass(blend, GlowShapes.Card).pressClickable(onOpen, GlowShapes.Card)
+            .padding(start = 18.dp, top = 14.dp, end = 14.dp, bottom = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(
+                stringResource(R.string.glow_choose_your_usual), color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA),
+                style = GlowType.secondary,
+            )
+            Text(
+                Workouts.sportName(s.type), color = Color.White, style = GlowType.headerDate, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.padding(top = 2.dp),
+            )
+            if (s.line.isNotEmpty()) Text(
+                s.line, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary,
+                maxLines = 1, overflow = TextOverflow.Ellipsis,
             )
         }
+        Spacer(Modifier.width(12.dp))
+        PageButton(
+            stringResource(R.string.glow_choose_start),
+            { haptics.perform(org.openstrap.app.ui.components.HapticEvent.WorkoutStart); onStart() },
+            primary = true, icon = AppIcons.PlayFill,
+        )
     }
 }
 
-/** Choose's quiet chips, a step off black. */
-private val QuietCard = ListSurface
-
-/** A Recent chip: the sport's icon in its colour and a name, a sport's or a saved workout's, on a quiet pill. */
+/**
+ * A Recent chip (board WorkoutChoose): a 44 dp pill, white 6% with a 12% ring, the sport's family blend as a small
+ * dot and its name, a sport's or a saved workout's.
+ */
 @Composable
-private fun RecentPill(sport: Int, name: String, onClick: () -> Unit) =
-    IconPill(name, onClick, icon = SportIcons.of(sport), tint = familyColor(Workouts.family(sport)), surface = QuietCard, hairline = true)
+private fun RecentPill(sport: Int, name: String, onClick: () -> Unit) {
+    val blend = sportBlend(sport)
+    Row(
+        Modifier.height(44.dp).clip(GlowShapes.Pill).background(Color.White.copy(alpha = 0.06f))
+            .border(1.dp, Color.White.copy(alpha = 0.12f), GlowShapes.Pill).pressClickable(onClick, GlowShapes.Pill)
+            .semantics { role = Role.Button }.padding(start = 12.dp, end = 16.dp),
+        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Box(Modifier.size(10.dp).clip(CircleShape).background(Brush.linearGradient(listOf(blend.first, blend.second))))
+        Text(name, color = Color.White, style = GlowType.secondary.copy(fontSize = 14.sp), maxLines = 1)
+    }
+}
 
 /* --------------------------------------------- Sport picker -------------------------------------------- */
 
@@ -272,20 +293,25 @@ internal fun SportTile(
     modifier: Modifier,
     outdoor: Boolean,
     selected: Boolean = false,
+    /** The sport's family blend: the tile shows it as a dot (board WorkoutChoose) in place of the [icon]. */
+    blend: Blend? = null,
     onClick: () -> Unit,
 ) {
     // Tight corners and room underneath, so the press area never clips a label that fills the width.
     Column(
-        modifier.pressClickable(onClick, RoundedCornerShape(8.dp)).semantics(mergeDescendants = true) { role = Role.Button }
+        modifier.pressClickable(onClick, GlowShapes.Small).semantics(mergeDescendants = true) { role = Role.Button }
             .padding(vertical = 4.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Box(
-            Modifier.size(SportTileSize).clip(GlowLayout.TileShape).background(if (selected) Color.White else Raised),
+            Modifier.size(SportTileSize).clip(GlowLayout.TileShape).background(if (selected) Color.White else Color.White.copy(alpha = 0.1f)),
             contentAlignment = Alignment.Center,
         ) {
             val ink = if (selected) Color.Black else Color.White
-            Icon(icon, null, tint = ink, modifier = Modifier.size(24.dp))
+            if (blend != null) Box(
+                Modifier.size(12.dp).clip(CircleShape)
+                    .background(if (selected) SolidColor(Color.Black) else Brush.linearGradient(listOf(blend.first, blend.second))),
+            ) else Icon(icon, null, tint = ink, modifier = Modifier.size(24.dp))
             if (outdoor) Icon(
                 SportIcons.Location, stringResource(R.string.glow_choose_outdoors), tint = ink.copy(alpha = 0.7f),
                 modifier = Modifier.align(Alignment.TopEnd).padding(6.dp).size(12.dp),
@@ -464,7 +490,7 @@ private fun SportTiles(title: String?, types: List<Int>, name: (Int) -> String, 
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.Top) {
                 row.forEach { type ->
                     val outdoor = type in Workouts.OUTDOOR_ONLY
-                    SportTile(SportIcons.of(type), name(type), Modifier.weight(1f), outdoor, isSelected(type)) { onPick(type) }
+                    SportTile(SportIcons.of(type), name(type), Modifier.weight(1f), outdoor, isSelected(type), sportBlend(type)) { onPick(type) }
                 }
                 repeat(4 - row.size) { Spacer(Modifier.weight(1f)) }
             }

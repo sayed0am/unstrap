@@ -55,7 +55,9 @@ import org.openstrap.app.ui.components.pressClickable
 import org.openstrap.app.ui.components.rememberHaptics
 import org.openstrap.app.ui.theme.AppIcons
 import org.openstrap.app.ui.workout.StartCopy
-import org.openstrap.app.ui.workout.familyColor
+import org.openstrap.app.ui.workout.familyBlend
+import org.openstrap.app.ui.theme.ScreenLight
+import androidx.compose.runtime.CompositionLocalProvider
 import org.openstrap.app.data.Structure
 import androidx.compose.ui.unit.Dp
 import androidx.compose.foundation.layout.RowScope
@@ -225,8 +227,10 @@ fun GlowWorkoutReadyScreen(
                 ),
             )
         }
-        WorkoutPage(
-            Color.Transparent, contentPadding,
+        val blend = familyBlend(family)
+        CompositionLocalProvider(LocalReadyBlend provides blend) { WorkoutPage(
+            // The family's blend from below for a run, from above for the rest (boards WorkoutReadyRun, WorkoutReadyStrength).
+            if (cardio) ScreenLight(blend, 225f, 0.9f, 520f) else ScreenLight(blend, 135f, 0.9f, 220f), contentPadding,
             // While a goal is typed the keyboard has the bottom of the screen.
             pinned = if (typing) null else ({ WorkoutButton(StartCopy.startLabel(type), Color.White, Color.Black, start, icon = AppIcons.PlayFill, height = 64.dp) }),
         ) {
@@ -259,7 +263,7 @@ fun GlowWorkoutReadyScreen(
                 )
                 return@WorkoutPage
             }
-            ReadyHeartCard(connection, liveHeartRate, familyColor(family))
+            ReadyHeartCard(connection, liveHeartRate)
             when (family) {
                 Workouts.Family.Strength -> StrengthPlanCard(
                     type, sets, { sets = it; if (it != null) planSets = it }, planSets, restSeconds, { restSeconds = it }, typing, { typing = it },
@@ -288,7 +292,7 @@ fun GlowWorkoutReadyScreen(
                 }
                 PageSwitchRow(StartCopy.ASK_TO_END, StartCopy.ASK_TO_END_NOTE, askToEnd, { askToEnd = it }, divider = divider)
             }
-        }
+        } }
     }
 }
 

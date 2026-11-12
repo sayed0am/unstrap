@@ -26,7 +26,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -49,25 +48,30 @@ import org.openstrap.app.presentation.WorkoutCopy
 import org.openstrap.app.ui.workout.LiveGlance
 import org.openstrap.app.ui.workout.GlanceTint
 import org.openstrap.app.ui.workout.GlanceAction
-import org.openstrap.app.ui.workout.ZONE_COLORS
 import org.openstrap.app.ui.theme.MetricColors
 import androidx.compose.ui.text.style.TextOverflow
 import org.openstrap.app.ui.glow.draw.LightAngle
 import org.openstrap.app.ui.glow.draw.GlowMotion
 import org.openstrap.app.ui.glow.draw.heroStyle
 import org.openstrap.app.ui.glow.draw.DotSize
+import org.openstrap.app.ui.theme.Blends
+import org.openstrap.app.ui.theme.GlowShapes
+import org.openstrap.app.ui.workout.familyBlend
+import org.openstrap.app.data.SportTypes
 import org.openstrap.app.ui.theme.ControlSurface
 
 /* ------------------------------------- Rest of the app meanwhile ------------------------------------- */
 
-/** The colour a [LiveGlance] is lit in ([GlanceTint]). */
-internal fun glanceColor(g: LiveGlance): Color = when (g.tint) {
-    GlanceTint.Zone -> g.zone?.let { ZONE_COLORS[it] } ?: PausedColor
-    GlanceTint.Work -> MetricColors.heart
-    GlanceTint.Rest -> Color(WorkoutColors.REST_GREEN)
-    GlanceTint.Mind -> MetricColors.evening
+/**
+ * The colour a [LiveGlance] is lit in ([GlanceTint]): its family's blend's first stop (Intervals: pink for work, teal for
+ * rest), grey while paused. A heart zone is never the colour of a bar or a card, only of a small dot inside it.
+ */
+internal fun glanceColor(g: LiveGlance, sportType: Int = SportTypes.OUTDOOR_RUN): Color = when (g.tint) {
+    GlanceTint.Work -> Blends.Intervals.first
+    GlanceTint.Rest -> Blends.Intervals.second
+    GlanceTint.Mind -> Blends.MindAndBody.first
     GlanceTint.Paused -> PausedColor
-    GlanceTint.Asking -> MetricColors.warn
+    GlanceTint.Zone, GlanceTint.Asking -> familyBlend(Workouts.family(sportType)).first
 }
 
 /** An action's icon on the bar and the hero. */
@@ -89,9 +93,13 @@ private fun actionIcon(a: GlanceAction) = when (a) {
  * brings the live screen back.
  */
 @Composable
-fun WorkoutCapsule(glance: LiveGlance, onClick: () -> Unit, onAction: (GlanceAction) -> Unit, modifier: Modifier = Modifier) {
-    val color = glanceColor(glance)
-    val shape = RoundedCornerShape(50)
+fun WorkoutCapsule(
+    glance: LiveGlance, onClick: () -> Unit, onAction: (GlanceAction) -> Unit, modifier: Modifier = Modifier,
+    /** The workout's sport, for its family's blend. */
+    sportType: Int = SportTypes.OUTDOOR_RUN,
+) {
+    val color = glanceColor(glance, sportType)
+    val shape = GlowShapes.Pill
     val quiet = glance.tint == GlanceTint.Mind
     Box(
         // Mind and body is quieter: 56 dp and no glow.
@@ -142,7 +150,7 @@ fun WorkoutCapsule(glance: LiveGlance, onClick: () -> Unit, onAction: (GlanceAct
 /** A pill on the bar: white with its [icon] for the next action ([primary]), else dark, End with its red dot. */
 @Composable
 private fun BarPill(label: String, primary: Boolean, icon: androidx.compose.ui.graphics.vector.ImageVector? = null, endDot: Boolean = false, onClick: () -> Unit) {
-    val shape = RoundedCornerShape(50)
+    val shape = GlowShapes.Pill
     Row(
         Modifier.height(44.dp).clip(shape).background(if (primary) Color.White else ControlSurface).pressClickable(onClick, shape)
             .padding(horizontal = 14.dp),
@@ -169,7 +177,7 @@ private fun BarPill(label: String, primary: Boolean, icon: androidx.compose.ui.g
  */
 @Composable
 internal fun LiveHero(glance: LiveGlance, sportType: Int, clock: String, onOpen: () -> Unit, onAction: (GlanceAction) -> Unit, modifier: Modifier) {
-    val color = glanceColor(glance)
+    val color = glanceColor(glance, sportType)
     val style = heroStyle(color, LightAngle.Below).let { s -> glance.bpm?.let { s.copy(motion = GlowMotion.Heartbeat(it)) } ?: s }
     GlowCard(style, modifier, onClick = onOpen) {
         Column {
@@ -195,8 +203,8 @@ internal fun LiveHero(glance: LiveGlance, sportType: Int, clock: String, onOpen:
             }
             glance.progress?.let { p ->
                 Spacer(Modifier.height(16.dp))
-                Box(Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(50)).background(Color.Black.copy(alpha = 0.4f))) {
-                    Box(Modifier.fillMaxWidth(p.fraction).height(6.dp).clip(RoundedCornerShape(50)).background(Color.White))
+                Box(Modifier.fillMaxWidth().height(6.dp).clip(GlowShapes.Pill).background(Color.Black.copy(alpha = 0.4f))) {
+                    Box(Modifier.fillMaxWidth(p.fraction).height(6.dp).clip(GlowShapes.Pill).background(Color.White))
                 }
             }
             if (glance.goal != null || glance.toGo != null) {
@@ -220,7 +228,7 @@ internal fun LiveHero(glance: LiveGlance, sportType: Int, clock: String, onOpen:
             }
             glance.next?.let { next ->
                 Spacer(Modifier.height(16.dp))
-                Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(Color.Black.copy(alpha = 0.4f)).padding(14.dp)) {
+                Column(Modifier.fillMaxWidth().clip(GlowShapes.Tile).background(Color.Black.copy(alpha = 0.4f)).padding(14.dp)) {
                     Text(
                         stringResource(R.string.glow_workout_capsule_next), color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA),
                         style = GlowType.secondary,
@@ -235,8 +243,8 @@ internal fun LiveHero(glance: LiveGlance, sportType: Int, clock: String, onOpen:
                 dark?.let { a ->
                     val label = glance.secondLabel.takeIf { a == glance.second }
                     Box(
-                        Modifier.height(52.dp).then(if (label == null) Modifier.size(52.dp) else Modifier).clip(RoundedCornerShape(50))
-                            .background(Color.Black.copy(alpha = 0.45f)).pressClickable({ onAction(a) }, RoundedCornerShape(50))
+                        Modifier.height(52.dp).then(if (label == null) Modifier.size(52.dp) else Modifier).clip(GlowShapes.Pill)
+                            .background(Color.Black.copy(alpha = 0.45f)).pressClickable({ onAction(a) }, GlowShapes.Pill)
                             .padding(horizontal = if (label == null) 0.dp else 18.dp),
                         contentAlignment = Alignment.Center,
                     ) {
