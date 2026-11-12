@@ -77,9 +77,10 @@ private val Dark = darkColorScheme(
     // Elevation would tint raised surfaces with the primary; white would lift them to grey.
     surfaceTint = Color.Transparent,
     // OLED black page with neutral grey cards, so the metric accents carry all the colour.
-    background = Color(0xFF000000),
+    // The Glow × Glass ground (#030304), a hair off black so the screen's light has something to sit in.
+    background = Color(0xFF030304),
     onBackground = Color(0xFFFFFFFF),
-    surface = Color(0xFF000000),
+    surface = Color(0xFF030304),
     onSurface = Color(0xFFFFFFFF),
     surfaceContainerLowest = Color(0xFF000000),
     surfaceContainerLow = Color(0xFF0A0A0A),
@@ -146,6 +147,7 @@ fun OpenStrapTheme(content: @Composable () -> Unit) {
     MaterialTheme(
         colorScheme = Dark,
         typography = AppTypography,
+        shapes = GlowShapes.Material,
         content = content,
     )
 }

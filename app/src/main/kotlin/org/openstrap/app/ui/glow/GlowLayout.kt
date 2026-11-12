@@ -14,7 +14,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
+import org.openstrap.app.ui.theme.screenLight
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -45,12 +45,12 @@ object GlowLayout {
 
     /** Every card's corner, on every tier: glow, edge, list, strip and page panels. */
     val CardCorner = 28.dp
-    val CardShape = RoundedCornerShape(CardCorner)
+    val CardShape: androidx.compose.ui.graphics.Shape = org.openstrap.app.ui.theme.GlowShapes.Card
     /** A sheet's top corners match the cards'. */
-    val SheetShape = RoundedCornerShape(topStart = CardCorner, topEnd = CardCorner)
+    val SheetShape: androidx.compose.ui.graphics.Shape = org.openstrap.app.ui.theme.GlowShapes.Sheet
     /** Sport tiles, chart pills, text fields: rounded, but a step tighter than a card. */
     val TileCorner = 16.dp
-    val TileShape = RoundedCornerShape(TileCorner)
+    val TileShape: androidx.compose.ui.graphics.Shape = org.openstrap.app.ui.theme.GlowShapes.Tile
 
     /** From a card's edge to its content, on every side and every tier. */
     val CardInset = 20.dp
@@ -216,9 +216,11 @@ fun GlowScreenList(
     state: LazyListState,
     focus: Boolean = false,
     onFocused: () -> Unit = {},
+    /** The screen's light (Matrix board): the hero's blend, drawn behind the list and fixed to the screen. */
+    light: org.openstrap.app.ui.theme.ScreenLight? = null,
     content: GlowBlocks.() -> Unit,
 ) {
-    BoxWithConstraints(Modifier.fillMaxSize()) {
+    BoxWithConstraints(Modifier.fillMaxSize().then(if (light != null) Modifier.screenLight(light) else Modifier)) {
         val wide = maxWidth >= GlowLayout.TwoColumnWidth
         val gutter = GlowLayout.dashboardGutter(maxWidth)
         val built = GlowBlocks(smallsAcross = GlowLayout.smallsAcross(maxWidth)).apply(content)
@@ -499,7 +501,7 @@ internal fun TitleMark(marker: String?, tag: TitleTag?, modifier: Modifier = Mod
  */
 @Composable
 internal fun OutlineTag(text: String, modifier: Modifier = Modifier, onClick: (() -> Unit)? = null) {
-    val shape = RoundedCornerShape(50)
+    val shape = org.openstrap.app.ui.theme.GlowShapes.Pill
     val about = stringResource(R.string.glow_tag_about, text.lowercase())
     Text(
         text,
