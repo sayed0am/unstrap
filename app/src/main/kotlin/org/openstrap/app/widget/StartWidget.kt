@@ -53,7 +53,7 @@ import org.openstrap.app.ui.glow.draw.GlowMood
 import org.openstrap.app.ui.glow.draw.drawIcon
 import org.openstrap.app.ui.glow.draw.renderToBitmap
 import org.openstrap.app.ui.theme.AppIcons
-import org.openstrap.app.ui.theme.MetricColors
+import org.openstrap.app.ui.theme.Blends
 import org.openstrap.app.ui.theme.SportIcons
 import java.time.Instant
 import java.time.ZoneId
@@ -119,7 +119,7 @@ internal fun openLiveWorkout(context: Context): Intent =
 /* ------------------------------------------------------------------------------------------------ */
 
 /** Heart ink, as Ready's hero: the light toward Start. */
-private val Ink = MetricColors.heart
+private val Ink = Blends.Heart.chart
 
 /** The still light on the top right corner, where the app's Start card's travelling light is when it starts. */
 private val StartCorner = Rim(1f, 0f, reachX = 0.45f, reachY = 0.9f)

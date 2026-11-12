@@ -34,7 +34,7 @@ import org.openstrap.app.ui.glow.draw.drawWeekRings
 import org.openstrap.app.ui.glow.draw.ChartInk
 import org.openstrap.app.ui.glow.draw.hourPills
 import org.openstrap.app.ui.glow.draw.renderToBitmap
-import org.openstrap.app.ui.theme.MetricColors
+import org.openstrap.app.ui.theme.Blends
 
 /**
  * The Steps widget (widgets spec 3.3): today's steps against the goal, glanceable all day. The Wide adds what's to go
@@ -83,7 +83,7 @@ class StepsWidgetReceiver : PlacedWidgetReceiver() {
 /* ------------------------------------------------------------------------------------------------ */
 
 /** Steps' lime, as Today's Steps card. */
-private val Ink = MetricColors.steps
+private val Ink = Blends.Steps.chart
 
 /** The goal bar's track (the mockup's): white at 10%. */
 private const val TRACK_ALPHA = 0.10f

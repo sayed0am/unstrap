@@ -28,7 +28,7 @@ import org.openstrap.app.ui.glow.draw.GlowMood
 import org.openstrap.app.ui.glow.draw.WeekBarsLook
 import org.openstrap.app.ui.glow.draw.drawWeekDots
 import org.openstrap.app.ui.glow.draw.renderToBitmap
-import org.openstrap.app.ui.theme.MetricColors
+import org.openstrap.app.ui.theme.Blends
 import java.time.LocalDate
 
 /**
@@ -71,7 +71,7 @@ class RecoveryWidgetReceiver : PlacedWidgetReceiver() {
 /* ------------------------------------------------------------------------------------------------ */
 
 /** Recovery's ink. */
-private val Ink = MetricColors.readiness
+private val Ink = Blends.Recovery.chart
 
 /**
  * The widget at the size Glance lays out: the edge light behind, drawn at the cell's real size, then the size's
