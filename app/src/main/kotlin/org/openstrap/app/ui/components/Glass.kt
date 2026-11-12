@@ -16,9 +16,7 @@ import dev.chrisbanes.haze.blur.hazeBlur
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.staticCompositionLocalOf
@@ -27,6 +25,25 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.compose.material3.LocalContentColor
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.Stable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.ColorMatrix
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.blur.HazeBlurStyle
+import dev.chrisbanes.haze.blur.HazeColorEffect
+import org.openstrap.app.ui.theme.Ground
+import org.openstrap.app.ui.theme.GlowShapes
+import org.openstrap.app.ui.theme.ScreenLight
+import org.openstrap.app.ui.theme.LocalScreenLight
+import org.openstrap.app.ui.theme.litEdge
+import org.openstrap.app.ui.theme.screenLight
 import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.gestures.Orientation
@@ -50,19 +67,23 @@ val GlassEdge = BorderStroke(
     1.dp, Brush.verticalGradient(0f to Color.White.copy(alpha = 0.2f), 0.5f to Color.White.copy(alpha = 0.05f), 1f to Color.Black.copy(alpha = 0.4f)),
 )
 
-/** The screen's cards go OLED black with a faint hairline instead of grey fills, matching the glow tabs. */
+/**
+ * Material parts on the screen light (Glow × Glass): the ground is #030304 and the containers that Material paints
+ * behind its parts are see-through, so no black slab sits over a page's light. Menus and sheets keep an opaque dark
+ * container, since they must be readable over anything.
+ */
 @Composable
 fun OledSurfaces(content: @Composable () -> Unit) {
     val c = MaterialTheme.colorScheme
     MaterialTheme(
         colorScheme = c.copy(
-            background = Color.Black,
-            surface = Color.Black,
-            surfaceContainerLowest = Color.Black,
-            surfaceContainerLow = Color.Black,
-            surfaceContainer = Color.Black,
-            surfaceContainerHigh = Color(0xFF101012),
-            surfaceContainerHighest = Color(0xFF1A1A1D),
+            background = Ground,
+            surface = Color.Transparent,
+            surfaceContainerLowest = Color.Transparent,
+            surfaceContainerLow = Color.Transparent,
+            surfaceContainer = Color(0xFF121215),
+            surfaceContainerHigh = Color(0xFF16161A),
+            surfaceContainerHighest = Color(0xFF1E1E22),
             outline = Color.White.copy(alpha = 0.16f),
             outlineVariant = Color.White.copy(alpha = 0.12f),
         ),
@@ -70,6 +91,41 @@ fun OledSurfaces(content: @Composable () -> Unit) {
         shapes = MaterialTheme.shapes,
         content = content,
     )
+}
+
+/* ------------------------------------------- The page's screen light -------------------------------------- */
+
+/** Holds the screen light a page over a tab asks for. Read by [PageLightHost], set by [PageLight]. */
+@Stable
+class PageLightState {
+    var light: ScreenLight? by mutableStateOf(null)
+}
+
+/** The page's light holder, null outside a [PageLightHost]. */
+val LocalPageLight = staticCompositionLocalOf<PageLightState?> { null }
+
+/**
+ * Draws the screen light of the page inside it, over [Ground] (the plain ground until a page sets one), fixed to the
+ * screen. A detail or a page over a tab sets its light from inside with [PageLight]. Wrap each page once: the host
+ * belongs to one stack entry, so a page sliding in or out keeps its own light.
+ */
+@Composable
+fun PageLightHost(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
+    val state = remember { PageLightState() }
+    CompositionLocalProvider(LocalPageLight provides state, LocalScreenLight provides state.light) {
+        Box(modifier.fillMaxSize().screenLight(state.light)) { content() }
+    }
+}
+
+/**
+ * Sets the screen light for the page this is called in (the hero's blend, mood and angle). Cleared when the page
+ * leaves. Does nothing outside a [PageLightHost]. Pass null for the plain ground.
+ */
+@Composable
+fun PageLight(light: ScreenLight?) {
+    val state = LocalPageLight.current ?: return
+    SideEffect { state.light = light }
+    DisposableEffect(state) { onDispose { state.light = null } }
 }
 
 /* ------------------------------------------- In-app overlay ----------------------------------------- */
@@ -104,12 +160,30 @@ private fun GlassPortal(host: GlassHost, sheet: Boolean, onDismiss: () -> Unit, 
     }
 }
 
-/** The page behind a popup: blurred and darkened, the nav bar's glass spread across the screen. */
-private val BackdropBlur = dev.chrisbanes.haze.blur.HazeBlurStyle {
-    blurRadius(28.dp)
-    backgroundColor(Color.Black)
-    colorEffects(listOf(dev.chrisbanes.haze.blur.HazeColorEffect.tint(Color.Black.copy(alpha = 0.45f))))
-    fallbackColorEffect(dev.chrisbanes.haze.blur.HazeColorEffect.tint(Color.Black.copy(alpha = 0.8f)))
+/** The sheet material's fill (the boards' rgba(22,22,26)). */
+private val SheetFill = Color(0xFF16161A)
+
+/** The boards' dim behind a sheet or popup: black at 58%. */
+private const val BACKDROP_DIM = 0.58f
+
+/** The haze the overlay's sheets and popups blur (the pages' source), for [GlassPanel]. */
+val LocalGlassHaze = staticCompositionLocalOf<HazeState?> { null }
+
+/**
+ * Heavy glass (Sheet boards): the page behind blurred 40 dp, saturated 150%, under a 78% dark fill. The boards'
+ * System panel draws 28 dp and 170% for a card-sized panel, the sheet boards 40 and 150, and the sheets win here.
+ * Before Android 12, which has no blur, the fill is near solid.
+ */
+private val HeavyGlass = HazeBlurStyle {
+    blurRadius(40.dp)
+    backgroundColor(Ground)
+    colorEffects(
+        listOf(
+            HazeColorEffect.colorFilter(ColorFilter.colorMatrix(ColorMatrix().apply { setToSaturation(1.5f) })),
+            HazeColorEffect.tint(SheetFill.copy(alpha = 0.78f)),
+        ),
+    )
+    fallbackColorEffect(HazeColorEffect.tint(SheetFill.copy(alpha = 0.96f)))
 }
 
 /** Draws the registered popups; place it last at the root, over everything, with the pages' [haze]. */
@@ -124,7 +198,7 @@ fun GlassOverlay(host: GlassHost, haze: dev.chrisbanes.haze.HazeState) {
             Box(
                 Modifier.fillMaxSize()
                     .graphicsLayer { alpha = shown.value }
-                    .hazeBlur(HazeInput.Sources(haze), BackdropBlur)
+                    .background(Color.Black.copy(alpha = BACKDROP_DIM))
                     .clickable(tap, indication = null) { layer.onDismiss.value() },
             )
             Box(
@@ -137,7 +211,7 @@ fun GlassOverlay(host: GlassHost, haze: dev.chrisbanes.haze.HazeState) {
             ) {
                 // The panel takes its own taps, so tapping it doesn't dismiss.
                 Box(Modifier.clickable(androidx.compose.runtime.remember { androidx.compose.foundation.interaction.MutableInteractionSource() }, indication = null) {}) {
-                    layer.content.value()
+                    CompositionLocalProvider(LocalGlassHaze provides haze) { layer.content.value() }
                 }
             }
         }
@@ -145,18 +219,24 @@ fun GlassOverlay(host: GlassHost, haze: dev.chrisbanes.haze.HazeState) {
 }
 
 /**
- * The glass panel a popup sits on: see-through dark over the blurred page, with a lit top edge. Android 11 can't blur
- * the page (Haze needs 12), so there it is near solid, or the page's text reads through the popup's.
+ * The heavy glass a sheet or popup sits on: the page behind it blurred under a dark fill, with a lit top edge. Popups
+ * take [GlowShapes.Card], sheets [GlowShapes.Sheet]. Outside the overlay (no page to blur) and before Android 12 it is
+ * a near solid fill.
  */
 @Composable
-fun GlassPanel(modifier: Modifier = Modifier, shape: androidx.compose.ui.graphics.Shape = org.openstrap.app.ui.glow.GlowLayout.CardShape, content: @Composable () -> Unit) {
-    Surface(
-        shape = shape, color = GlassTint.copy(alpha = GlassPanelAlpha), border = GlassEdge, contentColor = Color.White,
-        modifier = modifier, content = content,
-    )
+fun GlassPanel(modifier: Modifier = Modifier, shape: androidx.compose.ui.graphics.Shape = GlowShapes.Card, content: @Composable () -> Unit) {
+    val haze = LocalGlassHaze.current
+    Box(
+        modifier.clip(shape)
+            .let {
+                if (haze != null) it.hazeBlur(HazeInput.Sources(haze), HeavyGlass)
+                else it.background(SheetFill.copy(alpha = 0.96f))
+            }
+            .litEdge(shape, top = 0.2f, ring = 0f, reach = 3f),
+    ) {
+        CompositionLocalProvider(LocalContentColor provides Color.White, content = content)
+    }
 }
-
-private val GlassPanelAlpha = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) 0.72f else 0.96f
 
 /**
  * A bottom sheet as glass in the overlay, at most [org.openstrap.app.ui.glow.GlowLayout.PageMaxWidth] wide and centred.
@@ -209,11 +289,12 @@ fun GlassSheet(onDismiss: () -> Unit, content: @Composable () -> Unit) {
                     rememberDraggableState { d -> pull.floatValue = (pull.floatValue + d).coerceAtLeast(0f) },
                     Orientation.Vertical, onDragStopped = { v -> release(v) },
                 ),
-            org.openstrap.app.ui.glow.GlowLayout.SheetShape,
+            GlowShapes.Sheet,
         ) {
             Column {
-                Box(Modifier.fillMaxWidth().padding(top = 12.dp, bottom = 8.dp), contentAlignment = Alignment.Center) {
-                    Box(Modifier.size(width = 36.dp, height = 4.dp).background(Color.White.copy(alpha = 0.3f), RoundedCornerShape(2.dp)))
+                // The grab handle as the boards draw it: a 36 by 4 pill, 10 dp from the top.
+                Box(Modifier.fillMaxWidth().padding(top = 10.dp, bottom = 14.dp), contentAlignment = Alignment.Center) {
+                    Box(Modifier.size(width = 36.dp, height = 4.dp).background(Color.White.copy(alpha = 0.3f), GlowShapes.Small))
                 }
                 content()
             }
