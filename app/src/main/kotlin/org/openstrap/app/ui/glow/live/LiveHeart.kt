@@ -259,9 +259,10 @@ internal fun WorkoutHeartCard(
                     Spacer(Modifier.width(8.dp))
                     Text(
                         WorkoutCopy.zoneLine(zone), color = Color.White, style = GlowType.cardTitle, maxLines = 1,
-                        modifier = Modifier.weight(1f, fill = false),
+                        // The zone line takes what the time leaves: two weights split the row and cut "Zone 2, easy" short.
+                        modifier = Modifier.weight(1f),
                     )
-                    Spacer(Modifier.weight(1f))
+                    Spacer(Modifier.width(8.dp))
                     Text(WorkoutCopy.zoneTime(zoneSeconds[zone]), color = Color.White.copy(alpha = 0.72f), style = GlowType.secondary, maxLines = 1)
                 } else Text(WorkoutCopy.noZone(r.paused), color = Color.White, style = GlowType.cardTitle, maxLines = 1)
             }
