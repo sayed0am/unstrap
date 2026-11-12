@@ -313,7 +313,7 @@ internal fun uniqueKeys(keys: List<String>): List<String> {
  */
 val LocalCardOpens = compositionLocalOf { false }
 
-/** The tap caret (spec 2.5): 14 dp, at [alpha] white, 50% after a card's title and 30% at a row's end. */
+/** The tap caret: 14 dp, at [alpha] white. Raised to pass 4.5:1 (decision 1): 67% after a title, about 50% at a row's end. */
 @Composable
 internal fun TapCaret(alpha: Float, modifier: Modifier = Modifier) =
     Icon(AppIcons.TapCaret, null, tint = Color.White.copy(alpha = alpha), modifier = modifier.size(CaretSize))
@@ -332,9 +332,9 @@ internal fun InfoButton(label: String, onClick: () -> Unit, modifier: Modifier =
 
 internal val InfoButtonSize = 32.dp
 /** A card's caret, right after its title. */
-internal const val CARD_CARET_ALPHA = 0.5f
-/** A row's caret, at its end. */
-internal const val ROW_CARET_ALPHA = 0.3f
+internal const val CARD_CARET_ALPHA = 0.67f
+/** A row's caret, at its end, on clear glass and pages. */
+internal const val ROW_CARET_ALPHA = 0.5f
 
 /**
  * A card's title in [GlowType.cardTitle], on one line, with the tap caret 6 dp after the text when the card opens
@@ -473,12 +473,17 @@ internal fun NoteText(text: String) =
     Text(text, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary, maxLines = 1)
 
 /**
- * A small sync marker next to a card's title, "Up to 09:40" (spec 4.3): amber, as the strap chip, since it's about
- * the sync and not the body.
+ * A small sync marker next to a card's title, "Up to 09:40" (spec 4.3): an amber dot, as the strap chip, since it's
+ * about the sync and not the body.
  */
 @Composable
 internal fun StateMarker(text: String, modifier: Modifier = Modifier) {
-    Text(text, modifier, color = MetricColors.warn, style = GlowType.caption, maxLines = 1)
+    // An amber dot and white words: amber is for the dot, never the text (decisions 6 and 9).
+    Row(modifier, verticalAlignment = Alignment.CenterVertically) {
+        androidx.compose.foundation.layout.Box(Modifier.size(6.dp).background(MetricColors.warn, androidx.compose.foundation.shape.CircleShape))
+        androidx.compose.foundation.layout.Spacer(Modifier.width(6.dp))
+        Text(text, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.caption, maxLines = 1)
+    }
 }
 
 /**

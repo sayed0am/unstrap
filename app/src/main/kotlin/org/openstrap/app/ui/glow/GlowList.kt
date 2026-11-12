@@ -1,7 +1,6 @@
 package org.openstrap.app.ui.glow
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -13,7 +12,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -30,11 +30,16 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import org.openstrap.app.R
 import org.openstrap.app.ui.dashboard.Detail
 import org.openstrap.app.presentation.Metric
 import org.openstrap.app.ui.dashboard.Score
 import org.openstrap.app.ui.theme.AppIcons
+import org.openstrap.app.ui.theme.Blends
+import org.openstrap.app.ui.theme.CLEAR_GLASS_FILL
+import org.openstrap.app.ui.theme.GlowShapes
+import org.openstrap.app.ui.theme.clearGlass
 import org.openstrap.app.ui.components.LocalCardNumbers
 import org.openstrap.app.ui.components.cardNumber
 import org.openstrap.app.ui.components.cardOpening
@@ -44,8 +49,17 @@ import org.openstrap.app.ui.components.cardOpening
  * for lists of things (workouts, contributors, settings). No glow at all, so the cards above it keep the light.
  */
 
-internal val ListSurface = Color(0xFF0F0F11)
-internal val RowHairline = Color.White.copy(alpha = GlowLayout.DividerAlpha)
+/** A list's surface: clear glass, white 7% over the screen's light (System board). */
+internal val ListSurface = Color.White.copy(alpha = CLEAR_GLASS_FILL)
+/** The divider between rows: white 7%, inset to the list's padding. */
+internal val RowHairline = Color.White.copy(alpha = 0.07f)
+
+/** A list row's height, and the side and top padding of a list panel (TabTodayMorning, PageStrap). */
+internal val ListRowHeight = 60.dp
+internal val ListInset = 18.dp
+/** A row icon's circle (36 dp, the blend's first stop at 16%). */
+internal val RowIconCircle = 36.dp
+private const val ROW_ICON_FILL = 0.16f
 
 /**
  * A grouped list: a dark panel with a title row ([title] left, an optional [note] right) over its rows, usually
@@ -68,7 +82,7 @@ fun ListPanel(
         // The first row's own padding sits under it, so the title row needs only a little below. The note drops
         // under the title when they can't share a line, so the title never wraps.
         if (title != null || note != null) TitleRow(
-            Modifier.padding(top = GlowLayout.RowPadding, bottom = 6.dp),
+            Modifier.padding(top = 8.dp, bottom = 2.dp),
             start = {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
@@ -84,14 +98,15 @@ fun ListPanel(
     }
     // Rows reach out over the side padding, so a tap lights the whole row, edge to edge. The card clips them to its
     // corners.
-    val rows: @Composable ColumnScope.() -> Unit = { CompositionLocalProvider(LocalRowBleed provides GlowLayout.CardInset) { inner() } }
+    val rows: @Composable ColumnScope.() -> Unit = { CompositionLocalProvider(LocalRowBleed provides ListInset) { inner() } }
+    val titled = title != null || note != null
     Column(
         modifier
             .fillMaxWidth()
-            .clip(GlowLayout.CardShape)
-            .background(ListSurface, GlowLayout.CardShape)
-            .border(1.dp, CardHairline, GlowLayout.CardShape)
-            .padding(GlowLayout.ListPadding),
+            // Clear glass is drawn outside the clip, so its lit edge isn't cut in half.
+            .clearGlass(GlowShapes.Card)
+            .clip(GlowShapes.Card)
+            .padding(start = ListInset, end = ListInset, top = if (titled) 14.dp else 6.dp, bottom = if (titled) 4.dp else 6.dp),
         content = rows,
     )
 }
@@ -163,15 +178,26 @@ fun ListRow(
             .let { if (onClick != null) it.clickable(onClick = opening?.onClick ?: onClick) else it }
             // The hairline keeps to the list's padding, as before.
             .let { if (divider) it.drawBehind { val e = bleed.toPx(); drawLine(RowHairline, Offset(e, 0f), Offset(size.width - e, 0f), 1.dp.toPx()) } else it }
-            .padding(horizontal = bleed, vertical = GlowLayout.RowPadding),
+            .padding(horizontal = bleed)
+            .heightIn(min = ListRowHeight)
+            .padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        // The icon sits in a 36 dp circle filled with the blend's first stop at 16% (a sport's white icon on white 8%).
+        val blend = Blends.forInk(color)
+        val circle = if (iconTint == color && blend != null) blend.first.copy(alpha = ROW_ICON_FILL) else Color.White.copy(alpha = 0.08f)
+        val glyph = if (iconTint == color && blend != null) blend.first else iconTint
         if (ring != null) {
             // A row's progress ring (spec 2.7): as thick as an icon's stroke reads at 20 dp, a dp in from its box.
-            ProgressRing({ ring }, color, Modifier.size(RowIcon).padding(1.dp), stroke = 2.5.dp, track = 0.12f)
+            Box(Modifier.size(RowIconCircle).background(circle, CircleShape), contentAlignment = Alignment.Center) {
+                ProgressRing({ ring }, glyph, Modifier.size(RowIcon).padding(1.dp), stroke = 2.5.dp, track = 0.12f)
+            }
             Spacer(Modifier.width(RowIconGap))
         } else if (icon != null) {
-            Icon(icon, null, tint = iconTint.copy(alpha = iconTint.alpha * if (waiting) WAITING_ICON_ALPHA else 1f), modifier = Modifier.size(RowIcon))
+            Box(
+                Modifier.size(RowIconCircle).background(circle.copy(alpha = circle.alpha * if (waiting) WAITING_ICON_ALPHA else 1f), CircleShape),
+                contentAlignment = Alignment.Center,
+            ) { Icon(icon, null, tint = glyph.copy(alpha = glyph.alpha * if (waiting) WAITING_ICON_ALPHA else 1f), modifier = Modifier.size(RowGlyph)) }
             Spacer(Modifier.width(RowIconGap))
         }
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
@@ -198,8 +224,8 @@ private fun RowLine(status: String?, tag: org.openstrap.app.ui.dashboard.NewsTag
         if (status != null) Text(
             status,
             Modifier.weight(1f, fill = false),
-            color = if (waiting) Color.White.copy(alpha = 0.45f) else Color.White.copy(alpha = 0.6f),
-            style = GlowType.secondary,
+            color = if (waiting) Color.White.copy(alpha = 0.5f) else Color.White.copy(alpha = 0.65f),
+            style = GlowType.secondary.copy(fontSize = 12.sp),
             // Beside a tag the line stays on one row, the tag keeping its place.
             maxLines = if (tag != null) 1 else Int.MAX_VALUE,
             overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
@@ -211,6 +237,8 @@ private fun RowLine(status: String?, tag: org.openstrap.app.ui.dashboard.NewsTag
 
 /** A row's icon, and the gap after it, as on the You and Strap pages. */
 internal val RowIcon = 20.dp
+/** The glyph inside a row's icon circle. */
+internal val RowGlyph = 18.dp
 internal val RowIconGap = 14.dp
 /** From a row's value to its tap caret. */
 internal val RowCaretGap = 8.dp
@@ -268,7 +296,7 @@ fun WaitingDash(modifier: Modifier = Modifier) {
     Box(
         modifier
             .size(14.dp, 3.dp)
-            .background(Color.White.copy(alpha = 0.3f), RoundedCornerShape(2.dp))
+            .background(Color.White.copy(alpha = 0.3f), GlowShapes.Small)
             .semantics { contentDescription = described },
     )
 }
