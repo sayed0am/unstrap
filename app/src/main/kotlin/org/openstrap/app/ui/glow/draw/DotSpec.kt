@@ -49,8 +49,11 @@ object DotFont {
      * [text] as the dots show it (Numbers board): four digits read without a gap ("8412"), five or more keep a gap of
      * half a digit before each group of three ("12 480"). Grouping comes in as commas ([Units.DOT_LOCALE] is ROOT).
      */
-    fun grouped(text: String): String = GROUPED.replace(text) { m -> if (m.value.count { it.isDigit() } <= 4) m.value.replace(",", "") else m.value }
+    fun grouped(text: String): String = GROUPED.replace(text) { m ->
+        if (m.value.count { it.isDigit() } <= UNGROUPED_DIGITS) m.value.replace(",", "") else m.value
+    }
 
+    private const val UNGROUPED_DIGITS = 4
     private val GROUPED = Regex("\\d{1,3}(,\\d{3})+")
 
     /** Whether [c] has a glyph of its own. */

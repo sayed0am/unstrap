@@ -304,7 +304,8 @@ internal fun SportTile(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Box(
-            Modifier.size(SportTileSize).clip(GlowLayout.TileShape).background(if (selected) Color.White else Color.White.copy(alpha = 0.1f)),
+            Modifier.size(SportTileSize).clip(GlowLayout.TileShape)
+                .background(if (selected) Color.White else Color.White.copy(alpha = 0.1f)),
             contentAlignment = Alignment.Center,
         ) {
             val ink = if (selected) Color.Black else Color.White
@@ -413,13 +414,13 @@ private fun SearchResults(query: String, selected: Int, onPick: (Int) -> Unit) {
 }
 
 /** The search field's glass: white 12% with the lit edge (board WorkoutChoose). */
-private const val SearchFill = 0.12f
+private const val SEARCH_FILL = 0.12f
 
 /** Choose's search field before it's typed in: it looks like the field and opens [SearchPage]. */
 @Composable
 private fun SearchEntry(hint: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
     Row(
-        modifier.fillMaxWidth().height(48.dp).clip(GlowLayout.TileShape).clearGlass(GlowLayout.TileShape, SearchFill)
+        modifier.fillMaxWidth().height(48.dp).clip(GlowLayout.TileShape).clearGlass(GlowLayout.TileShape, SEARCH_FILL)
             .pressClickable(onClick, GlowLayout.TileShape).semantics { role = Role.Button }.padding(horizontal = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -493,7 +494,9 @@ private fun SportTiles(title: String?, types: List<Int>, name: (Int) -> String, 
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.Top) {
                 row.forEach { type ->
                     val outdoor = type in Workouts.OUTDOOR_ONLY
-                    SportTile(SportIcons.of(type), name(type), Modifier.weight(1f), outdoor, isSelected(type), sportBlend(type)) { onPick(type) }
+                    SportTile(
+                        SportIcons.of(type), name(type), Modifier.weight(1f), outdoor, isSelected(type), sportBlend(type),
+                    ) { onPick(type) }
                 }
                 repeat(4 - row.size) { Spacer(Modifier.weight(1f)) }
             }
@@ -513,7 +516,8 @@ private fun SearchField(query: String, hint: String, modifier: Modifier = Modifi
         keyboardActions = KeyboardActions(onSearch = { keyboard?.hide() }),
         decorationBox = { field ->
             Row(
-                Modifier.fillMaxWidth().height(48.dp).clip(GlowLayout.TileShape).clearGlass(GlowLayout.TileShape, SearchFill).padding(horizontal = 16.dp),
+                Modifier.fillMaxWidth().height(48.dp).clip(GlowLayout.TileShape)
+                    .clearGlass(GlowLayout.TileShape, SEARCH_FILL).padding(horizontal = 16.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Icon(SportIcons.Search, null, tint = Color.White.copy(alpha = GlowType.CAPTION_ALPHA), modifier = Modifier.size(18.dp))

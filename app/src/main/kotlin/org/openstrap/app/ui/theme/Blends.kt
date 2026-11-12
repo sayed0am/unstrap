@@ -120,18 +120,26 @@ internal fun chartTone(c: Color, on: Color = ChartGlass, target: Float = 4.5f): 
     if (contrast(c, on) >= target) return c
     val (h, s, l) = hsl(c)
     var light = l
+    var tone = Color.White
     while (light < 1f) {
-        light = min(1f, light + 0.01f)
+        light = min(1f, light + TONE_STEP)
         val next = Color.hsl(h, s, light)
-        if (contrast(next, on) >= target) return next
+        if (contrast(next, on) >= target) {
+            tone = next
+            break
+        }
     }
-    return Color.White
+    return tone
 }
+
+private const val TONE_STEP = 0.01f
+private const val MUTED_SATURATION = 0.6f
+private const val MUTED_LIGHTNESS = 0.4f
 
 /** [c] for the screen's light: same hue, 60% of its saturation, 40% lightness (Matrix board). */
 internal fun muted(c: Color): Color {
     val (h, s, _) = hsl(c)
-    return Color.hsl(h, s * 0.6f, 0.4f)
+    return Color.hsl(h, s * MUTED_SATURATION, MUTED_LIGHTNESS)
 }
 
 internal fun hsl(c: Color): Triple<Float, Float, Float> {

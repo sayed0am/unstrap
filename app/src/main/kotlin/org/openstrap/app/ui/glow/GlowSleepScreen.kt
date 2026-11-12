@@ -1,3 +1,5 @@
+@file:Suppress("TooManyFunctions") // the Sleep screen's cards and rows are one cohesive set
+
 package org.openstrap.app.ui.glow
 
 import org.openstrap.app.R
@@ -115,7 +117,7 @@ fun GlowSleepScreen(
     CompositionLocalProvider(LocalGlowPaused provides { list.isScrollInProgress }, LocalGlowMood provides GlowMood.Night) {
         // Always night, light from below (Matrix board): Sleep's blend at 65%, the top stays dark.
         GlowScreenList(
-            contentPadding, list, light = ScreenLight(Blends.Sleep, LightAngle.Below, ScreenLight.NIGHT, 190f),
+            contentPadding, list, light = ScreenLight(Blends.Sleep, LightAngle.Below, ScreenLight.NIGHT, heroCenterY = 190f),
         ) {
             full { header() }
             // With naps and a breathing summary the two are a Small pair; alone, either is a Wide.

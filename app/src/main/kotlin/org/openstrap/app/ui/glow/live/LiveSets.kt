@@ -81,7 +81,6 @@ import androidx.compose.ui.graphics.graphicsLayer
 import org.openstrap.app.presentation.WorkoutCopy
 import org.openstrap.app.ui.workout.ZONE_COLORS
 import org.openstrap.app.ui.workout.strengthMoment
-import org.openstrap.app.ui.dashboard.LocalHeartZones
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import org.openstrap.app.R
@@ -118,7 +117,6 @@ internal fun LiveStrengthScreen(
     onLog: (index: Int, exercise: String?, reps: Int, kg: Float) -> Unit,
     compact: Boolean = false,
 ) {
-    val heartZones = LocalHeartZones.current
     val now = nowTickingState()
     val connected = connection is ConnectionState.Connected
     val bpm = liveHeartRate.takeIf { connected && !r.paused }
@@ -145,7 +143,9 @@ internal fun LiveStrengthScreen(
         lap = if (!r.paused) ({ PauseSideButton(controls.onPause) }) else null,
         center = when {
             r.inSet -> ({ CenterAction(stringResource(R.string.workout_live_sets_set_done), AppIcons.Tick02, tapSetDone) })
-            else -> ({ CenterAction(stringResource(R.string.workout_live_sets_start_set, steady.setNumber), AppIcons.PlayFill, onStartSet) })
+            else -> ({
+                CenterAction(stringResource(R.string.workout_live_sets_start_set, steady.setNumber), AppIcons.PlayFill, onStartSet)
+            })
         },
         paused = { LivePaused(r, liveHeartRate.takeIf { connected }, history, listOf(
             momentNow().done.let { done -> done.toString() to pluralStringResource(R.plurals.workout_live_figure_sets_done, done) },
@@ -156,7 +156,9 @@ internal fun LiveStrengthScreen(
         val moment = steady
         if (compact) CompactCard(r, moment, momentNow, blend, onName = { naming = true }, onAdd30 = onExtendRest) else when {
             r.inSet -> SetCard(r, moment.setNumber, { momentNow().setSeconds }, blend) { naming = true }
-            r.resting -> RestCard(r, { momentNow().restLeft ?: 0 }, moment.done, moment.setNumber, r.exercise, moment.nextLoad, blend, onExtendRest)
+            r.resting -> RestCard(
+                r, { momentNow().restLeft ?: 0 }, moment.done, moment.setNumber, r.exercise, moment.nextLoad, blend, onExtendRest,
+            )
             else -> ReadyCard(r, moment.setNumber, blend) { naming = true }
         }
         if (!compact) {
@@ -167,7 +169,8 @@ internal fun LiveStrengthScreen(
         }
         Spacer(Modifier.weight(1f))
         val setsTarget = r.workout.setsTarget
-        if (!compact && setsTarget != null && moment.done >= setsTarget && !r.inSet) {
+        val showAllDone = !compact && !r.inSet
+        if (showAllDone && setsTarget != null && moment.done >= setsTarget) {
             Text(
                 pluralStringResource(R.plurals.workout_live_sets_all_done, setsTarget, setsTarget), color = Color.White.copy(alpha = 0.6f),
                 style = GlowType.secondary, modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center,
@@ -261,7 +264,14 @@ private fun ReadyCard(r: WorkoutState.Recording, number: Int, blend: Blend, onNa
  */
 @Composable
 private fun RestCard(
-    r: WorkoutState.Recording, left: () -> Long, done: Int, number: Int, exercise: String?, load: String?, blend: Blend, onAdd30: () -> Unit,
+    r: WorkoutState.Recording,
+    left: () -> Long,
+    done: Int,
+    number: Int,
+    exercise: String?,
+    load: String?,
+    blend: Blend,
+    onAdd30: () -> Unit,
 ) {
     LiveHero(blend) {
         Row {
@@ -280,7 +290,11 @@ private fun RestCard(
         val total = ((r.restUntil ?: 0) - (r.sets.lastOrNull()?.end ?: r.restUntil ?: 0)).coerceAtLeast(1)
         val track = Color.White.copy(alpha = 0.12f)
         Box(Modifier.fillMaxWidth().height(4.dp).clip(GlowShapes.Pill).background(track)) {
-            Box(Modifier.fillMaxHeight().fillMaxWidth().graphicsLayer { scaleX = (left().toFloat() / total).coerceIn(0f, 1f); transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0f, 0.5f) }.background(blend.chart))
+            val drain = Modifier.fillMaxHeight().fillMaxWidth().graphicsLayer {
+                scaleX = (left().toFloat() / total).coerceIn(0f, 1f)
+                transformOrigin = androidx.compose.ui.graphics.TransformOrigin(pivotFractionX = 0f, pivotFractionY = 0.5f)
+            }
+            Box(drain.background(blend.chart))
         }
         Spacer(Modifier.height(14.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -316,7 +330,8 @@ private fun RestHeart(r: WorkoutState.Recording, bpm: Int?, drop: Int?, history:
                 DotMatrixText(bpm.toString(), dot = DotSize.Edge)
                 Spacer(Modifier.width(8.dp))
                 Text(
-                    drop?.takeIf { it > 0 }?.let { stringResource(R.string.workout_live_bpm_down, bpm, it) } ?: stringResource(R.string.workout_live_bpm, bpm),
+                    drop?.takeIf { it > 0 }?.let { stringResource(R.string.workout_live_bpm_down, bpm, it) }
+                        ?: stringResource(R.string.workout_live_bpm, bpm),
                     color = Color.White, style = GlowType.secondary,
                 )
             } else Text(WorkoutCopy.noHeartRate(r.paused), color = Color.White, style = GlowType.sentence)
@@ -397,7 +412,8 @@ private fun SetDots(done: Int, target: Int?, inSet: Boolean, modifier: Modifier 
 private fun ExercisePill(name: String?, onClick: () -> Unit) {
     val shape = GlowShapes.Pill
     Row(
-        Modifier.clip(shape).background(Color.White.copy(alpha = 0.12f)).pressClickable(onClick, shape).padding(start = 14.dp, end = 10.dp, top = 8.dp, bottom = 8.dp),
+        Modifier.clip(shape).background(Color.White.copy(alpha = 0.12f)).pressClickable(onClick, shape)
+            .padding(start = 14.dp, end = 10.dp, top = 8.dp, bottom = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
@@ -414,8 +430,12 @@ private fun DoneSets(sets: List<AppWorkoutSet>, history: List<Pair<Long, Int>>) 
     val done = sets.filter { it.end != null }.asReversed()
     if (done.isEmpty()) return
     // The peaks scan the readings, so they're worked out when a set or the readings change, not on every pass.
-    val lines = remember(done, history) { done.take(4).map { s -> WorkoutCopy.setLine(s, Strength.peak(history, s.start, s.end!!)) } }
-    LiveStrip(Modifier.fillMaxWidth(), padding = PaddingValues(horizontal = 18.dp, vertical = 4.dp), verticalArrangement = Arrangement.Top) {
+    val lines = remember(done, history) {
+        done.take(4).map { s -> WorkoutCopy.setLine(s, Strength.peak(history, s.start, s.end!!)) }
+    }
+    LiveStrip(
+        Modifier.fillMaxWidth(), padding = PaddingValues(horizontal = 18.dp, vertical = 4.dp), verticalArrangement = Arrangement.Top,
+    ) {
         done.take(4).forEachIndexed { i, s ->
             if (i > 0) SetRule()
             Row(Modifier.fillMaxWidth().padding(vertical = 14.dp)) {

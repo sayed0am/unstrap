@@ -79,7 +79,10 @@ internal fun EditTodaySheet(edits: TodayEdits, onSave: (TodayEdits) -> Unit, onD
                             style = GlowType.secondary,
                         )
                     }
-                    Column(Modifier.fillMaxWidth().clearGlass(GlowShapes.Card).padding(start = 18.dp, end = 8.dp, top = 2.dp, bottom = 2.dp)) {
+                    Column(
+                        Modifier.fillMaxWidth().clearGlass(GlowShapes.Card)
+                            .padding(start = 18.dp, end = 8.dp, top = 2.dp, bottom = 2.dp),
+                    ) {
                         TodayCard.entries.filter { it.editable }.forEachIndexed { i, card ->
                             val shown = card !in e.hidden
                             Row(
@@ -106,7 +109,7 @@ internal fun EditTodaySheet(edits: TodayEdits, onSave: (TodayEdits) -> Unit, onD
                 )
             }
             Row(
-                Modifier.fillMaxWidth().topLine(true, 0.08f).padding(start = 20.dp, end = 20.dp, top = 12.dp)
+                Modifier.fillMaxWidth().topLine(true, alpha = 0.08f).padding(start = 20.dp, end = 20.dp, top = 12.dp)
                     .navigationBarsPadding().padding(bottom = 12.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
@@ -134,6 +137,8 @@ private val CheckIcon: ImageVector by lazy {
     ).build()
 }
 
+private const val DISABLED_ALPHA = 0.55f
+
 /** A hairline along the top of a row: white at [alpha], the boards' `inset 0 1px 0`. */
 private fun Modifier.topLine(show: Boolean, alpha: Float = 0.07f): Modifier =
     if (show) drawBehind { drawLine(Color.White.copy(alpha = alpha), Offset(0f, 0f), Offset(size.width, 0f), 1.dp.toPx()) } else this
@@ -147,7 +152,7 @@ private fun PinChip(pinned: Boolean, enabled: Boolean, label: String, onClick: (
     val text = stringResource(if (pinned) R.string.glow_today_edit_pinned else R.string.glow_today_edit_pin)
     val ink = if (pinned) Color(0xFF0B0B0D) else Color.White
     Box(
-        Modifier.height(44.dp).alpha(if (enabled) 1f else 0.55f)
+        Modifier.height(44.dp).alpha(if (enabled) 1f else DISABLED_ALPHA)
             .clickable(enabled = enabled, role = Role.Checkbox, onClick = onClick)
             .semantics { stateDescription = text; contentDescription = "$label, $text" },
         contentAlignment = Alignment.Center,
@@ -162,7 +167,10 @@ private fun PinChip(pinned: Boolean, enabled: Boolean, label: String, onClick: (
             verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp),
         ) {
             Icon(PinIcon, null, Modifier.size(14.dp), tint = ink)
-            Text(text, color = ink, style = GlowType.secondary.copy(fontWeight = if (pinned) FontWeight.SemiBold else FontWeight.Normal), maxLines = 1)
+            Text(
+                text, color = ink, maxLines = 1,
+                style = GlowType.secondary.copy(fontWeight = if (pinned) FontWeight.SemiBold else FontWeight.Normal),
+            )
         }
     }
 }
@@ -188,7 +196,7 @@ private fun EditSwitch(on: Boolean, label: String, onToggle: () -> Unit) {
 
 /** Cancel (clear glass) or Done (white with a check), 52 dp tall pills. */
 @Composable
-private fun FootButton(text: String, onClick: () -> Unit, modifier: Modifier, primary: Boolean = false) {
+private fun FootButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, primary: Boolean = false) {
     val ink = if (primary) Color(0xFF0B0B0D) else Color.White
     Row(
         modifier.height(52.dp)
@@ -198,7 +206,10 @@ private fun FootButton(text: String, onClick: () -> Unit, modifier: Modifier, pr
         horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally), verticalAlignment = Alignment.CenterVertically,
     ) {
         if (primary) Icon(CheckIcon, null, Modifier.size(18.dp), tint = ink)
-        Text(text, color = ink, style = GlowType.body.copy(fontWeight = if (primary) FontWeight.SemiBold else FontWeight.Medium), maxLines = 1)
+        Text(
+            text, color = ink, maxLines = 1,
+            style = GlowType.body.copy(fontWeight = if (primary) FontWeight.SemiBold else FontWeight.Medium),
+        )
     }
 }
 

@@ -277,6 +277,8 @@ private fun signalGroups(state: DayUiState, now: Long, strings: Strings): List<I
  * of its blend, the name and status, the day's value and a caret. [onOpen] gets the tapped row's target; the caller
  * closes the sheet and goes there.
  */
+// A sheet draws into the glass host, so it takes no modifier.
+@Suppress("ModifierMissing", "ComposeModifierMissing")
 @Composable
 fun AllMetricsSheet(
     groups: List<IndexGroup>,
@@ -300,7 +302,7 @@ fun AllMetricsSheet(
                     Text(
                         group.title, color = Color.White.copy(alpha = 0.6f),
                         style = GlowType.secondary.copy(fontWeight = FontWeight.Medium),
-                        modifier = Modifier.fillMaxWidth().then(if (gi > 0) Modifier.hairline(0.10f) else Modifier)
+                        modifier = Modifier.fillMaxWidth().then(if (gi > 0) Modifier.hairline(alpha = 0.10f) else Modifier)
                             .padding(top = if (gi == 0) 6.dp else 18.dp, bottom = 2.dp),
                     )
                     group.rows.forEachIndexed { i, r -> MetricRow(r, divider = i > 0) { onOpen(r.target) } }
@@ -320,7 +322,7 @@ private fun MetricRow(r: IndexRow, divider: Boolean, onClick: () -> Unit) {
     // Every row's icon is its blend's first stop (a row not on a blend keeps its own colour).
     val tint = (Blends.forInk(r.color)?.first ?: r.color).let { if (r.value == null) it.copy(alpha = 0.4f) else it }
     Row(
-        Modifier.fillMaxWidth().heightIn(min = 60.dp).then(if (divider) Modifier.hairline(0.07f) else Modifier)
+        Modifier.fillMaxWidth().heightIn(min = 60.dp).then(if (divider) Modifier.hairline(alpha = 0.07f) else Modifier)
             .clickable(onClick = onClick),
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp),
     ) {

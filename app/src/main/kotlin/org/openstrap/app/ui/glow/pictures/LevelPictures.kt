@@ -31,8 +31,8 @@ import kotlin.math.min
  * The level and count pictures (spec 2.7): a week of dots through your band, a level fill over your usual band, a
  * countdown ring, blocks, day bars, a range fill, a split bar, week rings and the age scale. Each draws in its metric's
  * blend (Charts board: the first colour at the start or base, the second on the answer, in the blend's chart tones;
- * the v2 `ink` overloads find it with [chartBlend]) and fills its modifier, about 136 by 60 dp on a Small and 324 by 70 on a Wide. Solid only: no dashes, and no dots
- * but the week's own.
+ * the v2 `ink` overloads find it with [chartBlend]) and fills its modifier, about 136 by 60 dp on a Small and 324 by 70
+ * on a Wide. Solid only: no dashes, and no dots but the week's own.
  *
  * The geometry is in plain functions below each picture, so it can be tested without drawing. Fractions run 0 to 1
  * across the picture, y from the top. The rim functions turn those into fractions of the card ([Rim]), assuming the
@@ -84,11 +84,17 @@ internal fun share(v: Float, from: Float, to: Float): Float =
 
 private fun ClosedFloatingPointRange<Float>.holds(v: Float) = v in this
 
+private const val MIN_SWEEP_SHARE = 0.001f
+
 /** A bar [h] high centred at [cy] from [x0] to [x1], each end rounded fully or to [inner] when [roundStart]/[roundEnd] say not. */
 private fun DrawScope.bar(color: Color, x0: Float, x1: Float, cy: Float, h: Float, roundStart: Boolean = true, roundEnd: Boolean = true, inner: Float = 0f) =
     bar(SolidColor(color), x0, x1, cy, h, roundStart, roundEnd, inner)
 
-private fun DrawScope.bar(brush: Brush, x0: Float, x1: Float, cy: Float, h: Float, roundStart: Boolean = true, roundEnd: Boolean = true, inner: Float = 0f, alpha: Float = 1f) {
+@Suppress("LongParameterList") // a private draw helper: the bar's span, height, round ends and inner radius
+private fun DrawScope.bar(
+    brush: Brush, x0: Float, x1: Float, cy: Float, h: Float,
+    roundStart: Boolean = true, roundEnd: Boolean = true, inner: Float = 0f, alpha: Float = 1f,
+) {
     if (x1 - x0 <= 0f) return
     val r = min(h / 2, (x1 - x0) / 2)
     val s = CornerRadius(if (roundStart) r else min(inner, r))
@@ -103,7 +109,7 @@ private fun Blend.across(x0: Float, x1: Float): Brush =
 
 /** A sweep from the first colour at the top of a ring (drawn after a -90 degree turn) to the second at [share] of the way round. */
 private fun Blend.sweep(share: Float, center: Offset): Brush = Brush.sweepGradient(
-    0f to chart, share.coerceIn(0.001f, 1f) to chartSecond, 1f to chartSecond, center = center,
+    0f to chart, share.coerceIn(MIN_SWEEP_SHARE, 1f) to chartSecond, 1f to chartSecond, center = center,
 )
 
 // ---- 1. Week of dots through your band ---------------------------------------------------------------------------
@@ -244,7 +250,10 @@ fun LevelFill(value: Float, usual: ClosedFloatingPointRange<Float>?, blend: Blen
         bar(Track, x(0f), x(1f), cy, barH)
         if (g.bandStart != null && g.bandEnd != null) {
             val bandH = 16.dp.toPx()
-            drawRoundRect(blend.chart.copy(alpha = ChartInk.LEVEL_BAND_ALPHA), Offset(x(g.bandStart), cy - bandH / 2), Size(x(g.bandEnd) - x(g.bandStart), bandH), CornerRadius(5.dp.toPx()))
+            drawRoundRect(
+                blend.chart.copy(alpha = ChartInk.LEVEL_BAND_ALPHA), Offset(x(g.bandStart), cy - bandH / 2),
+                Size(x(g.bandEnd) - x(g.bandStart), bandH), CornerRadius(5.dp.toPx()),
+            )
         }
         val end = max(x(g.value), x(0f) + barH)
         bar(blend.across(x(0f), end), x(0f), end, cy, barH)
@@ -466,7 +475,10 @@ fun SplitBar(parts: List<Float>, blend: Blend, size: PictureSize, modifier: Modi
         val cy = this.size.height / 2
         val laid = splitBarParts(parts, this.size.width, 2.dp.toPx())
         laid.forEachIndexed { k, p ->
-            bar(blend.across(0f, this.size.width), p.start, p.end, cy, h, alpha = splitAlpha(p.rank), roundStart = k == 0, roundEnd = k == laid.lastIndex, inner = 3.dp.toPx())
+            bar(
+                blend.across(0f, this.size.width), p.start, p.end, cy, h, alpha = splitAlpha(p.rank),
+                roundStart = k == 0, roundEnd = k == laid.lastIndex, inner = 3.dp.toPx(),
+            )
         }
     }
 }

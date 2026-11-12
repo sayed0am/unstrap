@@ -64,6 +64,9 @@ import org.openstrap.app.ui.theme.GlowShapes
 import org.openstrap.app.ui.theme.clearGlass
 import org.openstrap.app.ui.theme.darkGlow
 
+/** The weight tile's share of the row next to the three imperial height tiles. */
+private const val IMPERIAL_WEIGHT_SHARE = 1.3f
+
 /** One line for the settings row: "34 years, male, 72 kg, 178 cm", or a prompt when empty. */
 fun UserProfile.summary(strings: Strings = Strings.app): String =
     if (isEmpty) strings.get(R.string.you_profile_empty)
@@ -173,7 +176,9 @@ fun ProfileScreen(profile: UserProfile, contentPadding: PaddingValues, onSave: (
         val side = GlowLayout.pageSide(maxWidth, LocalPageColumn.current, GlowLayout.Gutter)
         // The list ends clear of Save and the fade behind it (ScreenList adds its own 24 dp).
         org.openstrap.app.ui.components.PageLight(
-            org.openstrap.app.ui.theme.ScreenLight(org.openstrap.app.ui.theme.Blends.You, angle = 30f, strength = 0.75f, heroCenterY = 165f),
+            org.openstrap.app.ui.theme.ScreenLight(
+                org.openstrap.app.ui.theme.Blends.You, angle = 30f, strength = 0.75f, heroCenterY = 165f,
+            ),
         )
         ScreenList(PaddingValues(bottom = PinnedFade.listClearance(bottom + 12.dp + SaveHeight, listEnd = 24.dp)), gutter = GlowLayout.Gutter) {
             item { PageHeader(stringResource(R.string.you_profile_title), back) }
@@ -210,9 +215,11 @@ fun ProfileScreen(profile: UserProfile, contentPadding: PaddingValues, onSave: (
             item {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     BodyTile(
-                        weight, { weight = it.filter { c -> c.isDigit() || c == '.' || c == ',' }.take(5) }, stringResource(R.string.you_profile_weight),
+                        weight, { weight = it.filter { c -> c.isDigit() || c == '.' || c == ',' }.take(5) },
+                        stringResource(R.string.you_profile_weight),
                         stringResource(if (imperial) R.string.you_profile_unit_lb else R.string.you_profile_unit_kg),
-                        weight.isNotBlank() && weightValue == null, Modifier.weight(if (imperial) 1.3f else 1f), decimal = true, big = !imperial,
+                        weight.isNotBlank() && weightValue == null, Modifier.weight(if (imperial) IMPERIAL_WEIGHT_SHARE else 1f),
+                        decimal = true, big = !imperial,
                     )
                     if (imperial) {
                         val wrong = !heightBlank && heightValue == null
@@ -320,7 +327,8 @@ private fun BodyTile(
 private fun SleepNeedRow(value: String, onChange: (String) -> Unit, label: String, unit: String, error: Boolean) {
     val shape = GlowShapes.Card
     Row(
-        Modifier.fillMaxWidth().height(64.dp).clearGlass(shape).let { if (error) it.border(1.5.dp, Color.White.copy(alpha = 0.9f), shape) else it }
+        Modifier.fillMaxWidth().height(64.dp).clearGlass(shape)
+            .let { if (error) it.border(1.5.dp, Color.White.copy(alpha = 0.9f), shape) else it }
             .padding(horizontal = 16.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically,
     ) {

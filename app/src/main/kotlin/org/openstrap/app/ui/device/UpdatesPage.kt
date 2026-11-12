@@ -86,7 +86,9 @@ fun UpdatesPage(
                         stringResource(R.string.you_updates_release, newest.versionName), Modifier.weight(1f), color = Color.White,
                         style = GlowType.pageTitle, maxLines = 1,
                     )
-                    newest.publishedAt?.let { Text(UpdateCopy.date(it), color = Color.White.copy(alpha = 0.75f), style = GlowType.secondary) }
+                    newest.publishedAt?.let {
+                        Text(UpdateCopy.date(it), color = Color.White.copy(alpha = 0.75f), style = GlowType.secondary)
+                    }
                 }
                 PageButton(
                     UpdateCopy.install(newest, state.install, recording), { onInstall(newest) },

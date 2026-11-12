@@ -445,7 +445,10 @@ internal fun TopRowView(title: String, note: String?, top: TopRow, f: WidgetFram
             top.words?.let {
                 Spacer(GlanceModifier.width(StatusButton.TITLE_GAP_DP.dp))
                 // Decision 6: an amber dot, the words in white, never amber text.
-                Image(ImageProvider(dotBitmap(MetricColors.warn, f.density)), contentDescription = null, modifier = GlanceModifier.size(StartLayout.DOT_DP.dp))
+                Image(
+                    ImageProvider(dotBitmap(MetricColors.warn, f.density)), contentDescription = null,
+                    modifier = GlanceModifier.size(StartLayout.DOT_DP.dp),
+                )
                 Spacer(GlanceModifier.width(4.dp))
                 Text(it, style = StatusWords, maxLines = 1)
                 Spacer(GlanceModifier.width(StatusButton.WORDS_GAP_DP.dp))

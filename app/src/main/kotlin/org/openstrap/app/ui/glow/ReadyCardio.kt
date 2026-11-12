@@ -298,7 +298,8 @@ private fun ReadyPlanCard(
         var choosing by rememberSaveable { mutableStateOf(false) }
         Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
             IconPill(
-                shown.name, { onTyping(false); choosing = true }, icon = shown.icon, tint = LocalReadyBlend.current.chart, caret = true, height = 40.dp,
+                shown.name, { onTyping(false); choosing = true }, icon = shown.icon, tint = LocalReadyBlend.current.chart,
+                caret = true, height = 40.dp,
                 description = stringResource(R.string.glow_ready_plan_description, shown.name, StartCopy.planHint(family)),
             )
         }

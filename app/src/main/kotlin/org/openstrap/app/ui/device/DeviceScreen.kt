@@ -131,6 +131,8 @@ internal fun strapStateLine(
  * Find strap, then its settings as rows with their values, each opening its page or switching in place, then
  * Disconnect, Restart and Forget. With no strap paired, the pairing steps.
  */
+// The page and its keep-connected tile both act on the one view model, so the tile is handed it.
+@Suppress("ViewModelForwarding", "ComposeViewModelForwarding", "CyclomaticComplexMethod", "ModifierMissing", "ComposeModifierMissing")
 @Composable
 fun DeviceScreen(
     vm: DeviceViewModel,
@@ -381,7 +383,9 @@ private fun KeepConnectedTile(vm: DeviceViewModel, keepConnected: KeepConnected,
     val icon = AppIcons.Bluetooth
     when {
         associated -> StatusTile(icon, title, modifier, chip = on)
-        vm.companionSupported && !declined && !hidden -> StatusTile(icon, title, modifier, chip = off, onClick = { keepConnected.associate(address) })
+        vm.companionSupported && !declined && !hidden -> StatusTile(
+            icon, title, modifier, chip = off, onClick = { keepConnected.associate(address) },
+        )
         !ignoringBattery -> StatusTile(icon, title, modifier, chip = off, onClick = {
             runCatching {
                 context.startActivity(
@@ -415,7 +419,8 @@ internal fun StrapHero(name: String, connection: ConnectionState, sync: SyncStat
                 Text(name, color = Color.White, style = GlowType.cardTitle, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 // The small status dot beside the state: green while connected, amber when it isn't (decision 9).
                 Row(Modifier.padding(top = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Box(Modifier.size(7.dp).background(if (connected != null && sync !is SyncState.Failed) MetricColors.good else MetricColors.warn, CircleShape))
+                    val dot = if (connected != null && sync !is SyncState.Failed) MetricColors.good else MetricColors.warn
+                    Box(Modifier.size(7.dp).background(dot, CircleShape))
                     Spacer(Modifier.width(7.dp))
                     Text(
                         strapStateLine(connection, sync, lastSeen, now, lastSync = lastSync),
@@ -467,7 +472,9 @@ internal fun StrapHero(name: String, connection: ConnectionState, sync: SyncStat
 fun DiagnosticsScreen(lines: List<String>, contentPadding: PaddingValues, onBack: () -> Unit) {
     BackHandler(onBack = onBack)
     val context = LocalContext.current
-    PageLight(org.openstrap.app.ui.theme.ScreenLight(org.openstrap.app.ui.theme.Blends.You, angle = 100f, strength = 0.65f, heroCenterY = 160f))
+    PageLight(
+        org.openstrap.app.ui.theme.ScreenLight(org.openstrap.app.ui.theme.Blends.You, angle = 100f, strength = 0.65f, heroCenterY = 160f),
+    )
     ScreenList(contentPadding, gutter = GlowLayout.Gutter) {
         item {
             val label = stringResource(R.string.you_diagnostics_clip_label)

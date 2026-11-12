@@ -63,6 +63,9 @@ import kotlinx.coroutines.launch
 
 /** The nav bar's glass: near-black, see-through, with a lit top edge. Popups use it over a blurred screen. */
 val GlassTint = Color(0xFF0B0B0D)
+private val ContainerDim = Color(0xFF121215)
+private val ContainerMid = Color(0xFF16161A)
+private val ContainerHigh = Color(0xFF1E1E22)
 val GlassEdge = BorderStroke(
     1.dp, Brush.verticalGradient(0f to Color.White.copy(alpha = 0.2f), 0.5f to Color.White.copy(alpha = 0.05f), 1f to Color.Black.copy(alpha = 0.4f)),
 )
@@ -81,9 +84,9 @@ fun OledSurfaces(content: @Composable () -> Unit) {
             surface = Color.Transparent,
             surfaceContainerLowest = Color.Transparent,
             surfaceContainerLow = Color.Transparent,
-            surfaceContainer = Color(0xFF121215),
-            surfaceContainerHigh = Color(0xFF16161A),
-            surfaceContainerHighest = Color(0xFF1E1E22),
+            surfaceContainer = ContainerDim,
+            surfaceContainerHigh = ContainerMid,
+            surfaceContainerHighest = ContainerHigh,
             outline = Color.White.copy(alpha = 0.16f),
             outlineVariant = Color.White.copy(alpha = 0.12f),
         ),
@@ -102,6 +105,7 @@ class PageLightState {
 }
 
 /** The page's light holder, null outside a [PageLightHost]. */
+@Suppress("CompositionLocalAllowlist", "ComposeCompositionLocalUsage") // a page deep in a stack sets the light its host draws
 val LocalPageLight = staticCompositionLocalOf<PageLightState?> { null }
 
 /**
@@ -167,6 +171,7 @@ private val SheetFill = Color(0xFF16161A)
 private const val BACKDROP_DIM = 0.58f
 
 /** The haze the overlay's sheets and popups blur (the pages' source), for [GlassPanel]. */
+@Suppress("CompositionLocalAllowlist", "ComposeCompositionLocalUsage") // a design token shared by every panel in the overlay
 val LocalGlassHaze = staticCompositionLocalOf<HazeState?> { null }
 
 /**

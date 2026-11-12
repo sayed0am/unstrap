@@ -653,7 +653,10 @@ fun PageConfirm(
 ) {
     PageSheet(onDismiss, if (icon == null) title else null) {
         if (icon != null) Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            Box(Modifier.size(40.dp).background(org.openstrap.app.ui.theme.Blends.Strap.first.copy(alpha = 0.18f), CircleShape), contentAlignment = Alignment.Center) {
+            Box(
+                Modifier.size(40.dp).background(org.openstrap.app.ui.theme.Blends.Strap.first.copy(alpha = 0.18f), CircleShape),
+                contentAlignment = Alignment.Center,
+            ) {
                 Icon(icon, null, Modifier.size(20.dp), tint = Color.White)
             }
             Text(title, color = Color.White, style = GlowType.cardTitle, maxLines = 1)

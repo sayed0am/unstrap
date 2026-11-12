@@ -482,7 +482,9 @@ internal fun NoteText(text: String) =
 internal fun StateMarker(text: String, modifier: Modifier = Modifier) {
     // An amber dot and white words: amber is for the dot, never the text (decisions 6 and 9).
     Row(modifier, verticalAlignment = Alignment.CenterVertically) {
-        androidx.compose.foundation.layout.Box(Modifier.size(6.dp).background(MetricColors.warn, androidx.compose.foundation.shape.CircleShape))
+        androidx.compose.foundation.layout.Box(
+            Modifier.size(6.dp).background(MetricColors.warn, androidx.compose.foundation.shape.CircleShape),
+        )
         androidx.compose.foundation.layout.Spacer(Modifier.width(6.dp))
         Text(text, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.caption, maxLines = 1)
     }

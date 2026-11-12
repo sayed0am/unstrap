@@ -137,7 +137,7 @@ fun GlowRecoveryScreen(
         // Light all round the number (Matrix board): the Recovery blend, day strength, centred on the hero.
         GlowScreenList(
             contentPadding, list, focus = showCharge, onFocused = onChargeShown,
-            light = ScreenLight(Blends.Recovery, LightAngle.Above, ScreenLight.DAY, 190f),
+            light = ScreenLight(Blends.Recovery, LightAngle.Above, ScreenLight.DAY, heroCenterY = 190f),
         ) {
             add(Pane.Full, GlowBlocks.HEADER) { header() }
             tabCards(slots, focus = RecoveryCard.Charge) { card, m ->

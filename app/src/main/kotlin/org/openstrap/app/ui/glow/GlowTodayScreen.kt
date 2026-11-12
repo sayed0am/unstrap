@@ -242,7 +242,7 @@ fun GlowTodayScreen(
     val unavailable = if (healthspan?.result == null) setOf(TodayCard.HabitAge) else emptySet()
     val stepsGoal = LocalGoals.current.steps
     val stepsFacts = activity?.stepsFacts(state.date, state.steps, stepsGoal)
-    val morning = LocalTime.now().hour < 12
+    val morning = LocalTime.now().hour < NOON_HOUR
     val live = liveHeartRate != null
     // The moment the cards are laid out for, with no moment yet resolved as todayCards does.
     val looksFor = moment ?: if (morning) Moment.Waking else Moment.Midday
@@ -454,7 +454,7 @@ private fun heroKindOf(ctx: TodayContext, pairing: PairStep?, running: org.opens
         Moment.Midday -> HeroKind.Midday
         Moment.Evening, Moment.Night -> HeroKind.Evening
         Moment.Waking -> HeroKind.Waking
-        null -> if (LocalTime.now().hour < 12 || !ctx.isToday) HeroKind.Waking else HeroKind.Midday
+        null -> if (LocalTime.now().hour < NOON_HOUR || !ctx.isToday) HeroKind.Waking else HeroKind.Midday
     }
 }.let {
     // No sleep last night: nothing for Recovery to score, so Charge leads from waking on (spec 4.3). Only once
@@ -477,7 +477,9 @@ private fun todayLight(kind: HeroKind, ctx: TodayContext, running: org.openstrap
         HeroKind.Waking -> ScreenLight(Blends.Recovery, LightAngle.LowerLeft, ScreenLight.DAY, y)
         HeroKind.Midday, HeroKind.NoSleep -> ScreenLight(Blends.Energy, LightAngle.Below, ScreenLight.DAY, y)
         HeroKind.Window -> ScreenLight(Blends.Heart, LightAngle.UpperRight, ScreenLight.DAY, y)
-        HeroKind.During -> ScreenLight(running?.let { familyBlend(it.workout.sportType) } ?: Blends.Heart, LightAngle.Below, ScreenLight.DAY, y)
+        HeroKind.During -> ScreenLight(
+            running?.let { familyBlend(it.workout.sportType) } ?: Blends.Heart, LightAngle.Below, ScreenLight.DAY, y,
+        )
         // Recovery's first stop settling into HRV's ocean.
         HeroKind.After -> ScreenLight(AfterBlend, LightAngle.Below, ScreenLight.DAY, y)
         HeroKind.Evening ->
@@ -929,3 +931,4 @@ internal fun chargeSoFar(points: List<Recovery.ChargePoint>, day: LongRange, now
 
 /** The longest Today's cards wait for the moment before showing the fallback layout. */
 private const val CARDS_WAIT_MS = 4_000L
+private const val NOON_HOUR = 12

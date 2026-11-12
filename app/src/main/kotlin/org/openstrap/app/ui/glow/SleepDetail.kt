@@ -401,7 +401,8 @@ private val SnackbarSurface = Color(0xFFF2F2F4)
 @Composable
 private fun EditedNote(text: String) {
     Row(
-        Modifier.fillMaxWidth().background(ListSurface, org.openstrap.app.ui.theme.GlowShapes.Tile).padding(horizontal = 14.dp, vertical = 12.dp),
+        Modifier.fillMaxWidth().background(ListSurface, org.openstrap.app.ui.theme.GlowShapes.Tile)
+            .padding(horizontal = 14.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         androidx.compose.material3.Icon(AppIcons.PencilEdit, null, Modifier.size(16.dp), tint = Color.White.copy(alpha = 0.7f))

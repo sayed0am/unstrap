@@ -20,7 +20,8 @@ import org.openstrap.app.ui.theme.Blends
 fun Wordmark(modifier: Modifier = Modifier, style: TextStyle = GlowType.storyBrand, strap: Color = Color.White) {
     val text = buildAnnotatedString {
         // The board's soft glow round the red, 0.25 em wide (Share board).
-        withStyle(SpanStyle(color = Blends.Heart.first, shadow = Shadow(Blends.Heart.first.copy(alpha = 0.35f), blurRadius = style.fontSize.value * 0.25f))) { append("un") }
+        val glow = Shadow(Blends.Heart.first.copy(alpha = 0.35f), blurRadius = style.fontSize.value * 0.25f)
+        withStyle(SpanStyle(color = Blends.Heart.first, shadow = glow)) { append("un") }
         withStyle(SpanStyle(color = strap)) { append("strap") }
     }
     Text(text, style = style, maxLines = 1, modifier = modifier)

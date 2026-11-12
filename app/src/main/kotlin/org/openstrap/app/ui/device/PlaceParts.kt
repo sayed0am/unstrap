@@ -1,3 +1,5 @@
+@file:Suppress("TooManyFunctions") // one small composable per part of the You and Strap pages, kept together
+
 package org.openstrap.app.ui.device
 
 import androidx.compose.foundation.background
@@ -66,6 +68,7 @@ internal val StrapPageLight = ScreenLight(Blends.Strap, angle = 90f, strength = 
 
 /** The caret's alpha at the end of a tile or an outlined row (clear glass: 50%). */
 private const val CARET = 0.5f
+private const val HERO_MID_STOP = 0.55f
 
 /**
  * The CSS `linear-gradient(<angle>deg, ...)` for a box of [w] by [h]: the gradient line runs through the centre at
@@ -91,25 +94,32 @@ internal fun Modifier.placeHero(angle: Float, vararg stops: Pair<Float, Color>):
 
 /** The You pages' hero: white into the copper first stop and back to white, lit from the upper left (140 degrees). */
 internal fun Modifier.youHero(blend: Blend = Blends.You): Modifier = placeHero(
-    140f, 0f to Color.White.copy(alpha = 0.24f), 0.55f to blend.first.copy(alpha = 0.14f), 1f to Color.White.copy(alpha = 0.04f),
+    angle = 140f,
+    0f to Color.White.copy(alpha = 0.24f),
+    HERO_MID_STOP to blend.first.copy(alpha = 0.14f),
+    1f to Color.White.copy(alpha = 0.04f),
 )
 
 /** The Strap pages' hero: the strap blend from the top (46%) fading to white 4%. */
 internal fun Modifier.strapHero(blend: Blend = Blends.Strap): Modifier = placeHero(
-    180f, 0f to blend.first.copy(alpha = 0.46f), 0.55f to blend.first.copy(alpha = 0.16f), 1f to Color.White.copy(alpha = 0.04f),
+    angle = 180f,
+    0f to blend.first.copy(alpha = 0.46f),
+    HERO_MID_STOP to blend.first.copy(alpha = 0.16f),
+    1f to Color.White.copy(alpha = 0.04f),
 )
 
-/** A hero card of a place's page: tinted glass of [look], padded 20 dp, [onClick] makes the whole card a button. */
+/** A hero card of a place's page: tinted glass of [lookModifier], padded 20 dp, [onClick] makes the whole card a button. */
 @Composable
+@Suppress("ModifierWithoutDefault") // the look is the card's design, always passed by the caller
 internal fun PlaceHero(
-    look: Modifier,
+    lookModifier: Modifier,
     modifier: Modifier = Modifier,
     onClick: (() -> Unit)? = null,
     content: @Composable BoxScope.() -> Unit,
 ) {
     val shape = GlowShapes.Card
     Box(
-        modifier.fillMaxWidth().clip(shape).then(look)
+        modifier.fillMaxWidth().clip(shape).then(lookModifier)
             .let { if (onClick != null) it.pressClickable(onClick, shape).semantics { role = Role.Button } else it }
             .padding(horizontal = 20.dp, vertical = 18.dp),
         content = content,
@@ -142,13 +152,13 @@ internal fun PlaceTile(
     val shape = GlowShapes.Card
     Column(
         modifier.height(height).clip(shape).clearGlass(shape)
-            .let { if (enabled) it.pressClickable(onClick, shape) else it.alpha(0.4f) }
+            .let { if (enabled) it.pressClickable(onClick, shape) else it.alpha(alpha = 0.4f) }
             .semantics { role = Role.Button }
             .padding(16.dp),
         verticalArrangement = Arrangement.SpaceBetween,
     ) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Top) {
-            PlaceIcon(icon, 40.dp, 0.10f)
+            PlaceIcon(icon, 40.dp, fill = 0.10f)
             if (caret) TapCaret(CARET, Modifier.padding(top = 4.dp))
         }
         Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
@@ -190,7 +200,12 @@ internal fun OutlineRow(
                 Text(title, color = Color.White, style = GlowType.body, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 if (dot) { Spacer(Modifier.width(8.dp)); NoticeDot() }
             }
-            if (note != null) Text(note, color = Color.White.copy(alpha = 0.65f), style = GlowType.secondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            if (note != null) {
+                Text(
+                    note, color = Color.White.copy(alpha = 0.65f), style = GlowType.secondary,
+                    maxLines = 1, overflow = TextOverflow.Ellipsis,
+                )
+            }
         }
         if (trailing != null) { Spacer(Modifier.width(10.dp)); trailing() }
         Spacer(Modifier.width(12.dp))
@@ -228,11 +243,12 @@ internal fun StatusTile(
         verticalArrangement = Arrangement.SpaceBetween,
     ) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-            PlaceIcon(icon, 36.dp, 0.08f, tint = Color.White.copy(alpha = 0.78f))
+            PlaceIcon(icon, 36.dp, fill = 0.08f, tint = Color.White.copy(alpha = 0.78f))
             if (onChange != null) org.openstrap.app.ui.glow.GlowSwitch(checked, onChange, Modifier.clearAndSetSemantics {})
             else if (chip != null) Text(
                 chip, color = Color.White, style = GlowType.secondary,
-                modifier = Modifier.clip(GlowShapes.Pill).background(Color.White.copy(alpha = 0.12f)).padding(horizontal = 10.dp, vertical = 4.dp),
+                modifier = Modifier.clip(GlowShapes.Pill).background(Color.White.copy(alpha = 0.12f))
+                    .padding(horizontal = 10.dp, vertical = 4.dp),
             )
         }
         Text(title, color = Color.White, style = GlowType.body, maxLines = 2)
@@ -293,8 +309,12 @@ internal fun SwitchHero(
                 Modifier.fillMaxWidth().toggleable(checked, role = Role.Switch, onValueChange = onChange),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                    PlaceIcon(icon, 40.dp, 0.16f)
+                Row(
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    PlaceIcon(icon, 40.dp, fill = 0.16f)
                     org.openstrap.app.ui.glow.GlowSwitch(checked, onChange, Modifier.clearAndSetSemantics {})
                 }
                 Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {

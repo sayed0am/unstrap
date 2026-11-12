@@ -230,7 +230,12 @@ fun GlowWorkoutReadyScreen(
         val blend = familyBlend(family)
         CompositionLocalProvider(LocalReadyBlend provides blend) { WorkoutPage(
             // The family's blend from below for a run, from above for the rest (boards WorkoutReadyRun, WorkoutReadyStrength).
-            if (cardio) ScreenLight(blend, 225f, 0.9f, 520f) else ScreenLight(blend, 135f, 0.9f, 220f), contentPadding,
+            if (cardio) {
+                ScreenLight(blend, angle = 225f, strength = 0.9f, heroCenterY = 520f)
+            } else {
+                ScreenLight(blend, angle = 135f, strength = 0.9f, heroCenterY = 220f)
+            },
+            contentPadding,
             // While a goal is typed the keyboard has the bottom of the screen.
             pinned = if (typing) null else ({ WorkoutButton(StartCopy.startLabel(type), Color.White, Color.Black, start, icon = AppIcons.PlayFill, height = 64.dp) }),
         ) {

@@ -118,10 +118,17 @@ private fun Modifier.rimLight(rim: Rim, blend: Blend, strength: Float): Modifier
     val c = Offset(rim.x * size.width, rim.y * size.height)
     val rx = (rim.reachX * size.width).coerceAtLeast(1f)
     val ry = (rim.reachY * size.height).coerceAtLeast(1f)
-    val wash = ellipse(c, rx * WASH_REACH_X, ry * WASH_REACH_Y, listOf(blend.first.copy(alpha = WASH_ALPHA * strength), Color.Transparent), listOf(0f, 1f))
+    val wash = ellipse(
+        c, rx * WASH_REACH_X, ry * WASH_REACH_Y,
+        listOf(blend.first.copy(alpha = WASH_ALPHA * strength), Color.Transparent), listOf(0f, 1f),
+    )
     val edge = ellipse(
         c, rx, ry,
-        listOf(blend.first.copy(alpha = strength), lerp(blend.first, blend.second, 0.5f).copy(alpha = RIM_HALF_ALPHA * strength), Color.Transparent),
+        listOf(
+            blend.first.copy(alpha = strength),
+            lerp(blend.first, blend.second, 0.5f).copy(alpha = RIM_HALF_ALPHA * strength),
+            Color.Transparent,
+        ),
         listOf(0f, RIM_HALF_AT, 1f),
     )
     // The card is clipped to its shape, so half of this stroke shows: the 2 dp rim.

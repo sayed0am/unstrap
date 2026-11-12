@@ -27,6 +27,7 @@ import org.openstrap.app.ui.theme.AppIcons
  * user chooses, which the keep-7 rule never clears. Turning backup on asks for the folder first ([onTurnOn]).
  */
 @Composable
+@Suppress("ModifierMissing", "ComposeModifierMissing") // a full page: ScreenList fills the screen and takes no modifier
 fun BackupPage(
     state: BackupState,
     backingUp: Boolean,
@@ -67,11 +68,13 @@ fun BackupPage(
         item {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 PlaceTile(
-                    AppIcons.ArrowCounterClockwise, stringResource(R.string.you_action_restore), stringResource(R.string.you_backup_restore_note),
+                    AppIcons.ArrowCounterClockwise, stringResource(R.string.you_action_restore),
+                    stringResource(R.string.you_backup_restore_note),
                     onRestore, Modifier.weight(1f), height = 170.dp, caret = false,
                 )
                 PlaceTile(
-                    AppIcons.DownloadSimple, stringResource(R.string.you_backup_save_copy), stringResource(R.string.you_backup_save_copy_note),
+                    AppIcons.DownloadSimple, stringResource(R.string.you_backup_save_copy),
+                    stringResource(R.string.you_backup_save_copy_note),
                     onSaveCopy, Modifier.weight(1f), height = 170.dp, caret = false,
                 )
             }

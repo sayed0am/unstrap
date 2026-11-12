@@ -87,13 +87,15 @@ fun Modifier.solidLight(blend: Blend, level: Float = 1f, shape: Shape = GlowShap
             edge to blend.second, 1f to blend.first,
         )
         // A dark pool behind the number, upper left, as the boards' radial-gradient.
+        val poolCenter = Offset(size.width * 0.3f, size.height * 0.22f)
+        val poolSquash = 0.52f / 1.1f
         val pool = Brush.radialGradient(
             0f to DarkGlowFill.copy(alpha = 0.97f), 0.5f to DarkGlowFill.copy(alpha = 0.88f), 1f to Color.Transparent,
-            center = Offset(size.width * 0.3f, size.height * 0.22f), radius = size.width * 1.1f,
+            center = poolCenter, radius = size.width * 1.1f,
         )
         onDrawBehind {
             drawOutline(outline, fill)
-            scale(1f, 0.52f / 1.1f, pivot = Offset(size.width * 0.3f, size.height * 0.22f)) { drawOutline(outline, pool) }
+            scale(1f, poolSquash, pivot = poolCenter) { drawOutline(outline, pool) }
         }
     }.litEdge(shape, top = 0.25f, ring = 0.05f)
 
@@ -134,6 +136,7 @@ data class ScreenLight(val blend: Blend, val angle: Float = 225f, val strength: 
 }
 
 /** The light a screen is lit by, for parts (sheets, the nav bar) that want to know. Null when the screen has none. */
+@Suppress("CompositionLocalAllowlist", "ComposeCompositionLocalUsage") // a design token the sheets and nav bar read
 val LocalScreenLight = compositionLocalOf<ScreenLight?> { null }
 
 /**
@@ -152,6 +155,11 @@ val LocalScreenLightReport = androidx.compose.runtime.staticCompositionLocalOf<(
 /** The boards' blob opacity at full strength. */
 private const val LIGHT_OPACITY = 0.6f
 
+/** The two blobs' widths (as a share of the screen width) and the second one's strength next to the first. */
+private const val FIRST_BLOB_RX = 0.82f
+private const val SECOND_BLOB_RX = 0.51f
+private const val SECOND_BLOB_STRENGTH = 0.9f
+
 /**
  * Draws [light] behind this (fixed to the screen, not scrolled), over [Ground]. With no light, just the ground: "no
  * light until there's a hero to light" (Matrix board, No data yet).
@@ -165,8 +173,14 @@ fun Modifier.screenLight(light: ScreenLight?): Modifier = clipToBounds().drawBeh
     val heroY = light.heroCenterY.dp.toPx()
     val reachX = w * 0.32f; val reachY = 90.dp.toPx()
     val a = light.strength * LIGHT_OPACITY
-    blob(Offset(w / 2 + vx * reachX, heroY + vy * reachY), w * 0.82f + 120.dp.toPx(), 260.dp.toPx() + 120.dp.toPx(), light.blend.light, a)
-    blob(Offset(w / 2 - vx * reachX, heroY - vy * reachY + 360.dp.toPx()), w * 0.51f + 120.dp.toPx(), 190.dp.toPx() + 120.dp.toPx(), light.blend.lightSecond, a * 0.9f)
+    blob(
+        Offset(w / 2 + vx * reachX, heroY + vy * reachY), w * FIRST_BLOB_RX + 120.dp.toPx(), 260.dp.toPx() + 120.dp.toPx(),
+        light.blend.light, a,
+    )
+    blob(
+        Offset(w / 2 - vx * reachX, heroY - vy * reachY + 360.dp.toPx()), w * SECOND_BLOB_RX + 120.dp.toPx(),
+        190.dp.toPx() + 120.dp.toPx(), light.blend.lightSecond, a * SECOND_BLOB_STRENGTH,
+    )
 }
 
 /** A blurred ellipse [rx] by [ry] around [c]: what the boards draw as a circle under `filter: blur(120px)`. */

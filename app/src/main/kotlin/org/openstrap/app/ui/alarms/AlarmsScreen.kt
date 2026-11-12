@@ -68,6 +68,8 @@ import org.openstrap.app.presentation.TimeOfDay
 import java.time.LocalTime
 
 /** The days of the week, short, Monday first: "Mon", for an alarm on chosen days. */
+private const val HERO_FADE_STOP = 0.6f
+
 private val DAY_NAMES = listOf(
     R.string.you_alarms_day_mon, R.string.you_alarms_day_tue, R.string.you_alarms_day_wed, R.string.you_alarms_day_thu,
     R.string.you_alarms_day_fri, R.string.you_alarms_day_sat, R.string.you_alarms_day_sun,
@@ -238,7 +240,12 @@ private fun AlarmsPanel(
         // The board's hero panel: strap glass from the top, the title and count on one line, 84 dp rows of 40 sp time.
         Column(
             Modifier.fillMaxWidth().clip(GlowShapes.Card)
-                .placeHero(180f, 0f to Blends.Strap.first.copy(alpha = 0.22f), 0.6f to Color.White.copy(alpha = 0.06f), 1f to Color.White.copy(alpha = 0.06f))
+                .placeHero(
+                    angle = 180f,
+                    0f to Blends.Strap.first.copy(alpha = 0.22f),
+                    HERO_FADE_STOP to Color.White.copy(alpha = 0.06f),
+                    1f to Color.White.copy(alpha = 0.06f),
+                )
                 .padding(start = 18.dp, end = 18.dp, top = 16.dp, bottom = 6.dp),
         ) {
             Row(Modifier.fillMaxWidth().height(24.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Bottom) {
@@ -265,7 +272,9 @@ private fun AlarmsPanel(
                         val (digits, marker) = dotClock(a.hour, a.minute)
                         Row(verticalAlignment = Alignment.Bottom) {
                             Text(digits, color = ink, style = GlowType.goalValue)
-                            marker?.let { Text(it, style = GlowType.secondary, color = ink, modifier = Modifier.padding(start = 6.dp, bottom = 4.dp)) }
+                            marker?.let {
+                                Text(it, style = GlowType.secondary, color = ink, modifier = Modifier.padding(start = 6.dp, bottom = 4.dp))
+                            }
                         }
                         Text(daysLabel(a.days), style = GlowType.secondary, color = Color.White.copy(alpha = 0.6f))
                     }
@@ -276,8 +285,8 @@ private fun AlarmsPanel(
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
             if (state.canAdd) {
                 PageButton(
-                    stringResource(R.string.you_alarms_add), onAdd, Modifier.fillMaxWidth().height(52.dp), enabled = !state.busy, primary = true,
-                    icon = AppIcons.Plus,
+                    stringResource(R.string.you_alarms_add), onAdd, Modifier.fillMaxWidth().height(52.dp),
+                    enabled = !state.busy, primary = true, icon = AppIcons.Plus,
                 )
             }
             if (state.alarms.size > 1) {
@@ -293,7 +302,7 @@ private fun AlarmsPanel(
                 .padding(horizontal = 18.dp, vertical = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(14.dp), verticalAlignment = Alignment.CenterVertically,
         ) {
-            PlaceIcon(AppIcons.HandPalm, 32.dp, 0.08f, tint = Color.White.copy(alpha = 0.78f))
+            PlaceIcon(AppIcons.HandPalm, 32.dp, fill = 0.08f, tint = Color.White.copy(alpha = 0.78f))
             Text(
                 stringResource(R.string.you_alarms_tip), Modifier.weight(1f), color = Color.White.copy(alpha = 0.72f),
                 style = GlowType.body,

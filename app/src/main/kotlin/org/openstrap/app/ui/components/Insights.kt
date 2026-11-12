@@ -230,7 +230,15 @@ val NavRailWidth = 92.dp
 /** One destination's icon and label, tinted for whether it's [on]. */
 @Composable
 private fun NavCell(item: NavItem, on: Boolean, modifier: Modifier, verticalArrangement: Arrangement.Vertical = Arrangement.Top) {
-    Column(modifier, verticalArrangement = if (verticalArrangement == Arrangement.Center) Arrangement.spacedBy(3.dp, Alignment.CenterVertically) else verticalArrangement, horizontalAlignment = Alignment.CenterHorizontally) {
+    Column(
+        modifier,
+        verticalArrangement = if (verticalArrangement == Arrangement.Center) {
+            Arrangement.spacedBy(3.dp, Alignment.CenterVertically)
+        } else {
+            verticalArrangement
+        },
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
         val tint by androidx.compose.animation.animateColorAsState(
             if (on) Color.White else Color.White.copy(alpha = 0.6f),
             tween(Motion.QUICK), label = "nav tint",

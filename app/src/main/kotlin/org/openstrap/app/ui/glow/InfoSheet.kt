@@ -158,7 +158,10 @@ private fun Fold(title: String, text: String, divider: Boolean = true) {
             Icon(AppIcons.CaretDown, null, tint = Color.White.copy(alpha = 0.6f), modifier = Modifier.size(16.dp).rotate(turn))
         }
         AnimatedVisibility(open) {
-            Text(text, color = Color.White.copy(alpha = 0.8f), style = GlowType.secondary.copy(lineHeight = 18.85.sp), modifier = Modifier.padding(bottom = 16.dp))
+            Text(
+                text, color = Color.White.copy(alpha = 0.8f), style = GlowType.secondary.copy(lineHeight = 18.85.sp),
+                modifier = Modifier.padding(bottom = 16.dp),
+            )
         }
     }
 }

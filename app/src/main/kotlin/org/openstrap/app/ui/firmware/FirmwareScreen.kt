@@ -102,7 +102,10 @@ fun FirmwareScreen(vm: FirmwareViewModel, contentPadding: PaddingValues, onBack:
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text(stringResource(R.string.you_firmware_this_strap), color = Color.White, style = GlowType.cardTitle, maxLines = 1)
                     Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                        Text(stringResource(R.string.you_firmware_title), color = Color.White.copy(alpha = 0.78f), style = GlowType.secondary)
+                        Text(
+                            stringResource(R.string.you_firmware_title), color = Color.White.copy(alpha = 0.78f),
+                            style = GlowType.secondary,
+                        )
                         Text(
                             info?.firmware ?: c?.firmware ?: stringResource(R.string.you_firmware_unknown), color = Color.White,
                             style = GlowType.smallValue,
@@ -296,7 +299,7 @@ private fun AccountPanel(
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         if (mode != AccountMode.EditingToken) {
-            PlaceIcon(AppIcons.Key, 44.dp, 0.12f)
+            PlaceIcon(AppIcons.Key, 44.dp, fill = 0.12f)
             Body(
                 when {
                     account == null -> stringResource(R.string.you_zepp_account_none)

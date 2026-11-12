@@ -159,7 +159,7 @@ fun YouPage(
             // The profile, as the page's hero: tinted copper glass, the summary in Sentence type at the bottom.
             PlaceHero(Modifier.youHero(), Modifier.height(160.dp), onClick = onProfile) {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    PlaceIcon(AppIcons.User, 52.dp, 0.16f)
+                    PlaceIcon(AppIcons.User, 52.dp, fill = 0.16f)
                     Spacer(Modifier.width(14.dp))
                     Text(
                         stringResource(R.string.you_row_profile), Modifier.weight(1f), color = Color.White,
@@ -180,7 +180,10 @@ fun YouPage(
                     below = true, divider = false, icon = AppIcons.Heartbeat, selected = selected == PageRowKeys.HEART_ZONES,
                     tint = Blends.Heart, iconSize = 36.dp,
                 )
-                PageRow(stringResource(R.string.you_row_goals), goalsLine(goals), onClick = onGoals, below = true, icon = AppIcons.Target, iconSize = 36.dp)
+                PageRow(
+                    stringResource(R.string.you_row_goals), goalsLine(goals), onClick = onGoals, below = true,
+                    icon = AppIcons.Target, iconSize = 36.dp,
+                )
                 PageRow(
                     stringResource(R.string.you_row_sleep_goal), sleepGoalLine(goals, sleepNeedMinutes), onClick = onGoals, below = true,
                     icon = AppIcons.Moon, tint = Blends.Sleep, iconSize = 36.dp,

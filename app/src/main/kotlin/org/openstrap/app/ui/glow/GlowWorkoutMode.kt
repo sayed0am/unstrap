@@ -154,7 +154,9 @@ internal fun WorkoutButton(
 ) {
     Row(
         modifier.fillMaxWidth().height(height)
-            .let { if (background.alpha >= 1f) it.shadow(28.dp, GlowShapes.Pill, ambientColor = background, spotColor = background) else it }
+            .let {
+                if (background.alpha >= 1f) it.shadow(28.dp, GlowShapes.Pill, ambientColor = background, spotColor = background) else it
+            }
             .clip(GlowShapes.Pill).background(background)
             .let { if (background.alpha < 1f) it.litEdge(GlowShapes.Pill, top = 0.2f, ring = 0f) else it }
             .pressClickable(onClick, GlowShapes.Pill),
@@ -235,7 +237,11 @@ internal fun WorkoutPage(
     backdrop: Brush? = null,
     content: @Composable ColumnScope.() -> Unit,
 ): Unit = WorkoutPage(
-    if (glow == Color.Transparent) null else ScreenLight(Blends.forInk(glow) ?: Blend(glow, glow), 90f, 0.5f, 0f),
+    if (glow == Color.Transparent) {
+        null
+    } else {
+        ScreenLight(Blends.forInk(glow) ?: Blend(glow, glow), angle = 90f, strength = 0.5f, heroCenterY = 0f)
+    },
     contentPadding, scroll, pinned, backdrop, content = content,
 )
 

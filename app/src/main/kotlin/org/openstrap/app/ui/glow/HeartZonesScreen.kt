@@ -41,6 +41,8 @@ import org.openstrap.app.ui.workout.HeartZonesCopy
 import org.openstrap.app.ui.workout.ZONE_COLORS
 import org.openstrap.app.ui.workout.ZONE_NAMES
 
+private const val HERO_MID_STOP = 0.5f
+
 /**
  * Heart rate zones (board SettingsHeartZones), from Ready's Your zones and the You page: your max heart rate as the
  * hero, lit in heart red from the left, with where it comes from and Set it myself; then the five zones as a plain
@@ -89,7 +91,8 @@ private fun MaxHero(max: MaxHeartRate?, onSet: () -> Unit) {
     Column(
         Modifier.fillMaxWidth().clip(org.openstrap.app.ui.theme.GlowShapes.Card)
             .placeHero(
-                90f, 0f to heart.first.copy(alpha = 0.55f), 0.5f to heart.second.copy(alpha = 0.20f), 1f to Color.White.copy(alpha = 0.05f),
+                angle = 90f, 0f to heart.first.copy(alpha = 0.55f), HERO_MID_STOP to heart.second.copy(alpha = 0.20f),
+                1f to Color.White.copy(alpha = 0.05f),
             )
             .padding(horizontal = 20.dp, vertical = 18.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),

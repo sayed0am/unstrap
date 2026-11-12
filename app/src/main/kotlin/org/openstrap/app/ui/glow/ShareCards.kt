@@ -351,6 +351,11 @@ private object StoryGap {
 
 /** The block's corner: 24 dp, a squircle. */
 private val BlockShape = GlowShapes.Card
+private const val BLOCK_MID_STOP = 0.55f
+private const val BLOB_STOP_A = 0.35f
+private const val BLOB_STOP_B = 0.6f
+private const val BLOB_STOP_C = 0.8f
+private const val PHOTO_FADE_STOP = 0.4f
 
 /**
  * The glass block under the text on a lit card (decision 15): a dark gradient from 46% to 74%, a lit top edge and a
@@ -362,7 +367,9 @@ private fun StoryBlock(card: StoryCard, modifier: Modifier = Modifier) {
         modifier.fillMaxWidth().clip(BlockShape)
             .background(
                 Brush.verticalGradient(
-                    0f to Color.Black.copy(alpha = 0.46f), 0.55f to Color.Black.copy(alpha = 0.62f), 1f to Color.Black.copy(alpha = 0.74f),
+                    0f to Color.Black.copy(alpha = 0.46f),
+                    BLOCK_MID_STOP to Color.Black.copy(alpha = 0.62f),
+                    1f to Color.Black.copy(alpha = 0.74f),
                 ),
             )
             .litEdge(BlockShape, top = 0.20f, ring = 0.07f)
@@ -459,7 +466,7 @@ private fun StatRow(stats: List<StoryStat>) {
                     )
                 }
                 Text(
-                    s.label, color = Color.White.copy(alpha = StoryDim), style = GlowType.secondary, maxLines = 1,
+                    s.label, color = Color.White.copy(alpha = STORY_DIM), style = GlowType.secondary, maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
             }
@@ -488,13 +495,18 @@ private fun StoryGlow(blend: Blend) {
                 val c = Offset(cx.dp.toPx(), cy.dp.toPx())
                 val r = rx.dp.toPx()
                 val brush = Brush.radialGradient(
-                    0f to color.copy(alpha = alpha), 0.35f to color.copy(alpha = alpha * 0.9f), 0.6f to color.copy(alpha = alpha * 0.55f),
-                    0.8f to color.copy(alpha = alpha * 0.2f), 1f to Color.Transparent, center = c, radius = r,
+                    0f to color.copy(alpha = alpha),
+                    BLOB_STOP_A to color.copy(alpha = alpha * 0.9f),
+                    BLOB_STOP_B to color.copy(alpha = alpha * 0.55f),
+                    BLOB_STOP_C to color.copy(alpha = alpha * 0.2f),
+                    1f to Color.Transparent,
+                    center = c,
+                    radius = r,
                 )
                 scale(1f, ry / rx, pivot = c) { drawCircle(brush, r, c) }
             }
-            blob(120f, 550f, 260f + 90f, 220f + 90f, blend.first, 0.55f)
-            blob(330f, 590f, 180f + 90f, 160f + 90f, blend.second, 0.45f)
+            blob(cx = 120f, cy = 550f, rx = 260f + 90f, ry = 220f + 90f, color = blend.first, alpha = 0.55f)
+            blob(cx = 330f, cy = 590f, rx = 180f + 90f, ry = 160f + 90f, color = blend.second, alpha = 0.45f)
         },
     )
 }
@@ -508,12 +520,16 @@ private fun PhotoFade() {
     Box(Modifier.fillMaxSize()) {
         Box(
             // Deep enough that the wordmark's red reads over a bright photo.
-            Modifier.fillMaxWidth().fillMaxHeight(0.22f)
+            Modifier.fillMaxWidth().fillMaxHeight(fraction = 0.22f)
                 .background(Brush.verticalGradient(listOf(Color.Black.copy(alpha = 0.7f), Color.Transparent))),
         )
         Box(
-            Modifier.align(Alignment.BottomCenter).fillMaxWidth().fillMaxHeight(0.62f).background(
-                Brush.verticalGradient(0f to Color.Transparent, 0.4f to Color.Black.copy(alpha = 0.75f), 1f to Color.Black.copy(alpha = 0.9f)),
+            Modifier.align(Alignment.BottomCenter).fillMaxWidth().fillMaxHeight(fraction = 0.62f).background(
+                Brush.verticalGradient(
+                    0f to Color.Transparent,
+                    PHOTO_FADE_STOP to Color.Black.copy(alpha = 0.75f),
+                    1f to Color.Black.copy(alpha = 0.9f),
+                ),
             ),
         )
     }
@@ -571,4 +587,4 @@ private fun StoryChipView(chip: StoryChip) {
 private val ChipText = GlowType.secondary.copy(fontWeight = FontWeight.Medium)
 
 /** White for a card's dimmer lines, as on the boards. */
-private const val StoryDim = 0.7f
+private const val STORY_DIM = 0.7f

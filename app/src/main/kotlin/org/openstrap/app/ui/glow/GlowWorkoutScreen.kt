@@ -76,6 +76,11 @@ import org.openstrap.app.ui.dashboard.LocalHeartZones
 
 /** The heart rate line is drawn in ten-second steps: readable on a phone, and the card still says the time. */
 private const val HeartStep = 10L
+private const val LIGHT_BASE_STRENGTH = 0.6f
+private const val LIGHT_EFFORT_STRENGTH = 0.25f
+
+/** The page light's strength for a workout of [effort] (0 to 1): a base glow plus a share by how hard it was. */
+private fun workoutLightStrength(effort: Float): Float = LIGHT_BASE_STRENGTH + LIGHT_EFFORT_STRENGTH * effort
 
 /**
  * The workout [a]. A phone workout shows from its [summary] (route, laps, sets and the whole recording, for trimming),
@@ -116,7 +121,14 @@ fun GlowWorkoutDetailScreen(
     val zones = shown?.zoneSeconds.orEmpty()
     // Lit by the kind's blend at a strength by effort (Matrix board), as its summary was; the zones stay small.
     PageLight(
-        shown?.let { ScreenLight(familyBlend(Workouts.family(it.workout.sportType)), 225f, 0.6f + 0.25f * Workouts.effort(it.workout.trainingLoad, usual), 170f) },
+        shown?.let {
+            ScreenLight(
+                familyBlend(Workouts.family(it.workout.sportType)),
+                angle = 225f,
+                strength = workoutLightStrength(Workouts.effort(it.workout.trainingLoad, usual)),
+                heroCenterY = 170f,
+            )
+        },
     )
     CompositionLocalProvider(LocalGlowPaused provides { list.isScrollInProgress }) {
         ScreenList(contentPadding, list, gutter = GlowLayout.Gutter) {
@@ -197,7 +209,7 @@ private fun PastSummary(
     val weekStarts = remember(workouts) { goalWeekStarts(workouts) }
     val trim = rememberWorkoutTrim(summary, onTrim, onUndoTrim)
     val effort = Workouts.effort(w.trainingLoad, usual)
-    PageLight(ScreenLight(familyBlend(family), 225f, 0.6f + 0.25f * effort, 170f))
+    PageLight(ScreenLight(familyBlend(family), angle = 225f, strength = workoutLightStrength(effort), heroCenterY = 170f))
     CompositionLocalProvider(LocalGlowPaused provides { list.isScrollInProgress }) {
         ScreenList(contentPadding, list, gutter = GlowLayout.Gutter) {
             item {
@@ -431,7 +443,7 @@ fun GlowWorkoutsScreen(workouts: List<WorkoutAnalysis>, contentPadding: PaddingV
     val days = remember(workouts) { workouts.groupBy { Instant.ofEpochSecond(it.workout.start).atZone(zone).toLocalDate() }.toList() }
     val today = LocalDate.now()
     // Heart's blend from the upper right, quiet: nothing here is a single workout to light (board DetailAllWorkouts).
-    PageLight(ScreenLight(Blends.Heart, 45f, 0.7f, 120f))
+    PageLight(ScreenLight(Blends.Heart, angle = 45f, strength = 0.7f, heroCenterY = 120f))
     ScreenList(contentPadding, gutter = GlowLayout.Gutter) {
         item {
             PageHeader(

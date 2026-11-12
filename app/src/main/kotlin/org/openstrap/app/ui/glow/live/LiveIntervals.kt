@@ -54,7 +54,6 @@ import org.openstrap.app.ui.workout.StartCopy
 import org.openstrap.app.presentation.WorkoutCopy
 import org.openstrap.app.ui.workout.ZONE_COLORS
 import org.openstrap.app.ui.workout.intervalMoment
-import org.openstrap.app.ui.dashboard.LocalHeartZones
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import org.openstrap.app.R
@@ -85,7 +84,6 @@ internal fun LiveIntervalsScreen(
     split: Boolean = false,
     compact: Boolean = false,
 ) {
-    val heartZones = LocalHeartZones.current
     val now = nowTickingState()
     val connected = connection is ConnectionState.Connected
     val bpm = liveHeartRate.takeIf { connected && !r.paused }
@@ -168,7 +166,9 @@ internal fun LiveIntervalsScreen(
             )
         }
         if (!split && (m.phase is Phase.Rest || m.phase == Phase.Done)) RoundPeaks(r.rounds, m.rounds)
-        if (!split && m.phase !is Phase.Rest) LiveStrip(Modifier.fillMaxWidth()) { LiveZoneStrip(bpm, r.maxHeartRate, r.paused, connected, null) }
+        if (!split && m.phase !is Phase.Rest) {
+            LiveStrip(Modifier.fillMaxWidth()) { LiveZoneStrip(bpm, r.maxHeartRate, r.paused, connected, null) }
+        }
         val tall = if (compact) 48.dp else 64.dp
         when (m.phase) {
             Phase.WarmUp -> WorkoutButton(
@@ -246,7 +246,10 @@ private fun ColumnScope.PhaseFigure(
     bar: @Composable () -> Unit = {},
 ) {
     Row(Modifier.fillMaxWidth().padding(horizontal = 4.dp)) {
-        Text(where, color = Color.White, style = GlowType.body.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold), modifier = Modifier.weight(1f))
+        Text(
+            where, color = Color.White,
+            style = GlowType.body.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold), modifier = Modifier.weight(1f),
+        )
         Text(next, color = Color.White.copy(alpha = 0.8f), style = GlowType.secondary)
     }
     bar()
@@ -259,7 +262,10 @@ private fun ColumnScope.PhaseFigure(
         return
     }
     // A dark card so the phase's light shows round it and the seconds sit on glass, not on the colour.
-    LiveDarkCard(Modifier.fillMaxWidth().weight(1f), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterVertically)) {
+    LiveDarkCard(
+        Modifier.fillMaxWidth().weight(1f), horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterVertically),
+    ) {
         Text(word, color = Color.White, style = GlowType.phaseWord)
         if (seconds != null) DotMatrixText(seconds, dot = DotSize.Live)
         if (line.isNotEmpty()) Text(line, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.body, textAlign = TextAlign.Center)

@@ -1,3 +1,5 @@
+@file:Suppress("MatchingDeclarationName") // the file is the theme's Shapes; the object is the one shape set
+
 package org.openstrap.app.ui.theme
 
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -18,7 +20,8 @@ object GlowShapes {
     val Card: CornerBasedShape = SquircleShape(radius = 28.dp, smoothing = SMOOTHING)
 
     /** Sheets: the top corners only. */
-    val Sheet: CornerBasedShape = SquircleShape(topStart = 28.dp, topEnd = 28.dp, bottomStart = 0.dp, bottomEnd = 0.dp, smoothing = SMOOTHING)
+    val Sheet: CornerBasedShape =
+        SquircleShape(topStart = 28.dp, topEnd = 28.dp, bottomStart = 0.dp, bottomEnd = 0.dp, smoothing = SMOOTHING)
 
     /** Tiles inside a card. */
     val Tile: CornerBasedShape = SquircleShape(radius = 16.dp, smoothing = SMOOTHING)

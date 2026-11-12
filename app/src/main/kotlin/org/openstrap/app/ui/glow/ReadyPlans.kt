@@ -220,7 +220,9 @@ private fun RoundsStrip(s: Structure.Timed) {
     ) {
         repeat(s.rounds) { i ->
             Box(Modifier.weight(s.work.toFloat()).height(10.dp).clip(CircleShape).background(Blends.Intervals.chart))
-            if (i < s.rounds - 1 && s.rest > 0) Box(Modifier.weight(s.rest.toFloat()).height(10.dp).clip(CircleShape).background(Blends.Intervals.chartSecond))
+            if (i < s.rounds - 1 && s.rest > 0) {
+                Box(Modifier.weight(s.rest.toFloat()).height(10.dp).clip(CircleShape).background(Blends.Intervals.chartSecond))
+            }
         }
     }
 }

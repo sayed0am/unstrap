@@ -79,13 +79,17 @@ fun HealthConnectPage(
                     onCopyNow, Modifier.weight(1f), caret = false,
                 )
                 PlaceTile(
-                    AppIcons.ArrowCounterClockwise, stringResource(R.string.you_action_restore), stringResource(R.string.you_hc_restore_note),
+                    AppIcons.ArrowCounterClockwise, stringResource(R.string.you_action_restore),
+                    stringResource(R.string.you_hc_restore_note),
                     onRestore, Modifier.weight(1f), caret = false,
                 )
             }
         }
         item {
-            OutlineRow(AppIcons.SlidersHorizontal, stringResource(R.string.you_hc_open), onOpen, note = stringResource(R.string.you_hc_open_note))
+            OutlineRow(
+                AppIcons.SlidersHorizontal, stringResource(R.string.you_hc_open), onOpen,
+                note = stringResource(R.string.you_hc_open_note),
+            )
         }
         if (caloriesMissing) item { CaloriesOffer(onOfferCalories) }
     }

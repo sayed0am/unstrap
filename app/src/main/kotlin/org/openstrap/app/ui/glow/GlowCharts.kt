@@ -804,7 +804,10 @@ fun TrendDots(values: List<Int?>, blend: Blend, modifier: Modifier = Modifier, h
         fun yOf(v: Float) = ring + (size.height - ring * 2) * (1f - (v - lo) / (hi - lo))
         band?.let { b ->
             val y0 = yOf(b.endInclusive)
-            drawRoundRect(blend.chart.copy(alpha = ChartInk.NORMAL_BAND_ALPHA), Offset(0f, y0), Size(size.width, yOf(b.start) - y0), CornerRadius(6.dp.toPx()))
+            drawRoundRect(
+                blend.chart.copy(alpha = ChartInk.NORMAL_BAND_ALPHA), Offset(0f, y0), Size(size.width, yOf(b.start) - y0),
+                CornerRadius(6.dp.toPx()),
+            )
         }
         val pts = values.mapIndexedNotNull { i, v -> v?.let { i to Offset(xOf(i), yOf(it.toFloat())) } }
         pts.zipWithNext { (_, a), (_, b) -> drawLine(blend.chart.copy(alpha = 0.3f), a, b, 1.5.dp.toPx()) }
@@ -901,12 +904,18 @@ internal fun NormalTrend(
                 onDrawBehind {
                     band?.let { b ->
                         val y0 = yOf(b.endInclusive)
-                        drawRoundRect(blend.chart.copy(alpha = NormalBandAlpha), Offset(0f, y0), Size(size.width, yOf(b.start) - y0), CornerRadius(12.dp.toPx()))
+                        drawRoundRect(
+                            blend.chart.copy(alpha = NormalBandAlpha), Offset(0f, y0), Size(size.width, yOf(b.start) - y0),
+                            CornerRadius(12.dp.toPx()),
+                        )
                         if (bandText != null && labelH != null) {
                             val w = bandText.size.width
                             val sw = 14.dp.toPx()
                             val x = size.width - w
-                            drawRoundRect(blend.chart.copy(alpha = 0.35f), Offset(x - sw - 6.dp.toPx(), labelH / 2 - 4.dp.toPx()), Size(sw, 8.dp.toPx()), CornerRadius(3.dp.toPx()))
+                            drawRoundRect(
+                                blend.chart.copy(alpha = 0.35f), Offset(x - sw - 6.dp.toPx(), labelH / 2 - 4.dp.toPx()),
+                                Size(sw, 8.dp.toPx()), CornerRadius(3.dp.toPx()),
+                            )
                             text(bandText, size.width, 0f, align = 1f)
                         }
                     }

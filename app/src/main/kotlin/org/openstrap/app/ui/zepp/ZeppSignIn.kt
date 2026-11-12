@@ -243,7 +243,11 @@ fun ZeppSignInDialog(
     }
 }
 
+private const val HERO_ANGLE = 200f
+private const val HERO_MID_STOP = 0.55f
+
 @Composable
+@Suppress("CyclomaticComplexMethod") // one card of rows, each shown or not by what the account lists
 private fun FoundStrap(
     listing: DeviceListing,
     confirmLabel: String,
@@ -257,7 +261,12 @@ private fun FoundStrap(
     Column(Modifier.verticalScroll(rememberScrollState()).padding(GlowLayout.Gutter), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Column(
             Modifier.fillMaxWidth().clip(GlowShapes.Card)
-                .placeHero(200f, 0f to Blends.Strap.first.copy(alpha = 0.42f), 0.55f to Blends.Strap.second.copy(alpha = 0.16f), 1f to Color.White.copy(alpha = 0.05f))
+                .placeHero(
+                    HERO_ANGLE,
+                    0f to Blends.Strap.first.copy(alpha = 0.42f),
+                    HERO_MID_STOP to Blends.Strap.second.copy(alpha = 0.16f),
+                    1f to Color.White.copy(alpha = 0.05f),
+                )
                 .padding(start = 20.dp, end = 20.dp, top = 18.dp, bottom = 10.dp),
         ) {
             Row(Modifier.fillMaxWidth().padding(bottom = 12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
@@ -314,10 +323,13 @@ private fun FoundStrap(
         }
         PageNote(stringResource(R.string.you_zepp_token_stays))
         PageButton(
-            if (canConfirm) confirmLabel else stringResource(R.string.you_zepp_keep_sign_in), { onConfirm(strap) }, Modifier.fillMaxWidth().height(52.dp),
-            primary = true, icon = if (canConfirm) AppIcons.Bluetooth else null,
+            if (canConfirm) confirmLabel else stringResource(R.string.you_zepp_keep_sign_in), { onConfirm(strap) },
+            Modifier.fillMaxWidth().height(52.dp), primary = true, icon = if (canConfirm) AppIcons.Bluetooth else null,
         )
-        PageButton(stringResource(R.string.you_zepp_other_account), onOtherAccount, Modifier.fillMaxWidth().height(52.dp), icon = AppIcons.User)
+        PageButton(
+            stringResource(R.string.you_zepp_other_account), onOtherAccount, Modifier.fillMaxWidth().height(52.dp),
+            icon = AppIcons.User,
+        )
         if (!canConfirm && requireKey) ComputerGuideButton()
     }
 }

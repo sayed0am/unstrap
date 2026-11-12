@@ -139,7 +139,13 @@ internal fun ZoneTimeBar(zoneSeconds: ZoneSeconds, current: Int?, target: Workou
                     val on = z == current
                     Box(
                         Modifier.width(room * (weights[z] / sum)).height(10.dp)
-                            .then(if (on) Modifier.shadow(7.dp, GlowShapes.Pill, ambientColor = ZONE_COLORS[z], spotColor = ZONE_COLORS[z]) else Modifier)
+                            .then(
+                                if (on) {
+                                    Modifier.shadow(7.dp, GlowShapes.Pill, ambientColor = ZONE_COLORS[z], spotColor = ZONE_COLORS[z])
+                                } else {
+                                    Modifier
+                                },
+                            )
                             .clip(GlowShapes.Pill)
                             .background(if (s == 0) Color.White.copy(alpha = 0.18f) else ZONE_COLORS[z].copy(alpha = if (on) 1f else 0.7f)),
                     )
@@ -150,13 +156,17 @@ internal fun ZoneTimeBar(zoneSeconds: ZoneSeconds, current: Int?, target: Workou
                 val hi = target.high.coerceIn(lo, 4)
                 val start = (0 until lo).sumOf { (room * (weights[it] / sum)).value.toDouble() + gap.value }.dp
                 val width = (lo..hi).sumOf { (room * (weights[it] / sum)).value.toDouble() }.dp + gap * (hi - lo)
-                Box(Modifier.offset(x = start - 3.dp).width(width + 6.dp).height(16.dp).border(1.5.dp, Color.White.copy(alpha = 0.7f), GlowShapes.Tile))
+                Box(
+                    Modifier.offset(x = start - 3.dp).width(width + 6.dp).height(16.dp)
+                        .border(1.5.dp, Color.White.copy(alpha = 0.7f), GlowShapes.Tile),
+                )
             }
         }
         if (labels) Row(Modifier.fillMaxWidth().padding(top = 6.dp)) {
             zoneSeconds.forEachIndexed { z, s ->
                 Text(
-                    if (s >= 60) "${s / 60}" else "", color = Color.White.copy(alpha = 0.72f), style = GlowType.caption,
+                    if (s >= SECONDS_PER_MINUTE) "${s / SECONDS_PER_MINUTE}" else "",
+                    color = Color.White.copy(alpha = 0.72f), style = GlowType.caption,
                     textAlign = androidx.compose.ui.text.style.TextAlign.Center, maxLines = 1, modifier = Modifier.weight(weights[z]),
                 )
             }
@@ -164,12 +174,17 @@ internal fun ZoneTimeBar(zoneSeconds: ZoneSeconds, current: Int?, target: Workou
     }
 }
 
+private const val SECONDS_PER_MINUTE = 60
+
 /** "Time in zones" and the target on clear glass over [ZoneTimeBar] (board LiveIndoor): the strip that follows the arc. */
 @Composable
 internal fun TimeInZonesCard(zoneSeconds: ZoneSeconds, current: Int?, target: WorkoutTarget.Zones?) {
     LiveStrip(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(stringResource(R.string.workout_live_time_in_zones), color = Color.White, style = GlowType.cardTitle, maxLines = 1, modifier = Modifier.weight(1f))
+            Text(
+                stringResource(R.string.workout_live_time_in_zones), color = Color.White, style = GlowType.cardTitle,
+                maxLines = 1, modifier = Modifier.weight(1f),
+            )
             if (target != null) Text(
                 if (target.low == target.high) stringResource(R.string.workout_live_target_short_zone, target.low + 1)
                 else stringResource(R.string.workout_live_target_short_zones, target.low + 1, target.high + 1),

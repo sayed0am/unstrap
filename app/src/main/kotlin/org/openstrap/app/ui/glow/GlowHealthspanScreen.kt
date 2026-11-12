@@ -57,7 +57,7 @@ fun GlowHealthspanScreen(state: Healthspan.Outcome?, contentPadding: PaddingValu
     org.openstrap.app.ui.components.PageLight(
         org.openstrap.app.ui.theme.ScreenLight(
             org.openstrap.app.ui.theme.Blends.HabitAge, org.openstrap.app.ui.glow.draw.LightAngle.Above,
-            org.openstrap.app.ui.theme.ScreenLight.DAY, 150f,
+            org.openstrap.app.ui.theme.ScreenLight.DAY, heroCenterY = 150f,
         ),
     )
     ScreenList(contentPadding, gutter = GlowLayout.Gutter) {

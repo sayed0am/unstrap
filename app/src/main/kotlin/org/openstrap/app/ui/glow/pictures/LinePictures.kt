@@ -154,7 +154,10 @@ fun DayLine(
         val bandTop = band?.let { y(it.endInclusive) }
         val bandBottom = band?.let { y(it.start) }
         if (band != null && bandTop != null && bandBottom != null) {
-            drawRoundRect(blend.normalBand(), Offset(0f, bandTop), Size(this.size.width, (bandBottom - bandTop).coerceAtLeast(1f)), CornerRadius(4.dp.toPx()))
+            drawRoundRect(
+                blend.normalBand(), Offset(0f, bandTop), Size(this.size.width, (bandBottom - bandTop).coerceAtLeast(1f)),
+                CornerRadius(4.dp.toPx()),
+            )
         }
         // Runs of readings, a gap starting a new run: a smooth line each, a lone reading a dot.
         val runs = mutableListOf<MutableList<Offset>>(mutableListOf())
@@ -231,7 +234,10 @@ fun DayStrip(levels: List<Float?>, blend: Blend, size: PictureSize, modifier: Mo
             // Each stretch reaches a hair over the next so no seam shows between them.
             stretches.forEach { s ->
                 val level = ((s.alpha - 0.15f) / 0.85f).coerceIn(0f, 1f)
-                drawRect(lerp(blend.chart, blend.chartSecond, level).copy(alpha = s.alpha), Offset(s.x0 * this.size.width, top), Size((s.x1 - s.x0) * this.size.width + 0.5f, h))
+                drawRect(
+                    lerp(blend.chart, blend.chartSecond, level).copy(alpha = s.alpha), Offset(s.x0 * this.size.width, top),
+                    Size((s.x1 - s.x0) * this.size.width + 0.5f, h),
+                )
             }
         }
     }
@@ -312,7 +318,10 @@ fun TempDial(
             // Compose sweeps clockwise from 3 o'clock with y down, so a maths angle a is at -a.
             val from = -dialAngle(normal.start)
             val to = -dialAngle(normal.endInclusive)
-            drawArc(blend.chart.copy(alpha = ChartInk.LEVEL_BAND_ALPHA), from, to - from, false, corner, box, style = Stroke(bandW, cap = StrokeCap.Round))
+            drawArc(
+                blend.chart.copy(alpha = ChartInk.LEVEL_BAND_ALPHA), from, to - from, false, corner, box,
+                style = Stroke(bandW, cap = StrokeCap.Round),
+            )
         }
         if (deviation != null) {
             val angle = dialAngle(deviation)

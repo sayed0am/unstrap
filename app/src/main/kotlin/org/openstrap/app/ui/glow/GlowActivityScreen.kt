@@ -188,7 +188,7 @@ fun GlowActivityScreen(
     CompositionLocalProvider(LocalGlowPaused provides { list.isScrollInProgress }) {
         // Steps' blend from the upper right (Matrix board, Activity tab), day strength.
         GlowScreenList(
-            contentPadding, list, light = ScreenLight(Blends.Steps, LightAngle.UpperRight, ScreenLight.DAY, 240f),
+            contentPadding, list, light = ScreenLight(Blends.Steps, LightAngle.UpperRight, ScreenLight.DAY, heroCenterY = 240f),
         ) {
             add(Pane.Full, GlowBlocks.HEADER) { header() }
             tabCards(slots) { card, m ->
@@ -669,9 +669,9 @@ private val EffortShape = CircleShape
 private val EffortGap = 12.dp
 
 /**
- * A workout as a list row: its family's dot on a faint circle of its blend ([SportDot]; [usual] no longer lights it), the sport with "Auto-detected" when the strap logged
- * it by itself, the sport's one fact and the start time ([TabCopy.workoutFact]), and the duration in dots. A thin zone
- * bar under it, lined up with the name. [divider] draws the hairline above.
+ * A workout as a list row: its family's dot on a faint circle of its blend ([SportDot]; [usual] no longer lights it), the sport
+ * with "Auto-detected" when the strap logged it by itself, the sport's one fact and the start time ([TabCopy.workoutFact]), and the
+ * duration in dots. A thin zone bar under it, lined up with the name. [divider] draws the hairline above.
  */
 @Composable
 @Suppress("UNUSED_PARAMETER")

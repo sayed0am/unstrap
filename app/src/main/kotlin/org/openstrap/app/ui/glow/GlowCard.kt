@@ -64,12 +64,14 @@ import org.openstrap.app.ui.theme.litEdge
  * Whether glow cards should hold still right now; a scrolling screen provides its scroll state, so
  * the pulse pauses while the list moves and the scroll gets every frame to itself.
  */
+@Suppress("CompositionLocalAllowlist", "ComposeCompositionLocalUsage")
 val LocalGlowPaused = staticCompositionLocalOf<() -> Boolean> { { false } }
 
 /**
  * Whether the page holding these cards is off screen or the tab pager is moving; provided by the pager, apart from
  * [LocalGlowPaused] so a screen's own scroll state doesn't override it.
  */
+@Suppress("CompositionLocalAllowlist", "ComposeCompositionLocalUsage")
 val LocalGlowPagePaused = staticCompositionLocalOf<() -> Boolean> { { false } }
 
 @Composable
@@ -107,7 +109,7 @@ fun GlowCard(
                 last = withFrameNanos { it }
             }
             withFrameNanos { now ->
-                beats.floatValue += (now - last) / 1e9f * bpm / 60f
+                beats.floatValue += (now - last) / NANOS_PER_SECOND * bpm / SECONDS_PER_MINUTE
                 last = now
             }
         }
@@ -199,7 +201,6 @@ private fun Modifier.clearGlassRing(blend: Blend, shape: androidx.compose.ui.gra
  */
 private fun Modifier.levelLight(blend: Blend, level: Float, swell: GlowSwell?, shape: androidx.compose.ui.graphics.Shape): Modifier =
     drawWithCache {
-        val outline = shape.createOutline(size, layoutDirection, this)
         val across = size.width > size.height * 1.2f
         onDrawBehind {
             val lifted = swell?.let { s ->
@@ -239,10 +240,13 @@ private fun DrawScope.drawLevel(blend: Blend, level: Float, across: Boolean) {
 /** A gentle lift of the tint with each heartbeat (live heart rate only): the blend's first stop, up to 12% over the card. */
 private fun Modifier.beatPulse(blend: Blend, beats: () -> Float): Modifier = drawBehind {
     val c = contraction(beats())
-    if (c > 0.01f) drawRect(blend.first.copy(alpha = BEAT_LIFT * c))
+    if (c > BEAT_MIN) drawRect(blend.first.copy(alpha = BEAT_LIFT * c))
 }
 
 private const val BEAT_LIFT = 0.12f
+private const val BEAT_MIN = 0.01f
+private const val NANOS_PER_SECOND = 1e9f
+private const val SECONDS_PER_MINUTE = 60f
 
 /**
  * How hard the heart is squeezing over one beat (phase in beats), 0..1: a quick lub, a smaller dub just after,

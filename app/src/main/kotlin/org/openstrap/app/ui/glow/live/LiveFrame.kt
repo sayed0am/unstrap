@@ -89,8 +89,10 @@ import org.openstrap.app.ui.theme.ScreenLight
  * middle and the two figures either side, in Display Light. The only two sizes on the workout pages no role has; a
  * live clock read at arm's length isn't one of spec 2.3's.
  */
-internal val LiveClock = GlowType.sentence.copy(fontSize = 46.sp, lineHeight = 50.sp, letterSpacing = (-0.02).em, fontFeatureSettings = "tnum")
-internal val LiveFigure = GlowType.sentence.copy(fontSize = 24.sp, lineHeight = 28.sp, letterSpacing = (-0.02).em, fontFeatureSettings = "tnum")
+internal val LiveClock =
+    GlowType.sentence.copy(fontSize = 46.sp, lineHeight = 50.sp, letterSpacing = (-0.02).em, fontFeatureSettings = "tnum")
+internal val LiveFigure =
+    GlowType.sentence.copy(fontSize = 24.sp, lineHeight = 28.sp, letterSpacing = (-0.02).em, fontFeatureSettings = "tnum")
 
 /** What every live screen can do to the workout, passed down as one. */
 @androidx.compose.runtime.Immutable
@@ -157,7 +159,9 @@ internal fun LiveFrame(
     val landscape = LocalLiveLandscape.current
     // On its side the screen keeps a wider column than a page's, so the content and the controls fit side by side.
     CompositionLocalProvider(LocalPageColumn provides if (landscape) GlowLayout.MaxContentWidth else LocalPageColumn.current) {
-        WorkoutPage(ScreenLight(blend, lightAngle, lightStrength, heroCenterY = lightY), contentPadding, scroll = false, backdrop = backdrop) {
+        WorkoutPage(
+            ScreenLight(blend, lightAngle, lightStrength, heroCenterY = lightY), contentPadding, scroll = false, backdrop = backdrop,
+        ) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 RoundIcon(AppIcons.CaretDown, stringResource(R.string.workout_live_minimize), controls.onMinimize)
                 if (quiet) {
@@ -390,7 +394,10 @@ internal fun CenterAction(label: String, icon: androidx.compose.ui.graphics.vect
         Box(Modifier.height(88.dp), contentAlignment = Alignment.Center) {
             FlatButton(Color.White, 88.dp, onClick = onClick) { Icon(icon, label, tint = Color.Black, modifier = Modifier.size(30.dp)) }
         }
-        Text(label, color = Color.White, style = GlowType.secondary.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold), maxLines = 1)
+        Text(
+            label, color = Color.White,
+            style = GlowType.secondary.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold), maxLines = 1,
+        )
     }
 }
 

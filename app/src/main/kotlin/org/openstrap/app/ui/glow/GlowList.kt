@@ -195,9 +195,15 @@ fun ListRow(
             Spacer(Modifier.width(RowIconGap))
         } else if (icon != null) {
             Box(
-                Modifier.size(RowIconCircle).background(circle.copy(alpha = circle.alpha * if (waiting) WAITING_ICON_ALPHA else 1f), CircleShape),
+                Modifier.size(RowIconCircle)
+                    .background(circle.copy(alpha = circle.alpha * if (waiting) WAITING_ICON_ALPHA else 1f), CircleShape),
                 contentAlignment = Alignment.Center,
-            ) { Icon(icon, null, tint = glyph.copy(alpha = glyph.alpha * if (waiting) WAITING_ICON_ALPHA else 1f), modifier = Modifier.size(RowGlyph)) }
+            ) {
+                Icon(
+                    icon, null, tint = glyph.copy(alpha = glyph.alpha * if (waiting) WAITING_ICON_ALPHA else 1f),
+                    modifier = Modifier.size(RowGlyph),
+                )
+            }
             Spacer(Modifier.width(RowIconGap))
         }
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {

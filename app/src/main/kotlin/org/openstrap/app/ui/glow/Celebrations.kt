@@ -71,7 +71,7 @@ fun BestCardScreen(best: Rewards.NewBest, sportName: String, contentPadding: Pad
     BackHandler(onBack = onContinue)
     val now = System.currentTimeMillis() / 1000
     WorkoutPage(
-        ScreenLight(Blends.Calories, 270f, ScreenLight.DAY, 260f), contentPadding,
+        ScreenLight(Blends.Calories, angle = 270f, strength = ScreenLight.DAY, heroCenterY = 260f), contentPadding,
         pinned = { WorkoutButton(stringResource(R.string.glow_continue), Color.White, Color.Black, onContinue) },
     ) {
         CloseRow(stringResource(R.string.glow_celebrate_personal_best), onContinue)
@@ -99,7 +99,7 @@ fun BestCardScreen(best: Rewards.NewBest, sportName: String, contentPadding: Pad
 fun GoalMomentScreen(count: Int, goal: Int, inARow: Int, weekStarts: List<Long>, contentPadding: PaddingValues, onSettings: () -> Unit, onContinue: () -> Unit) {
     BackHandler(onBack = onContinue)
     WorkoutPage(
-        ScreenLight(Blends.Goals, 270f, ScreenLight.DAY, 190f), contentPadding,
+        ScreenLight(Blends.Goals, angle = 270f, strength = ScreenLight.DAY, heroCenterY = 190f), contentPadding,
         pinned = {
             WorkoutButton(stringResource(R.string.glow_continue), Color.White, Color.Black, onContinue)
             PageTextButton(stringResource(R.string.glow_celebrate_settings), onSettings, Modifier.align(Alignment.CenterHorizontally))
@@ -111,9 +111,22 @@ fun GoalMomentScreen(count: Int, goal: Int, inARow: Int, weekStarts: List<Long>,
         Box(
             Modifier.align(Alignment.CenterHorizontally).size(220.dp).drawBehind {
                 val ring = 1.5.dp.toPx()
-                val brush = Brush.linearGradient(listOf(Blends.Goals.first, Blends.Goals.second), Offset(size.width * 0.2f, 0f), Offset(size.width * 0.8f, size.height))
-                drawCircle(Brush.verticalGradient(listOf(org.openstrap.app.ui.theme.DarkGlowFill.copy(alpha = 0.92f), org.openstrap.app.ui.theme.DarkGlowFill.copy(alpha = 0.6f), org.openstrap.app.ui.theme.DarkGlowFill.copy(alpha = 0.2f))), size.minDimension / 2)
-                drawCircle(brush.let { Brush.linearGradient(listOf(Blends.Goals.first.copy(alpha = 0.18f), Blends.Goals.second.copy(alpha = 0.3f))) }, size.minDimension / 2)
+                val brush = Brush.linearGradient(
+                    listOf(Blends.Goals.first, Blends.Goals.second),
+                    Offset(size.width * 0.2f, 0f),
+                    Offset(size.width * 0.8f, size.height),
+                )
+                val fill = org.openstrap.app.ui.theme.DarkGlowFill
+                drawCircle(
+                    Brush.verticalGradient(listOf(fill.copy(alpha = 0.92f), fill.copy(alpha = 0.6f), fill.copy(alpha = 0.2f))),
+                    size.minDimension / 2,
+                )
+                drawCircle(
+                    brush.let {
+                        Brush.linearGradient(listOf(Blends.Goals.first.copy(alpha = 0.18f), Blends.Goals.second.copy(alpha = 0.3f)))
+                    },
+                    size.minDimension / 2,
+                )
                 drawCircle(brush, size.minDimension / 2 - ring / 2, style = Stroke(ring))
             },
             contentAlignment = Alignment.Center,
@@ -170,7 +183,7 @@ fun CelebrationsSheet(goalMoment: Boolean, weeklyRecap: Boolean, onGoalMoment: (
 fun HistoryBadgesScreen(badges: List<Rewards.Badge>, contentPadding: PaddingValues, onContinue: () -> Unit, face: (Rewards.Badge) -> String = { it.short }) {
     BackHandler(onBack = onContinue)
     WorkoutPage(
-        ScreenLight(Blends.Goals, 270f, ScreenLight.DAY, 190f), contentPadding,
+        ScreenLight(Blends.Goals, angle = 270f, strength = ScreenLight.DAY, heroCenterY = 190f), contentPadding,
         pinned = { WorkoutButton(stringResource(R.string.glow_continue), Color.White, Color.Black, onContinue) },
     ) {
         CloseRow(null, onContinue)

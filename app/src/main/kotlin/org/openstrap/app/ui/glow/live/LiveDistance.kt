@@ -188,7 +188,10 @@ internal fun LiveDistanceScreen(
                     fill = true, title = stringResource(R.string.workout_live_reps_title, Workouts.sportName(r.workout.sportType)),
                     bottomRoom = bar,
                 ) {
-                    RepPage(r, route, readings, bpm, color, target, connected, compact, if (shortLandscape(compact)) Modifier else Modifier.weight(1f))
+                    RepPage(
+                        r, route, readings, bpm, target, connected, compact,
+                        if (shortLandscape(compact)) Modifier else Modifier.weight(1f),
+                    )
                 } else LiveFrame(
                     r, blend, connected, pagePadding, controls, lap, time = { active.value }, smallTime = compact, battery = battery,
                     status = status, fill = true, bottomRoom = bar,
@@ -242,7 +245,7 @@ internal fun LiveDistanceScreen(
  */
 @Composable
 private fun RepPage(
-    r: WorkoutState.Recording, route: List<Route.Point>, readings: List<Pair<Long, Int>>, bpm: Int?, color: Color,
+    r: WorkoutState.Recording, route: List<Route.Point>, readings: List<Pair<Long, Int>>, bpm: Int?,
     target: WorkoutTarget?, connected: Boolean, compact: Boolean,
     modifier: Modifier,
 ) {
@@ -329,7 +332,8 @@ private fun RepPage(
         ) {
             done.forEach { round ->
                 Row(
-                    Modifier.clip(GlowShapes.Pill).background(org.openstrap.app.ui.glow.Raised).padding(horizontal = 14.dp, vertical = 9.dp),
+                    Modifier.clip(GlowShapes.Pill).background(org.openstrap.app.ui.glow.Raised)
+                        .padding(horizontal = 14.dp, vertical = 9.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
@@ -366,7 +370,10 @@ internal fun speedText(secondsPerKm: Double?, locale: java.util.Locale = java.ut
  * kilometre under it ([KmSplitBars]). The hero's tinted glass in the distance blend (Steps), under it the clear glass zone strip.
  */
 @Composable
-private fun PaceCard(pace: Double?, averagePace: () -> Double?, splits: List<Route.Split>, speed: Boolean, blend: Blend, modifier: Modifier = Modifier) {
+private fun PaceCard(
+    pace: Double?, averagePace: () -> Double?, splits: List<Route.Split>, speed: Boolean, blend: Blend,
+    modifier: Modifier = Modifier,
+) {
     LiveHero(blend, modifier, verticalArrangement = Arrangement.spacedBy(0.dp)) {
         Row(Modifier.fillMaxWidth()) {
             Text(
@@ -448,7 +455,9 @@ private fun KmSplitBars(splits: List<Route.Split>, blend: Blend) {
                             style = androidx.compose.ui.graphics.drawscope.Stroke(w),
                         )
                     } else if (best) drawRoundRect(
-                        androidx.compose.ui.graphics.Brush.verticalGradient(listOf(blend.second, blend.first), startY = size.height - h, endY = size.height),
+                        androidx.compose.ui.graphics.Brush.verticalGradient(
+                            listOf(blend.second, blend.first), startY = size.height - h, endY = size.height,
+                        ),
                         Offset(0f, size.height - h), Size(size.width, h), corner,
                     ) else drawRoundRect(blend.first.copy(alpha = 0.35f), Offset(0f, size.height - h), Size(size.width, h), corner)
                 }

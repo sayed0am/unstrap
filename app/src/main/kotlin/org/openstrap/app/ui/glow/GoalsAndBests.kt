@@ -71,12 +71,22 @@ private fun weekDots(view: RewardsView, first: LocalDate, zone: ZoneId = ZoneId.
     }
 }
 
+private const val LIGHT_TOP_X = 0.3f
+private const val LIGHT_TOP_RX = 0.82f
+private const val LIGHT_BOTTOM_X = 0.8f
+private const val LIGHT_BOTTOM_RX = 0.5f
+
 /**
  * The Goals blend's page light (boards RewardsGoals, RewardsBadges, RewardsWeeklyRecap, WorkoutCelebration): the second
  * stop big at the upper left, the first small at the lower right, both muted, over the ground. [top] and [bottom] are
  * the two blobs' strengths.
  */
-internal fun Modifier.goalsLight(top: Float = 0.5f, bottom: Float = 0.22f, topY: Float = 200f, bottomY: Float = 680f): Modifier = drawBehind {
+internal fun Modifier.goalsLight(
+    top: Float = 0.5f,
+    bottom: Float = 0.22f,
+    topY: Float = 200f,
+    bottomY: Float = 680f,
+): Modifier = drawBehind {
     drawRect(org.openstrap.app.ui.theme.Ground)
     fun blob(c: Offset, rx: Float, ry: Float, color: Color, alpha: Float) {
         val brush = Brush.radialGradient(
@@ -86,8 +96,14 @@ internal fun Modifier.goalsLight(top: Float = 0.5f, bottom: Float = 0.22f, topY:
         scale(1f, ry / rx, pivot = c) { drawCircle(brush, rx, c) }
     }
     val w = size.width
-    blob(Offset(w * 0.3f, topY.dp.toPx()), w * 0.82f + 100.dp.toPx(), 240.dp.toPx() + 100.dp.toPx(), Blends.Goals.lightSecond, top)
-    blob(Offset(w * 0.8f, bottomY.dp.toPx()), w * 0.5f + 100.dp.toPx(), 170.dp.toPx() + 100.dp.toPx(), Blends.Goals.light, bottom)
+    blob(
+        Offset(w * LIGHT_TOP_X, topY.dp.toPx()), w * LIGHT_TOP_RX + 100.dp.toPx(), 240.dp.toPx() + 100.dp.toPx(),
+        Blends.Goals.lightSecond, top,
+    )
+    blob(
+        Offset(w * LIGHT_BOTTOM_X, bottomY.dp.toPx()), w * LIGHT_BOTTOM_RX + 100.dp.toPx(), 170.dp.toPx() + 100.dp.toPx(),
+        Blends.Goals.light, bottom,
+    )
 }
 
 /**
@@ -107,12 +123,15 @@ private fun Modifier.goalsFill(level: Float): Modifier = drawWithCache {
         fun pool(cx: Float, cy: Float, rx: Float, ry: Float, a: Float) {
             val c = Offset(size.width * cx, size.height * cy)
             val r = size.width * rx
-            val b = Brush.radialGradient(0f to dark.copy(alpha = a), 0.5f to dark.copy(alpha = a * 0.66f), 1f to Color.Transparent, center = c, radius = r)
+            val b = Brush.radialGradient(
+                0f to dark.copy(alpha = a), 0.5f to dark.copy(alpha = a * 0.66f), 1f to Color.Transparent,
+                center = c, radius = r,
+            )
             scale(1f, size.height * ry / r, pivot = c) { drawCircle(b, r, c) }
         }
-        pool(0.18f, 0.10f, 0.6f, 0.30f, 0.6f)
-        pool(0.38f, 0.94f, 0.9f, 0.32f, 0.82f)
-        pool(0.14f, 0.46f, 0.4f, 0.46f, 0.9f)
+        pool(cx = 0.18f, cy = 0.10f, rx = 0.6f, ry = 0.30f, a = 0.6f)
+        pool(cx = 0.38f, cy = 0.94f, rx = 0.9f, ry = 0.32f, a = 0.82f)
+        pool(cx = 0.14f, cy = 0.46f, rx = 0.4f, ry = 0.46f, a = 0.9f)
     }
 }
 
@@ -274,7 +293,8 @@ private fun WaysOn(onAllBadges: () -> Unit, onRecap: () -> Unit, onCelebrations:
 fun AllBadgesPage(view: RewardsView?, contentPadding: PaddingValues, onBack: () -> Unit) {
     BackHandler(onBack = onBack)
     var open by rememberSaveable { mutableStateOf<String?>(null) }
-    Box(Modifier.fillMaxSize().goalsLight(top = 0.38f, bottom = 0.2f, topY = 100f, bottomY = 560f)) { ScreenList(contentPadding, gutter = GlowLayout.Gutter) {
+    val light = Modifier.fillMaxSize().goalsLight(top = 0.38f, bottom = 0.2f, topY = 100f, bottomY = 560f)
+    Box(light) { ScreenList(contentPadding, gutter = GlowLayout.Gutter) {
         item {
             val subtitle = view?.let { stringResource(R.string.glow_goals_earned_count, it.earned.size, Rewards.BADGES.size) }
             PageHeader(stringResource(R.string.glow_goals_all_badges), onBack, subtitle = subtitle)
@@ -313,7 +333,8 @@ fun WeeklyRecapPage(view: RewardsView?, first: LocalDate, contentPadding: Paddin
         return
     }
     BackHandler(onBack = onBack)
-    Box(Modifier.fillMaxSize().goalsLight(top = 0.55f, bottom = 0.3f, topY = 220f, bottomY = 670f)) { ScreenList(contentPadding, gutter = GlowLayout.Gutter) {
+    val light = Modifier.fillMaxSize().goalsLight(top = 0.55f, bottom = 0.3f, topY = 220f, bottomY = 670f)
+    Box(light) { ScreenList(contentPadding, gutter = GlowLayout.Gutter) {
         item { PageHeader(stringResource(R.string.glow_goals_your_week), onBack, subtitle = RewardsCopy.weekRange(first)) }
         if (view == null) return@ScreenList
         val week = view.week(first)

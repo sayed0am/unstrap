@@ -181,15 +181,16 @@ internal fun DetailTemplate(
     BackHandler(onBack = onBack)
     val list = rememberLazyListState()
     // The page's light (Matrix board): the metric's own blend from the top, dimmer for the sleep details.
-    val blend = blend ?: remember(color) { Blends.forInk(color) ?: Blends.Strap }
-    PageLight(ScreenLight(blend, LightAngle.Above, if (blend == Blends.Sleep) SLEEP_DETAIL_STRENGTH else ScreenLight.DAY, 190f))
+    val pageBlend = blend ?: remember(color) { Blends.forInk(color) ?: Blends.Strap }
+    val lightStrength = if (pageBlend == Blends.Sleep) SLEEP_DETAIL_STRENGTH else ScreenLight.DAY
+    PageLight(ScreenLight(pageBlend, LightAngle.Above, strength = lightStrength, heroCenterY = 190f))
     var switching by rememberSaveable { mutableStateOf(false) }
     val gutter = GlowLayout.WideGutter
     // Rows inside a detail open the next one with a crossfade, not by growing (spec 3.5).
     CompositionLocalProvider(LocalGlowPaused provides { list.isScrollInProgress }, LocalCardsGrow provides false) {
         ScreenList(contentPadding, list, gutter = gutter) {
             item {
-                DetailHero(blend, ring = heroValue == null, gutter) {
+                DetailHero(pageBlend, ring = heroValue == null, gutter) {
                     // A scrub is read here, so only the hero follows the finger, not the whole detail (audit K4).
                     val scrub = scrubbed()
                     val shown = scrub ?: headline
@@ -367,6 +368,10 @@ private class PlainNumber(val number: Float, decimals: Int, grouped: Boolean) {
 
 /** Sleep's details sit in a little less light than the others (DetailSleep board, 0.55 against 0.6). */
 private const val SLEEP_DETAIL_STRENGTH = 0.9f
+private const val HERO_GLOW_RISE = 0.12f
+private const val HERO_GLOW_RADIUS = 0.75f
+private const val RING_MID_STOP = 0.3f
+private const val RING_END_STOP = 0.62f
 
 /** The corners of the hero's foot: 32 dp, only at the bottom, as a squircle. */
 private val HeroShape = sv.lib.squircleshape.SquircleShape(
@@ -399,7 +404,7 @@ private fun DetailHero(blend: Blend, ring: Boolean, gutter: Dp, content: @Compos
                 drawRect(
                     Brush.radialGradient(
                         listOf(blend.first.copy(alpha = 0.45f), blend.second.copy(alpha = 0.12f), Color.Transparent),
-                        Offset(size.width / 2, -size.height * 0.12f), size.width * 0.75f,
+                        Offset(size.width / 2, -size.height * HERO_GLOW_RISE), size.width * HERO_GLOW_RADIUS,
                     ),
                 )
                 // The hairline along the foot.
@@ -413,7 +418,7 @@ private fun DetailHero(blend: Blend, ring: Boolean, gutter: Dp, content: @Compos
                 if (ring) drawOutline(
                     shape.createOutline(size, layoutDirection, this),
                     Brush.linearGradient(
-                        0f to blend.first, 0.3f to blend.second, 0.62f to blend.second.copy(alpha = 0f),
+                        0f to blend.first, RING_MID_STOP to blend.second, RING_END_STOP to blend.second.copy(alpha = 0f),
                         start = Offset(size.width, 0f), end = Offset(0f, size.height),
                     ),
                     style = Stroke(4.dp.toPx()),

@@ -60,7 +60,8 @@ fun DeletedSleepPage(
                         below = true, divider = i > 0, icon = AppIcons.Moon,
                     ) {
                         PageButton(
-                            stringResource(R.string.you_action_restore), { onRestore(r.strap) }, Modifier.height(44.dp), icon = AppIcons.ArrowCounterClockwise,
+                            stringResource(R.string.you_action_restore), { onRestore(r.strap) }, Modifier.height(44.dp),
+                            icon = AppIcons.ArrowCounterClockwise,
                         )
                     }
                 }

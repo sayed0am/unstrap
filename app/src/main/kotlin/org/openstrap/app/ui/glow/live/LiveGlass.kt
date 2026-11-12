@@ -44,6 +44,9 @@ import org.openstrap.app.ui.theme.litEdge
 import org.openstrap.app.ui.theme.tintedGlass
 import org.openstrap.app.ui.workout.ZONE_COLORS
 
+/** The effort strip's bars, one per heart-rate zone. */
+private const val ZONE_BARS = 5
+
 /*
  * The glass the live screens share (Glow × Glass, boards LiveDistance to LiveGame): the hero is tinted glass in the
  * family's blend, every other card clear glass, and the heart rate's zone is only ever drawn small, as a dot and a
@@ -53,7 +56,9 @@ import org.openstrap.app.ui.workout.ZONE_COLORS
 /** The live screen's hero: tinted glass in the family's [blend], 20 dp in from its edges. */
 @Composable
 internal fun LiveHero(
-    blend: Blend, modifier: Modifier = Modifier, padding: PaddingValues = PaddingValues(start = 20.dp, top = 16.dp, end = 20.dp, bottom = 16.dp),
+    blend: Blend,
+    modifier: Modifier = Modifier,
+    padding: PaddingValues = PaddingValues(start = 20.dp, top = 16.dp, end = 20.dp, bottom = 16.dp),
     verticalArrangement: Arrangement.Vertical = Arrangement.Top, horizontalAlignment: Alignment.Horizontal = Alignment.Start,
     content: @Composable ColumnScope.() -> Unit,
 ) = Column(
@@ -73,7 +78,7 @@ internal fun LiveStrip(
 
 /** A zone's flat colour as the small dot beside its name. */
 @Composable
-internal fun ZoneDot(zone: Int?, size: Dp = 8.dp, modifier: Modifier = Modifier) =
+internal fun ZoneDot(zone: Int?, modifier: Modifier = Modifier, size: Dp = 8.dp) =
     Box(modifier.size(size).clip(CircleShape).background(zone?.let { ZONE_COLORS[it] } ?: Color.White))
 
 /**
@@ -101,7 +106,10 @@ internal fun LiveZoneStrip(
                 if (zone != null) {
                     ZoneDot(zone)
                     Spacer(Modifier.width(7.dp))
-                    Text(WorkoutCopy.zoneLine(zone), color = Color.White, style = GlowType.secondary.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold), maxLines = 1)
+                    Text(
+                        WorkoutCopy.zoneLine(zone), color = Color.White,
+                        style = GlowType.secondary.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold), maxLines = 1,
+                    )
                 } else Text(WorkoutCopy.noZone(paused), color = Color.White.copy(alpha = 0.75f), style = GlowType.secondary, maxLines = 1)
             }
         }
@@ -119,11 +127,14 @@ internal fun ZoneTrack(bpm: Int?, maxHr: Int, target: WorkoutTarget.Zones?, modi
         val gap = 3.dp
         val step = (maxWidth - gap * 4) / 5
         Row(Modifier.align(Alignment.Center), horizontalArrangement = Arrangement.spacedBy(gap)) {
-            for (z in 0 until 5) {
+            for (z in 0 until ZONE_BARS) {
                 val on = z == zone
                 Box(
                     Modifier.width(step).height(10.dp)
-                        .then(if (on) Modifier.shadow(7.dp, GlowShapes.Pill, ambientColor = ZONE_COLORS[z], spotColor = ZONE_COLORS[z]) else Modifier)
+                        .then(
+                            if (on) Modifier.shadow(7.dp, GlowShapes.Pill, ambientColor = ZONE_COLORS[z], spotColor = ZONE_COLORS[z])
+                            else Modifier,
+                        )
                         .clip(GlowShapes.Pill).background(ZONE_COLORS[z].copy(alpha = if (on) 1f else 0.26f)),
                 )
             }
