@@ -10,7 +10,17 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.RoundRect
 import androidx.compose.ui.geometry.Size
+import androidx.compose.runtime.remember
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.ClipOp
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.graphics.drawscope.clipRect
+import org.openstrap.app.ui.glow.draw.chartBlend
+import org.openstrap.app.ui.glow.draw.chartBrushAcross
+import org.openstrap.app.ui.glow.draw.composePath
+import org.openstrap.app.ui.glow.draw.smoothOps
+import org.openstrap.app.ui.theme.Blend
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -24,7 +34,6 @@ import org.openstrap.app.ui.glow.GlowType
 import org.openstrap.app.ui.glow.Rim
 import org.openstrap.app.ui.glow.draw.ChartInk
 import org.openstrap.app.ui.glow.draw.stageColor
-import org.openstrap.app.ui.glow.drawZoneLine
 import java.time.LocalTime
 import kotlin.math.abs
 import kotlin.math.cos
@@ -34,7 +43,9 @@ import kotlin.math.sin
 /*
  * The line-like pictures (spec 2.7): Heart rate's day line through your resting band, Stress's day strip, Skin
  * temperature's dial, Sleep regularity's bed and wake bars and the day with the naps on it. Each draws in its metric's
- * ink to fill its modifier, solid, never dotted or dashed and with no digits (but the dial's reading), and each but the
+ * blend (Charts board: the first colour at the start or base, the second on the answer, in the blend's chart tones) to
+ * fill its modifier. The v2 `ink` overloads find the blend with [chartBlend]; the [Blend] overloads take it directly. Each
+ * draws solid, never dotted or dashed and with no digits (but the dial's reading), and each but the
  * naps has a rim function saying where on the card the off part sits (spec 2.5). The geometry is in plain functions so it
  * is tested without a screen.
  */
@@ -66,11 +77,11 @@ internal fun lineCardY(f: Float): Float = PICTURE_TOP_Y + f.coerceIn(0f, 1f) * (
 private fun Modifier.pictureArea(size: PictureSize): Modifier =
     if (size == PictureSize.Small) defaultMinSize(136.dp, 60.dp) else defaultMinSize(324.dp, 70.dp)
 
-/** Your normal behind a picture: the ink at 12% (spec 2.7). */
-private fun Color.normalBand(): Color = copy(alpha = ChartInk.NORMAL_BAND_ALPHA)
+/** Your normal behind a picture: the blend's first colour at 12% (spec 2.7). */
+private fun Blend.normalBand(): Color = chart.copy(alpha = ChartInk.NORMAL_BAND_ALPHA)
 
-/** A level inside your normal is drawn a little dimmer than one outside it. */
-internal const val INSIDE_ALPHA = 0.7f
+/** A level inside your normal is drawn dimmer than one outside it (Charts board: 45%). */
+internal const val INSIDE_ALPHA = ChartInk.INSIDE_ALPHA
 
 /* ------------------------------------------------------------------------------------------------ */
 /* Heart rate: the day's line through your resting band                                              */
@@ -119,6 +130,19 @@ fun DayLine(
     size: PictureSize,
     modifier: Modifier = Modifier,
     slots: Int = values.size,
+) = DayLine(values, band, remember(ink) { chartBlend(ink) }, size, modifier, slots)
+
+/** [DayLine] in [blend]: the blend along time, the second colour at the latest reading; inside the band the line dims. */
+@Composable
+// The readings arrive whole with each update and never change in place.
+@Suppress("UnstableCollections", "ComposeUnstableCollections")
+fun DayLine(
+    values: List<Float?>,
+    band: ClosedFloatingPointRange<Float>?,
+    blend: Blend,
+    size: PictureSize,
+    modifier: Modifier = Modifier,
+    slots: Int = values.size,
 ) {
     val scale = lineScale(values, band)
     Canvas(modifier.pictureArea(size)) {
@@ -127,18 +151,32 @@ fun DayLine(
         val h = this.size.height - 2 * pad
         val w = this.size.width - 2 * pad
         fun y(v: Float) = pad + scale.down(v) * h
-        if (band != null) {
-            val top = y(band.endInclusive)
-            drawRoundRect(ink.normalBand(), Offset(0f, top), Size(this.size.width, (y(band.start) - top).coerceAtLeast(1f)), CornerRadius(4.dp.toPx()))
+        val bandTop = band?.let { y(it.endInclusive) }
+        val bandBottom = band?.let { y(it.start) }
+        if (band != null && bandTop != null && bandBottom != null) {
+            drawRoundRect(blend.normalBand(), Offset(0f, bandTop), Size(this.size.width, (bandBottom - bandTop).coerceAtLeast(1f)), CornerRadius(4.dp.toPx()))
         }
-        fun inside(v: Float) = band != null && v in band
-        val at = { i: Int -> values.getOrNull(i)?.let { Offset(pad + slotX(i, slots) * w, y(it)) } }
-        drawZoneLine(values.size, 2.dp.toPx(), at) { i ->
-            val a = values[i]!!
-            val b = values[i + 1]!!
-            if (inside(a) && inside(b)) ink.copy(alpha = INSIDE_ALPHA) else ink
+        // Runs of readings, a gap starting a new run: a smooth line each, a lone reading a dot.
+        val runs = mutableListOf<MutableList<Offset>>(mutableListOf())
+        values.forEachIndexed { i, v ->
+            if (v == null) { if (runs.last().isNotEmpty()) runs += mutableListOf<Offset>() }
+            else runs.last() += Offset(pad + slotX(i, slots) * w, y(v))
         }
-        lastReading(values)?.let { i -> at(i)?.let { drawCircle(ink, 3.5.dp.toPx(), it) } }
+        val last = lastReading(values)?.let { i -> Offset(pad + slotX(i, slots) * w, y(values[i]!!)) }
+        val brush = blend.chartBrushAcross(pad, last?.x ?: (pad + w))
+        val stroke = Stroke(2.dp.toPx(), cap = StrokeCap.Round, join = androidx.compose.ui.graphics.StrokeJoin.Round)
+        runs.filter { it.isNotEmpty() }.forEach { pts ->
+            if (pts.size == 1) { drawCircle(blend.chart, 2.dp.toPx(), pts.first()); return@forEach }
+            val path = composePath(smoothOps(pts))
+            if (bandTop != null && bandBottom != null) {
+                drawPath(path, brush, alpha = INSIDE_ALPHA, style = stroke)
+                clipRect(0f, bandTop, this.size.width, bandBottom, ClipOp.Difference) { drawPath(path, brush, style = stroke) }
+            } else drawPath(path, brush, style = stroke)
+        }
+        last?.let {
+            drawCircle(blend.chartSecond.copy(alpha = ChartInk.END_HALO_ALPHA), 7.5.dp.toPx(), it)
+            drawCircle(blend.chartSecond, 3.5.dp.toPx(), it)
+        }
     }
 }
 
@@ -176,16 +214,24 @@ internal fun stripStretches(levels: List<Float?>, slots: Int = levels.size): Lis
 @Composable
 // The levels arrive whole with each update and never change in place.
 @Suppress("UnstableCollections", "ComposeUnstableCollections")
-fun DayStrip(levels: List<Float?>, ink: Color, size: PictureSize, modifier: Modifier = Modifier, slots: Int = levels.size) {
+fun DayStrip(levels: List<Float?>, ink: Color, size: PictureSize, modifier: Modifier = Modifier, slots: Int = levels.size) =
+    DayStrip(levels, remember(ink) { chartBlend(ink) }, size, modifier, slots)
+
+/** [DayStrip] in [blend]: calm stretches dim in the first colour, high stretches full in the second. */
+@Composable
+// The levels arrive whole with each update and never change in place.
+@Suppress("UnstableCollections", "ComposeUnstableCollections")
+fun DayStrip(levels: List<Float?>, blend: Blend, size: PictureSize, modifier: Modifier = Modifier, slots: Int = levels.size) {
     val stretches = stripStretches(levels, slots)
     Canvas(modifier.pictureArea(size)) {
         val h = min((if (size == PictureSize.Small) 18.dp else 20.dp).toPx(), this.size.height)
         val top = (this.size.height - h) / 2
-        val clip = Path().apply { addRoundRect(RoundRect(Rect(0f, top, this@Canvas.size.width, top + h), CornerRadius(h / 2))) }
+        val clip = Path().apply { addRoundRect(RoundRect(Rect(0f, top, this@Canvas.size.width, top + h), CornerRadius(4.dp.toPx()))) }
         clipPath(clip) {
             // Each stretch reaches a hair over the next so no seam shows between them.
             stretches.forEach { s ->
-                drawRect(ink.copy(alpha = s.alpha), Offset(s.x0 * this.size.width, top), Size((s.x1 - s.x0) * this.size.width + 0.5f, h))
+                val level = ((s.alpha - 0.15f) / 0.85f).coerceIn(0f, 1f)
+                drawRect(lerp(blend.chart, blend.chartSecond, level).copy(alpha = s.alpha), Offset(s.x0 * this.size.width, top), Size((s.x1 - s.x0) * this.size.width + 0.5f, h))
             }
         }
     }
@@ -241,6 +287,17 @@ fun TempDial(
     size: PictureSize,
     modifier: Modifier = Modifier,
     reading: String? = null,
+) = TempDial(deviation, normal, remember(ink) { chartBlend(ink) }, size, modifier, reading)
+
+/** [TempDial] in [blend] (cool into warm): your normal flat in the first colour, the needle and its dot in the second. */
+@Composable
+fun TempDial(
+    deviation: Float?,
+    normal: ClosedFloatingPointRange<Float>?,
+    blend: Blend,
+    size: PictureSize,
+    modifier: Modifier = Modifier,
+    reading: String? = null,
 ) {
     val measurer = rememberTextMeasurer()
     Canvas(modifier.pictureArea(size)) {
@@ -255,13 +312,14 @@ fun TempDial(
             // Compose sweeps clockwise from 3 o'clock with y down, so a maths angle a is at -a.
             val from = -dialAngle(normal.start)
             val to = -dialAngle(normal.endInclusive)
-            drawArc(ink.normalBand(), from, to - from, false, corner, box, style = Stroke(bandW, cap = StrokeCap.Round))
+            drawArc(blend.chart.copy(alpha = ChartInk.LEVEL_BAND_ALPHA), from, to - from, false, corner, box, style = Stroke(bandW, cap = StrokeCap.Round))
         }
         if (deviation != null) {
             val angle = dialAngle(deviation)
             val tip = dialPoint(fit, angle)
-            drawLine(ink, dialPoint(fit, angle, fit.radius * 0.55f), dialPoint(fit, angle, dot), 2.dp.toPx(), StrokeCap.Round)
-            drawCircle(ink, dot, tip)
+            drawLine(blend.chartSecond, dialPoint(fit, angle, fit.radius * 0.55f), dialPoint(fit, angle, dot), 2.dp.toPx(), StrokeCap.Round)
+            drawCircle(blend.chartSecond.copy(alpha = ChartInk.END_HALO_ALPHA), dot + 3.dp.toPx(), tip)
+            drawCircle(blend.chartSecond, dot, tip)
         }
         if (reading != null) {
             val large = measurer.measure(reading, GlowType.secondary.copy(color = Color.White))
@@ -350,6 +408,19 @@ fun BedWakeBars(
     size: PictureSize,
     modifier: Modifier = Modifier,
     band: Int = USUAL_BAND_MINUTES,
+) = BedWakeBars(nights, usual, remember(ink) { chartBlend(ink) }, size, modifier, band)
+
+/** [BedWakeBars] in [blend]: each bar runs from the first colour at bedtime to the second at wake, full when off, dimmer when usual. */
+@Composable
+// The week arrives whole with each update and never changes in place.
+@Suppress("UnstableCollections", "ComposeUnstableCollections")
+fun BedWakeBars(
+    nights: List<BedWake?>,
+    usual: BedWake?,
+    blend: Blend,
+    size: PictureSize,
+    modifier: Modifier = Modifier,
+    band: Int = USUAL_BAND_MINUTES,
 ) {
     val off = offNights(nights, usual, band)
     val span = bedWakeSpan(nights, usual, band)
@@ -358,7 +429,7 @@ fun BedWakeBars(
         fun y(m: Int) = (m - span.first) / total * this.size.height
         usual?.let(::sinceNoon)?.toList()?.forEach { m ->
             val top = y(m - band)
-            drawRect(ink.normalBand(), Offset(0f, top), Size(this.size.width, y(m + band) - top))
+            drawRect(blend.normalBand(), Offset(0f, top), Size(this.size.width, y(m + band) - top))
         }
         val slot = this.size.width / nights.size.coerceAtLeast(1)
         val w = min(slot * 0.45f, (if (size == PictureSize.Small) 8.dp else 10.dp).toPx())
@@ -367,9 +438,11 @@ fun BedWakeBars(
             val (b, k) = sinceNoon(n)
             val cx = nightX(i, nights.size) * this.size.width
             val top = y(b)
+            val bottom = top + (y(k) - top).coerceAtLeast(w)
             drawRoundRect(
-                if (off[i]) ink else ink.copy(alpha = 0.45f),
-                Offset(cx - w / 2, top), Size(w, (y(k) - top).coerceAtLeast(w)), CornerRadius(w / 2),
+                brush = Brush.verticalGradient(listOf(blend.chart, blend.chartSecond), startY = top, endY = bottom),
+                topLeft = Offset(cx - w / 2, top), size = Size(w, bottom - top), cornerRadius = CornerRadius(w / 2),
+                alpha = if (off[i]) 1f else INSIDE_ALPHA,
             )
         }
     }
@@ -435,7 +508,14 @@ private val NapStrip: Dp = 10.dp
 @Composable
 // The naps arrive whole with each update and never change in place.
 @Suppress("UnstableCollections", "ComposeUnstableCollections")
-fun NapDay(naps: List<Nap>, dayStart: Long, dayEnd: Long, ink: Color, size: PictureSize, modifier: Modifier = Modifier) {
+fun NapDay(naps: List<Nap>, dayStart: Long, dayEnd: Long, ink: Color, size: PictureSize, modifier: Modifier = Modifier) =
+    NapDay(naps, dayStart, dayEnd, remember(ink) { chartBlend(ink) }, size, modifier)
+
+/** [NapDay] in [blend]: stages keep their flat colours, a nap with none takes the blend's second colour. */
+@Composable
+// The naps arrive whole with each update and never change in place.
+@Suppress("UnstableCollections", "ComposeUnstableCollections")
+fun NapDay(naps: List<Nap>, dayStart: Long, dayEnd: Long, blend: Blend, size: PictureSize, modifier: Modifier = Modifier) {
     Canvas(modifier.pictureArea(size)) {
         val h = min(NapStrip.toPx(), this.size.height)
         val mid = this.size.height / 2
@@ -447,7 +527,7 @@ fun NapDay(naps: List<Nap>, dayStart: Long, dayEnd: Long, ink: Color, size: Pict
             clipPath(clip) {
                 p.parts.forEach { part ->
                     drawRect(
-                        part.stage?.let(::stageColor) ?: ink,
+                        part.stage?.let(::stageColor) ?: blend.chartSecond,
                         Offset(part.x0 * this.size.width, mid - h / 2), Size((part.x1 - part.x0) * this.size.width + 0.5f, h),
                     )
                 }
