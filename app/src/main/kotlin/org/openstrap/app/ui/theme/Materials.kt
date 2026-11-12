@@ -3,6 +3,7 @@ package org.openstrap.app.ui.theme
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Offset
@@ -135,6 +136,19 @@ data class ScreenLight(val blend: Blend, val angle: Float = 225f, val strength: 
 /** The light a screen is lit by, for parts (sheets, the nav bar) that want to know. Null when the screen has none. */
 val LocalScreenLight = compositionLocalOf<ScreenLight?> { null }
 
+/**
+ * Each tab's light as its screen last drew it, so the nav bar outside the pages can tint the selected tab with it
+ * (TabTodayMorning). Provided at the root; a tab page reports through [LocalScreenLightReport].
+ */
+class TabLights {
+    val lights = androidx.compose.runtime.mutableStateMapOf<Int, ScreenLight?>()
+}
+
+val LocalTabLights = androidx.compose.runtime.staticCompositionLocalOf<TabLights?> { null }
+
+/** Where a screen reports the light it draws ([GlowScreenList] calls it). Nothing listens outside a tab. */
+val LocalScreenLightReport = androidx.compose.runtime.staticCompositionLocalOf<(ScreenLight?) -> Unit> { {} }
+
 /** The boards' blob opacity at full strength. */
 private const val LIGHT_OPACITY = 0.6f
 
@@ -142,7 +156,7 @@ private const val LIGHT_OPACITY = 0.6f
  * Draws [light] behind this (fixed to the screen, not scrolled), over [Ground]. With no light, just the ground: "no
  * light until there's a hero to light" (Matrix board, No data yet).
  */
-fun Modifier.screenLight(light: ScreenLight?): Modifier = drawBehind {
+fun Modifier.screenLight(light: ScreenLight?): Modifier = clipToBounds().drawBehind {
     drawRect(Ground)
     if (light == null) return@drawBehind
     val w = size.width

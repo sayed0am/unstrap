@@ -441,12 +441,14 @@ private fun AppRoot(
     // over a blur of the pages, like the nav bar.
     val navGlass = rememberHazeState()
     val glassHost = remember { GlassHost() }
+    val tabLights = remember { org.openstrap.app.ui.theme.TabLights() }
     // Half open on a table the top half is heart rate, or the workout's heart card with the controls below. Stood up
     // like a book, only the live workout splits.
     val folds = rememberFolds()
     val hinge = folds.table
     CompositionLocalProvider(
         LocalGoals provides goals, LocalHeartZones provides heartZones, LocalGlassHost provides glassHost,
+        org.openstrap.app.ui.theme.LocalTabLights provides tabLights,
         LocalGrowOrigin provides growOrigin,
     ) {
       Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
@@ -474,7 +476,11 @@ private fun AppRoot(
                         showBar,
                         enter = slideInVertically { it } + fadeIn(),
                         exit = slideOutVertically { it } + fadeOut(),
-                    ) { FloatingNavBar(navItems, tab, selectTab, glass = navGlass) }
+                    ) {
+                        CompositionLocalProvider(org.openstrap.app.ui.theme.LocalScreenLight provides tabLights.lights[tab]) {
+                            FloatingNavBar(navItems, tab, selectTab, glass = navGlass)
+                        }
+                    }
                 },
                 containerColor = MaterialTheme.colorScheme.background,
             ) { padding ->
@@ -508,7 +514,9 @@ private fun AppRoot(
                     )
                 }
             }
-            if (rail) FloatingNavRail(navItems, tab, selectTab, Modifier.align(Alignment.CenterStart), glass = navGlass)
+            if (rail) CompositionLocalProvider(org.openstrap.app.ui.theme.LocalScreenLight provides tabLights.lights[tab]) {
+                FloatingNavRail(navItems, tab, selectTab, Modifier.align(Alignment.CenterStart), glass = navGlass)
+            }
             AllMetricsHost(nav, shown, workoutsVm, scroll, closePages, onShowCharge = { showCharge = true })
             AddWorkoutHost(nav, container, workoutsVm, rootVm)
             SaveStretchHost(nav, container, workoutsVm, rootVm)

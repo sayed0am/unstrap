@@ -220,6 +220,8 @@ fun GlowScreenList(
     light: org.openstrap.app.ui.theme.ScreenLight? = null,
     content: GlowBlocks.() -> Unit,
 ) {
+    val report = org.openstrap.app.ui.theme.LocalScreenLightReport.current
+    androidx.compose.runtime.SideEffect { report(light) }
     BoxWithConstraints(Modifier.fillMaxSize().then(if (light != null) Modifier.screenLight(light) else Modifier)) {
         val wide = maxWidth >= GlowLayout.TwoColumnWidth
         val gutter = GlowLayout.dashboardGutter(maxWidth)

@@ -203,7 +203,11 @@ internal fun TabsPager(
     ) { page ->
         val back = if (page == tab) emptyArray() else arrayOf(LocalNavigationEventDispatcherOwner provides idleBack)
         @Suppress("SpreadOperator") // at most one local, once per page
+        val tabLights = org.openstrap.app.ui.theme.LocalTabLights.current
         CompositionLocalProvider(
+            org.openstrap.app.ui.theme.LocalScreenLightReport provides remember(tabLights, page) {
+                { l: org.openstrap.app.ui.theme.ScreenLight? -> if (tabLights != null && tabLights.lights[page] != l) tabLights.lights[page] = l }
+            },
             // Remembered: a new lambda each time would be a new static local, recomposing the whole tab under it.
             LocalGlowPagePaused provides remember(pager, page, covered) { tabPaused(pager, page, covered) },
             LocalScrollToTop provides scroll.of(page),
