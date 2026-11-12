@@ -18,6 +18,12 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.unit.sp
+import org.openstrap.app.ui.components.PageLight
+import org.openstrap.app.ui.device.OutlinePanel
+import org.openstrap.app.ui.device.PlaceHero
+import org.openstrap.app.ui.device.StrapPageLight
+import org.openstrap.app.ui.device.strapHero
 import androidx.compose.runtime.DisposableEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
@@ -81,39 +87,50 @@ fun FirmwareScreen(vm: FirmwareViewModel, contentPadding: PaddingValues, onBack:
     var confirm by remember { mutableStateOf<ReadyImage?>(null) }
     confirm?.let { image -> ConfirmInstall(image, vm.blockers(), onDismiss = { confirm = null }, onInstall = { confirm = null; vm.install(image) }) }
 
+    PageLight(StrapPageLight)
     ScreenList(contentPadding, gutter = GlowLayout.Gutter) {
         item { PageHeader(stringResource(R.string.you_firmware_title), { vm.reset(); onBack() }, backEnabled = !installing) }
 
         item {
-            PagePanel(title = stringResource(R.string.you_firmware_this_strap)) {
+            PlaceHero(Modifier.strapHero()) {
                 val c = connection as? ConnectionState.Connected
-                InfoLine(
-                    stringResource(R.string.you_firmware_title),
-                    info?.firmware ?: c?.firmware ?: stringResource(R.string.you_firmware_unknown),
-                )
-                info?.hardware?.let { InfoLine(stringResource(R.string.you_firmware_hardware), it) }
-                InfoLine(
-                    stringResource(R.string.you_firmware_battery),
-                    c?.batteryPercent?.let { stringResource(R.string.you_firmware_percent, it) }
-                        ?: stringResource(R.string.you_firmware_not_connected),
-                )
-                InfoLine(
-                    stringResource(R.string.you_firmware_service),
-                    stringResource(
-                        when (info?.dfuAvailable) {
-                            true -> R.string.you_firmware_service_available
-                            false -> R.string.you_firmware_service_not_found
-                            null -> R.string.you_firmware_service_unknown
-                        },
-                    ),
-                )
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text(stringResource(R.string.you_firmware_this_strap), color = Color.White, style = GlowType.cardTitle)
+                    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                        Text(stringResource(R.string.you_firmware_title), color = Color.White.copy(alpha = 0.78f), style = GlowType.secondary)
+                        Text(
+                            info?.firmware ?: c?.firmware ?: stringResource(R.string.you_firmware_unknown), color = Color.White,
+                            style = GlowType.sentence.copy(fontSize = 34.sp, lineHeight = 40.sp),
+                        )
+                    }
+                    Row(Modifier.fillMaxWidth().padding(top = 4.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        info?.hardware?.let { Fact(stringResource(R.string.you_firmware_hardware), it, Modifier.weight(1f)) }
+                        Fact(
+                            stringResource(R.string.you_firmware_battery),
+                            c?.batteryPercent?.let { stringResource(R.string.you_firmware_percent, it) }
+                                ?: stringResource(R.string.you_firmware_not_connected),
+                            Modifier.weight(1f),
+                        )
+                        Fact(
+                            stringResource(R.string.you_firmware_service),
+                            stringResource(
+                                when (info?.dfuAvailable) {
+                                    true -> R.string.you_firmware_service_available
+                                    false -> R.string.you_firmware_service_not_found
+                                    null -> R.string.you_firmware_service_unknown
+                                },
+                            ),
+                            Modifier.weight(1f),
+                        )
+                    }
+                }
             }
         }
 
         item { StepPanel(step, vm, onInstall = { confirm = it }) }
 
         item {
-            PageRows {
+            OutlinePanel {
                 // Update checks need a signed-in Zepp account; its page is a row away, as on the Strap page.
                 PageRow(
                     stringResource(R.string.you_strap_row_zepp),
@@ -188,7 +205,7 @@ private fun StepPanel(step: FirmwareStep, vm: FirmwareViewModel, onInstall: (Rea
             }
             FirmwareStep.Installed -> {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Icon(AppIcons.CheckCircle, null, tint = MetricColors.good)
+                    Icon(AppIcons.CheckCircle, null, tint = Color.White)
                     CardTitle(stringResource(R.string.you_firmware_installed))
                 }
                 Body(stringResource(R.string.you_firmware_installed_text))
@@ -210,7 +227,7 @@ private fun StepPanel(step: FirmwareStep, vm: FirmwareViewModel, onInstall: (Rea
 private fun CheckResult(result: UpdateCheck, vm: FirmwareViewModel) {
     if (result.upToDate) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            Icon(AppIcons.CheckCircle, null, tint = MetricColors.good)
+            Icon(AppIcons.CheckCircle, null, tint = Color.White)
             CardTitle(stringResource(R.string.you_firmware_up_to_date))
         }
         Body(stringResource(R.string.you_firmware_up_to_date_text))
@@ -242,6 +259,7 @@ fun ZeppAccountScreen(vm: FirmwareViewModel, contentPadding: PaddingValues, onBa
     BackHandler(onBack = onBack)
     val account by vm.account.collectAsStateWithLifecycle()
     val installing = vm.step.collectAsStateWithLifecycle().value is FirmwareStep.Installing
+    PageLight(StrapPageLight)
     ScreenList(contentPadding, gutter = GlowLayout.Gutter) {
         item { PageHeader(stringResource(R.string.you_zepp_title), onBack) }
         item { AccountPanel(account, enabled = !installing, onSave = vm::saveAccount, onClear = vm::clearAccount, onSignIn = vm::saveSignIn) }
@@ -370,6 +388,15 @@ private fun Point(icon: ImageVector, title: String, body: String) {
             Text(title, style = GlowType.body, color = Color.White)
             PageNote(body)
         }
+    }
+}
+
+/** One of the three small facts under the firmware number: a label over its value. */
+@Composable
+private fun Fact(label: String, value: String, modifier: Modifier = Modifier) {
+    Column(modifier, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text(label, color = Color.White.copy(alpha = 0.72f), style = GlowType.secondary.copy(fontSize = 12.sp, lineHeight = 16.sp), maxLines = 1)
+        Text(value, color = Color.White, style = GlowType.body, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }
 

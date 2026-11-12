@@ -2,7 +2,13 @@ package org.openstrap.app.ui.device
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
 import androidx.compose.runtime.Composable
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import org.openstrap.app.ui.components.PageLight
 import androidx.compose.runtime.remember
 import androidx.compose.ui.res.stringResource
 import org.openstrap.app.R
@@ -37,34 +43,36 @@ fun BackupPage(
     // Read again whenever the state changes, so "today" follows the last backup.
     val now = remember(state, backingUp) { System.currentTimeMillis() / 1000 }
     val toggle = { on: Boolean -> if (on) onTurnOn() else onTurnOff() }
+    PageLight(YouLight)
     ScreenList(contentPadding, gutter = GlowLayout.Gutter) {
         item { PageHeader(stringResource(R.string.you_backup_title), onBack) }
         item {
-            PageRows {
-                PageSwitchRow(
-                    stringResource(R.string.you_backup_automatic), BackupCopy.status(state, now), state.on, toggle, divider = false,
-                    icon = AppIcons.ShieldCheck,
+            SwitchHero(
+                AppIcons.ShieldCheck, stringResource(R.string.you_backup_automatic), BackupCopy.status(state, now), state.on, toggle,
+                below = if (!state.on) null else {
+                    {
+                        PageRow(
+                            stringResource(R.string.you_backup_folder), BackupCopy.folder(state), onClick = onFolder, below = true,
+                            icon = AppIcons.FolderOpen,
+                        )
+                        PageRow(
+                            stringResource(R.string.you_backup_now),
+                            stringResource(if (backingUp) R.string.you_backup_now_running else R.string.you_backup_now_note),
+                            onClick = onBackUpNow, below = true, enabled = !backingUp, icon = AppIcons.CloudArrowDown,
+                        )
+                    }
+                },
+            )
+        }
+        item {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                PlaceTile(
+                    AppIcons.ArrowCounterClockwise, stringResource(R.string.you_action_restore), stringResource(R.string.you_backup_restore_note),
+                    onRestore, Modifier.weight(1f), height = 170.dp, caret = false,
                 )
-                if (state.on) {
-                    PageRow(
-                        stringResource(R.string.you_backup_folder), BackupCopy.folder(state), onClick = onFolder, below = true,
-                        icon = AppIcons.FolderOpen,
-                    )
-                    PageRow(
-                        stringResource(R.string.you_backup_now),
-                        stringResource(if (backingUp) R.string.you_backup_now_running else R.string.you_backup_now_note),
-                        onClick = onBackUpNow, below = true, enabled = !backingUp, icon = AppIcons.CloudArrowDown,
-                    )
-                }
-                PageRow(
-                    stringResource(R.string.you_action_restore), stringResource(R.string.you_backup_restore_note), onClick = onRestore,
-                    below = true,
-                    icon = AppIcons.ArrowCounterClockwise,
-                )
-                PageRow(
-                    stringResource(R.string.you_backup_save_copy), stringResource(R.string.you_backup_save_copy_note), onClick = onSaveCopy,
-                    below = true,
-                    icon = AppIcons.DownloadSimple,
+                PlaceTile(
+                    AppIcons.DownloadSimple, stringResource(R.string.you_backup_save_copy), stringResource(R.string.you_backup_save_copy_note),
+                    onSaveCopy, Modifier.weight(1f), height = 170.dp, caret = false,
                 )
             }
         }

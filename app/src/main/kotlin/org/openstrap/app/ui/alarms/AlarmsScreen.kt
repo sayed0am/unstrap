@@ -172,6 +172,7 @@ fun AlarmsScreen(
             )
         }
     }
+    org.openstrap.app.ui.components.PageLight(org.openstrap.app.ui.device.StrapPageLight)
     ScreenList(contentPadding, gutter = GlowLayout.Gutter) {
         item { PageHeader(stringResource(R.string.you_alarms_title), onBack) }
         (state.error ?: state.alarmsError)?.let { msg -> item { ErrorPanel(msg, state.busy, vm::refresh) } }
@@ -193,6 +194,7 @@ fun AlarmsScreen(
 @Composable
 fun HealthAlertsScreen(vm: AlarmsViewModel, state: AlarmsUiState, contentPadding: PaddingValues, onBack: () -> Unit) {
     BackHandler(onBack = onBack)
+    org.openstrap.app.ui.components.PageLight(org.openstrap.app.ui.device.StrapPageLight)
     ScreenList(contentPadding, gutter = GlowLayout.Gutter) {
         item { PageHeader(stringResource(R.string.you_health_title), onBack) }
         (state.error ?: state.healthError)?.let { msg -> item { ErrorPanel(msg, state.busy, vm::refresh) } }

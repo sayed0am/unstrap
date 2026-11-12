@@ -124,6 +124,7 @@ fun PhoneAlertsScreen(vm: PhoneAlertsViewModel, contentPadding: PaddingValues, o
         Unit
     }
 
+    org.openstrap.app.ui.components.PageLight(org.openstrap.app.ui.device.StrapPageLight)
     ScreenList(contentPadding, gutter = GlowLayout.Gutter) {
         item { PageHeader(stringResource(R.string.you_phone_title), onBack) }
         item {

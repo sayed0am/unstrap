@@ -1,6 +1,5 @@
 package org.openstrap.app.ui.dashboard
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.PaddingValues
@@ -10,7 +9,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -43,9 +41,9 @@ fun ScreenList(
     val column = org.openstrap.app.ui.glow.LocalPageColumn.current
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val side = org.openstrap.app.ui.glow.GlowLayout.pageSide(maxWidth, column, gutter)
-        // The status bar gets an opaque strip so cards don't scroll underneath the clock.
+        // Transparent: the page host (or the screen's light) paints the ground and the light behind the list.
         LazyColumn(
-            Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).statusBarsPadding(),
+            Modifier.fillMaxSize().statusBarsPadding(),
             state = state,
             contentPadding = PaddingValues(
                 start = side, end = side,

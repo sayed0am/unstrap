@@ -25,7 +25,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
@@ -36,6 +35,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.foundation.layout.Spacer
+import org.openstrap.app.ui.components.PageLight
+import org.openstrap.app.ui.theme.GlowShapes
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
@@ -63,15 +66,11 @@ import org.openstrap.app.ui.alarms.healthAlertsSummary
 import org.openstrap.app.ui.alarms.phoneAlertsSummary
 import org.openstrap.app.ui.dashboard.agoText
 import org.openstrap.app.ui.firmware.FirmwareViewModel
-import org.openstrap.app.ui.glow.draw.CoreShape
 import org.openstrap.app.ui.glow.DestructiveInk
 import org.openstrap.app.ui.glow.HeroValue
-import org.openstrap.app.ui.glow.GlowCard
 import org.openstrap.app.ui.glow.GlowLayout
-import org.openstrap.app.ui.glow.draw.GlowStyle
 import org.openstrap.app.ui.glow.PageSwitchRow
 import org.openstrap.app.ui.glow.GlowType
-import org.openstrap.app.ui.glow.draw.LightAngle
 import org.openstrap.app.ui.glow.PageButton
 import org.openstrap.app.ui.glow.PageConfirm
 import org.openstrap.app.ui.glow.PageField
@@ -204,6 +203,7 @@ fun DeviceScreen(
         )
     }
 
+    PageLight(StrapPageLight)
     ScreenList(contentPadding, gutter = GlowLayout.Gutter) {
         item { PageHeader(stringResource(R.string.you_strap_title), onBack) }
 
@@ -264,49 +264,54 @@ fun DeviceScreen(
                     stringResource(R.string.you_strap_row_health_alerts), healthAlertsSummary(alarms) ?: waiting, onClick = onHealthAlerts,
                     icon = AppIcons.Heartbeat, selected = selected == PageRowKeys.HEALTH_ALERTS,
                 )
-                PageSwitchRow(
-                    stringResource(R.string.you_strap_row_off_body), null, wearReminder, vm::setWearReminder, icon = AppIcons.HandPalm,
-                )
-                KeepConnectedRow(vm, keepConnected, device.address)
-                val firmware = info?.firmware ?: (connection as? ConnectionState.Connected)?.firmware
-                if (FirmwareViewModel.UPDATES_ENABLED) {
-                    PageRow(
-                        stringResource(R.string.you_strap_row_firmware),
-                        firmware ?: stringResource(R.string.you_strap_check_for_updates),
-                        onClick = onFirmware, icon = AppIcons.Cpu, selected = selected == PageRowKeys.FIRMWARE,
-                    )
-                } else if (firmware != null) {
-                    PageRow(stringResource(R.string.you_strap_row_firmware), firmware, icon = AppIcons.Cpu)
-                }
-                PageRow(
-                    stringResource(R.string.you_strap_row_zepp),
-                    stringResource(if (zeppSignedIn) R.string.you_strap_signed_in else R.string.you_strap_not_signed_in),
-                    onClick = onZeppAccount, icon = AppIcons.Key, selected = selected == PageRowKeys.ZEPP_ACCOUNT,
-                )
             }
         }
         item {
             PageRows {
+                PageSwitchRow(
+                    stringResource(R.string.you_strap_row_off_body), null, wearReminder, vm::setWearReminder, divider = false,
+                    icon = AppIcons.HandPalm,
+                )
+                KeepConnectedRow(vm, keepConnected, device.address)
+            }
+        }
+        item {
+            val firmware = info?.firmware ?: (connection as? ConnectionState.Connected)?.firmware
+            OutlinePanel {
                 var first = true
-                if (connection is ConnectionState.Connected) {
+                if (FirmwareViewModel.UPDATES_ENABLED) {
                     PageRow(
-                        stringResource(R.string.you_strap_disconnect), onClick = { confirmDisconnect = true }, divider = false,
-                        icon = AppIcons.LinkBreak,
+                        stringResource(R.string.you_strap_row_firmware),
+                        firmware ?: stringResource(R.string.you_strap_check_for_updates),
+                        onClick = onFirmware, divider = false, icon = AppIcons.Cpu, selected = selected == PageRowKeys.FIRMWARE,
                     )
                     first = false
-                }
-                if (connection is ConnectionState.Connected && info?.canRestart == true) {
-                    PageRow(
-                        stringResource(R.string.you_strap_row_restart), onClick = { confirmRestart = true }, divider = !first,
-                        icon = AppIcons.ShutDown,
-                    )
+                } else if (firmware != null) {
+                    PageRow(stringResource(R.string.you_strap_row_firmware), firmware, divider = false, icon = AppIcons.Cpu)
                     first = false
                 }
                 PageRow(
-                    stringResource(R.string.you_strap_row_forget), onClick = { confirmForget = true }, divider = !first,
-                    titleColor = DestructiveInk,
-                    icon = AppIcons.Trash,
+                    stringResource(R.string.you_strap_row_zepp),
+                    stringResource(if (zeppSignedIn) R.string.you_strap_signed_in else R.string.you_strap_not_signed_in),
+                    onClick = onZeppAccount, divider = !first, icon = AppIcons.Key, selected = selected == PageRowKeys.ZEPP_ACCOUNT,
                 )
+            }
+        }
+        item {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                val connected = connection is ConnectionState.Connected
+                val canRestart = connected && info?.canRestart == true
+                if (connected || canRestart) Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    if (connected) PageButton(
+                        stringResource(R.string.you_strap_disconnect), { confirmDisconnect = true }, Modifier.weight(1f).height(52.dp),
+                        icon = AppIcons.LinkBreak,
+                    )
+                    if (canRestart) PageButton(
+                        stringResource(R.string.you_strap_row_restart), { confirmRestart = true }, Modifier.weight(1f).height(52.dp),
+                        icon = AppIcons.ShutDown,
+                    )
+                }
+                OutlinePill(stringResource(R.string.you_strap_row_forget), AppIcons.Trash, { confirmForget = true })
             }
         }
     }
@@ -404,15 +409,19 @@ internal fun StrapHero(name: String, connection: ConnectionState, sync: SyncStat
     val now by androidx.compose.runtime.produceState(System.currentTimeMillis() / 1000) {
         while (true) { kotlinx.coroutines.delay(30_000); value = System.currentTimeMillis() / 1000 }
     }
-    GlowCard(StrapGlow, Modifier.fillMaxWidth()) {
+    PlaceHero(Modifier.strapHero(), Modifier.heightIn(min = 196.dp)) {
         Box(Modifier.fillMaxWidth()) {
             Column(Modifier.fillMaxWidth().padding(end = 112.dp)) {
                 Text(name, color = Color.White, style = GlowType.cardTitle, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Text(
-                    strapStateLine(connection, sync, lastSeen, now, lastSync = lastSync),
-                    color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary,
-                    modifier = Modifier.padding(top = 4.dp),
-                )
+                // The small status dot beside the state: green while connected, amber when it isn't (decision 9).
+                Row(Modifier.padding(top = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Box(Modifier.size(7.dp).background(if (connected != null && sync !is SyncState.Failed) MetricColors.good else MetricColors.warn, CircleShape))
+                    Spacer(Modifier.width(7.dp))
+                    Text(
+                        strapStateLine(connection, sync, lastSeen, now, lastSync = lastSync),
+                        color = Color.White.copy(alpha = 0.82f), style = GlowType.secondary.copy(fontSize = 14.sp, lineHeight = 20.sp),
+                    )
+                }
             }
             // 5 dp under it, so the space below the battery matches the space the title's line height leaves above it.
             // Clear of the strap on the right too, which sits centred and so lower as this grows.
@@ -453,20 +462,12 @@ internal fun StrapHero(name: String, connection: ConnectionState, sync: SyncStat
 }
 
 
-/**
- * The strap's card: a quiet grey-green lit from above, so it doesn't read as any metric. The page's hero, so its light
- * is L4 at full strength (spec 2.1).
- */
-internal val StrapGlow = GlowStyle(
-    color = Color(0xFF6AAF98), coreShape = CoreShape.Radial, coreWidth = 1.2f, coreHeight = 1.1f, coreBlur = 30.dp,
-    coreLightness = 0.03f, toneWidth = 0.dp, lightAngle = LightAngle.Above,
-)
-
 /** The protocol log, for bug reports, opened from the You page; the whole log can be copied. */
 @Composable
 fun DiagnosticsScreen(lines: List<String>, contentPadding: PaddingValues, onBack: () -> Unit) {
     BackHandler(onBack = onBack)
     val context = LocalContext.current
+    PageLight(org.openstrap.app.ui.theme.ScreenLight(org.openstrap.app.ui.theme.Blends.You, angle = 100f, strength = 0.65f, heroCenterY = 160f))
     ScreenList(contentPadding, gutter = GlowLayout.Gutter) {
         item {
             val label = stringResource(R.string.you_diagnostics_clip_label)
@@ -474,7 +475,7 @@ fun DiagnosticsScreen(lines: List<String>, contentPadding: PaddingValues, onBack
                 PageButton(stringResource(R.string.you_diagnostics_copy), {
                     context.getSystemService(ClipboardManager::class.java)
                         .setPrimaryClip(ClipData.newPlainText(label, lines.joinToString("\n")))
-                }, Modifier.height(40.dp), icon = AppIcons.Copy)
+                }, Modifier.height(44.dp), icon = AppIcons.Copy)
             }
         }
         item {
@@ -483,7 +484,7 @@ fun DiagnosticsScreen(lines: List<String>, contentPadding: PaddingValues, onBack
                 note = pluralStringResource(R.plurals.you_diagnostics_lines, lines.size, lines.size),
             ) {
                 Box(
-                    Modifier.fillMaxWidth().heightIn(max = 520.dp).clip(RoundedCornerShape(12.dp)).background(Color.Black)
+                    Modifier.fillMaxWidth().heightIn(max = 520.dp).clip(GlowShapes.Tile).background(Color.Black)
                         .verticalScroll(rememberScrollState()).horizontalScroll(rememberScrollState()).padding(12.dp),
                 ) {
                     Text(
