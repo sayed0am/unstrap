@@ -13,11 +13,11 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithCache
-import androidx.compose.ui.geometry.CornerRadius
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.addOutline
 import androidx.compose.ui.graphics.ShaderBrush
+import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.toArgb
@@ -27,7 +27,8 @@ import kotlin.math.abs
 import kotlin.math.floor
 import kotlin.math.sin
 import kotlinx.coroutines.flow.first
-import org.openstrap.app.ui.theme.MetricColors
+import org.openstrap.app.ui.theme.Blends
+import org.openstrap.app.ui.theme.GlowShapes
 
 /**
  * A chroma ring round a card's border: a faint ring always there, with three lights sliding round it at their own
@@ -61,12 +62,11 @@ fun Modifier.movingBorder(): Modifier {
         }
     }
     return drawWithCache {
-        val corner = GlowLayout.CardCorner.toPx()
+        val path = Path().apply { addOutline(GlowShapes.Card.createOutline(size, layoutDirection, this@drawWithCache)) }
         val ring = RingWidth.toPx()
         val halo = HaloWidth.toPx()
         val cx = size.width / 2f
         val cy = size.height / 2f
-        val inset = ring / 2f
         val colors = IntArray(RING_SAMPLES + 1)
         val glows = IntArray(RING_SAMPLES + 1)
         val stops = FloatArray(RING_SAMPLES + 1) { it.toFloat() / RING_SAMPLES }
@@ -77,9 +77,11 @@ fun Modifier.movingBorder(): Modifier {
             // Starting at the top: the sweep's zero is at three o'clock.
             val ringShader = SweepGradient(cx, cy, colors, stops).apply { setLocalMatrix(matrix) }
             val glowShader = SweepGradient(cx, cy, glows, stops).apply { setLocalMatrix(matrix) }
-            val box = Size(size.width - ring, size.height - ring)
-            drawRoundRect(ShaderBrush(glowShader), Offset(inset, inset), box, CornerRadius(corner), style = Stroke(halo))
-            drawRoundRect(ShaderBrush(ringShader), Offset(inset, inset), box, CornerRadius(corner - inset), style = Stroke(ring))
+            // Clipped to the squircle, so half of each stroke shows: the ring and its halo follow the card's edge.
+            clipPath(path) {
+                drawPath(path, ShaderBrush(glowShader), style = Stroke(halo * 2f))
+                drawPath(path, ShaderBrush(ringShader), style = Stroke(ring * 2f))
+            }
         }
     }
 }
@@ -138,7 +140,7 @@ private fun noise(x: Float, y: Float): Float {
  * The lights' colours: the cards' own colours in spectrum order, Heart's red, Energy's orange, Calories' gold, Steps'
  * lime, Recovery's teal, Sleep's blue and the evening's violet, looping back to red.
  */
-private val Rainbow = with(MetricColors) { listOf(heart, charge, calories, steps, readiness, sleepDeep, evening) }
+private val Rainbow = with(Blends) { listOf(Heart, Energy, Calories, Steps, Recovery, Sleep, Evening).map { it.first } }
 
 /** The ring's dim base, and the white the lights are mixed with so they glow rather than shout. */
 private val RingBase = Color(0xFF333340)

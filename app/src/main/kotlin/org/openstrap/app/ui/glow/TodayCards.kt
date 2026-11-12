@@ -132,10 +132,13 @@ internal fun HeroNumber(value: String?, lines: List<String>, modifier: Modifier 
             Spacer(Modifier.width(12.dp))
         }
         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            lines.forEach { Text(it, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary, maxLines = 1) }
+            lines.forEach { Text(it, color = Color.White.copy(alpha = HERO_LINE_ALPHA), style = GlowType.secondary, maxLines = 1) }
         }
     }
 }
+
+/** The words beside the hero number: white at 92% (Today boards). */
+private const val HERO_LINE_ALPHA = 0.92f
 
 /* ---------------------------------------------- Strips ---------------------------------------------- */
 
