@@ -7,7 +7,10 @@ import org.openstrap.app.presentation.dotFormat
 import org.openstrap.app.presentation.Ranges
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.shape.RoundedCornerShape
+import org.openstrap.app.ui.theme.Blends
+import org.openstrap.app.ui.theme.GlowShapes
+import org.openstrap.app.ui.theme.ScreenLight
+import org.openstrap.app.ui.glow.draw.LightAngle
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -110,7 +113,10 @@ fun GlowSleepScreen(
     var breathingInfo by rememberSaveable { mutableStateOf(false) }
     // The Sleep tab is always at night (spec 2.6): calm glow, light from below only.
     CompositionLocalProvider(LocalGlowPaused provides { list.isScrollInProgress }, LocalGlowMood provides GlowMood.Night) {
-        GlowScreenList(contentPadding, list) {
+        // Always night, light from below (Matrix board): Sleep's blend at 65%, the top stays dark.
+        GlowScreenList(
+            contentPadding, list, light = ScreenLight(Blends.Sleep, LightAngle.Below, ScreenLight.NIGHT, 190f),
+        ) {
             full { header() }
             // With naps and a breathing summary the two are a Small pair; alone, either is a Wide.
             val pair = (breathing != null || firstNights) && state.naps.isNotEmpty()
@@ -204,8 +210,8 @@ private fun NightHero(state: DayUiState, firstNights: Boolean, onRestore: (org.o
                     )
                     Spacer(Modifier.height(10.dp))
                     Legend(
-                        totals.map { (stage, seconds) -> TabCopy.stageTotal(stage, seconds) to stageColor(stage) },
-                        swatch = RoundedCornerShape(2.dp), layout = LegendLayout.Flow,
+                        totals.map { (stage, seconds) -> TabCopy.stageTotal(stage, seconds) to stageMark(stage) },
+                        swatch = GlowShapes.Small, layout = LegendLayout.Flow,
                     )
                 }
             }
@@ -252,9 +258,13 @@ internal fun sleepHypnogramStages(spans: List<StageSpan>): List<GlowStage> {
     return spans.map { GlowStage((it.start - start).toFloat() / (end - start), (it.end - start).toFloat() / (end - start), rows[it.stage] ?: 0) }
 }
 
+/** A stage's colour as a small mark (legend dot, hypnogram band): Deep lightened to 3:1 (decision 11). The bars use [stageColor]. */
+internal fun stageMark(stage: Int): Color =
+    if (stage == org.openstrap.app.data.db.SleepStage.DEEP) Blends.SleepDeepMark else stageColor(stage)
+
 /** Each hypnogram row's stage colour, Awake at the top, Deep at the foot. */
 internal val SleepRowColors: List<Color> = DayViewModel.SLEEP_STAGE_ROWS.let { rows ->
-    (0 until rows.size).map { row -> stageColor(rows.entries.first { it.value == row }.key) }
+    (0 until rows.size).map { row -> stageMark(rows.entries.first { it.value == row }.key) }
 }
 
 /** The vitals while asleep against your previous nights, each opening its metric scoped to the night. */
