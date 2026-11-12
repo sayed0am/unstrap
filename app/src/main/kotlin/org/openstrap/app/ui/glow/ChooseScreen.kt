@@ -81,6 +81,7 @@ import org.openstrap.app.ui.workout.sportBlend
 import org.openstrap.app.ui.theme.Blend
 import org.openstrap.app.ui.theme.Blends
 import org.openstrap.app.ui.theme.GlowShapes
+import org.openstrap.app.ui.theme.clearGlass
 import org.openstrap.app.ui.theme.ScreenLight
 import org.openstrap.app.ui.theme.tintedGlass
 import androidx.compose.ui.graphics.Brush
@@ -412,11 +413,14 @@ private fun SearchResults(query: String, selected: Int, onPick: (Int) -> Unit) {
     else SportTiles(null, found, { if (it in Workouts.EVERYDAY) Workouts.shortName(it) else Workouts.sportName(it) }, { it == selected }, pick)
 }
 
+/** The search field's glass: white 12% with the lit edge (board WorkoutChoose). */
+private const val SearchFill = 0.12f
+
 /** Choose's search field before it's typed in: it looks like the field and opens [SearchPage]. */
 @Composable
 private fun SearchEntry(hint: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
     Row(
-        modifier.fillMaxWidth().height(48.dp).clip(GlowLayout.TileShape).background(Raised)
+        modifier.fillMaxWidth().height(48.dp).clip(GlowLayout.TileShape).clearGlass(GlowLayout.TileShape, SearchFill)
             .pressClickable(onClick, GlowLayout.TileShape).semantics { role = Role.Button }.padding(horizontal = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -510,7 +514,7 @@ private fun SearchField(query: String, hint: String, modifier: Modifier = Modifi
         keyboardActions = KeyboardActions(onSearch = { keyboard?.hide() }),
         decorationBox = { field ->
             Row(
-                Modifier.fillMaxWidth().height(48.dp).clip(GlowLayout.TileShape).background(Raised).padding(horizontal = 16.dp),
+                Modifier.fillMaxWidth().height(48.dp).clip(GlowLayout.TileShape).clearGlass(GlowLayout.TileShape, SearchFill).padding(horizontal = 16.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Icon(SportIcons.Search, null, tint = Color.White.copy(alpha = GlowType.CAPTION_ALPHA), modifier = Modifier.size(18.dp))

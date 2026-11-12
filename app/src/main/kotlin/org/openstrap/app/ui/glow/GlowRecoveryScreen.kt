@@ -375,7 +375,9 @@ private fun ChargeTall(
     GlowCard(GlowStyle.Ember.copy(lightLevel = (now ?: 0) / 100f), modifier, onClick = onOpen) {
         Column(Modifier.fillMaxHeight()) {
             GlowHeader(stringResource(R.string.glow_recovery_energy), tag = tag)
-            Spacer(Modifier.weight(1f))
+            // The number sits under the title, inside the dark pool at the top (board TabRecovery), not at the foot,
+            // where a tall card runs under the tab bar.
+            Spacer(Modifier.height(12.dp))
             HeroFigure(
                 now?.toString(),
                 when {
