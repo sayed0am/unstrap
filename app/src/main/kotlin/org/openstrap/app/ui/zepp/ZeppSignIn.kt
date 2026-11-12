@@ -59,6 +59,15 @@ import org.openstrap.app.ui.glow.GlowType
 import org.openstrap.app.ui.glow.PageButton
 import org.openstrap.app.ui.glow.OptionButton
 import org.openstrap.app.ui.glow.PageNote
+import org.openstrap.app.ui.glow.StrapDrawing
+import org.openstrap.app.ui.glow.StrapLight
+import org.openstrap.app.ui.glow.topHairline
+import org.openstrap.app.ui.device.placeHero
+import org.openstrap.app.ui.theme.Blends
+import org.openstrap.app.ui.theme.GlowShapes
+import org.openstrap.app.ui.theme.ScreenLight
+import org.openstrap.app.ui.theme.screenLight
+import androidx.compose.foundation.layout.heightIn
 import org.openstrap.app.ui.glow.PagePanel
 import org.openstrap.app.ui.glow.PageProgress
 import org.openstrap.app.ui.glow.PageTextButton
@@ -142,7 +151,11 @@ fun ZeppSignInDialog(
 
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         // Black to the screen's edges, the page itself in one centred column like every other page (spec 2.4).
-        Box(Modifier.fillMaxSize().background(Color.Black), contentAlignment = Alignment.TopCenter) {
+        // Lit by the strap's graphite from the upper left like the Setup boards; the light paints the ground too.
+        Box(
+            Modifier.fillMaxSize().screenLight(ScreenLight(Blends.Strap, angle = 150f, strength = 1f, heroCenterY = 150f)),
+            contentAlignment = Alignment.TopCenter,
+        ) {
             Column(Modifier.widthIn(max = GlowLayout.PageMaxWidth).fillMaxSize()) {
                 // A page's top: the round button (a close, since this sits over the page it came from) and the title.
                 val close = stringResource(R.string.you_zepp_close)
@@ -198,7 +211,7 @@ fun ZeppSignInDialog(
                         val thirdParty = s is SignInStep.ThirdParty
                         PagePanel {
                             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                                Icon(AppIcons.WarningCircle, null, Modifier.size(20.dp), tint = MetricColors.warn)
+                                Icon(AppIcons.WarningCircle, null, Modifier.size(20.dp), tint = Color.White)
                                 Text(
                                     stringResource(if (thirdParty) R.string.you_zepp_use_email else R.string.you_zepp_no_devices),
                                     color = Color.White, style = GlowType.cardTitle, maxLines = 1,
@@ -242,7 +255,18 @@ private fun FoundStrap(
     val canConfirm = strap != null && (strap.authKey != null || !requireKey)
     var showKey by remember { mutableStateOf(false) }
     Column(Modifier.verticalScroll(rememberScrollState()).padding(GlowLayout.Gutter), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        PagePanel(title = stringResource(if (strap != null) R.string.you_zepp_found else R.string.you_zepp_not_found)) {
+        Column(
+            Modifier.fillMaxWidth().clip(GlowShapes.Card)
+                .placeHero(200f, 0f to Blends.Strap.first.copy(alpha = 0.42f), 0.55f to Blends.Strap.second.copy(alpha = 0.16f), 1f to Color.White.copy(alpha = 0.05f))
+                .padding(start = 20.dp, end = 20.dp, top = 18.dp, bottom = 10.dp),
+        ) {
+            Row(Modifier.fillMaxWidth().padding(bottom = 12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                Text(
+                    stringResource(if (strap != null) R.string.you_zepp_found else R.string.you_zepp_not_found), Modifier.weight(1f),
+                    color = Color.White, style = GlowType.cardTitle, maxLines = 1,
+                )
+                if (strap != null) StrapDrawing(StrapLight, lit = true, syncing = false, Modifier.size(width = 52.dp, height = 64.dp))
+            }
             if (strap == null) {
                 Text(
                     if (listing.devices.isEmpty()) {
@@ -254,7 +278,7 @@ private fun FoundStrap(
                 )
             } else {
                 Line(stringResource(R.string.you_pair_address), strap.macAddress)
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(Modifier.fillMaxWidth().topHairline(true, Color.White.copy(alpha = 0.1f)).heightIn(min = 44.dp), verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         stringResource(R.string.you_pair_key), color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA),
                         style = GlowType.body, modifier = Modifier.weight(1f),
@@ -280,7 +304,7 @@ private fun FoundStrap(
                     stringResource(if (strap.china) R.string.you_zepp_region_china else R.string.you_zepp_region_global),
                 )
                 if (strap.authKey == null) {
-                    PageNote(stringResource(R.string.you_zepp_no_key), color = MetricColors.warn)
+                    PageNote(stringResource(R.string.you_zepp_no_key), color = Color.White)
                 }
             }
             Line(stringResource(R.string.you_zepp_user), listing.session.userId)
@@ -290,10 +314,10 @@ private fun FoundStrap(
         }
         PageNote(stringResource(R.string.you_zepp_token_stays))
         PageButton(
-            if (canConfirm) confirmLabel else stringResource(R.string.you_zepp_keep_sign_in), { onConfirm(strap) }, Modifier.fillMaxWidth(),
-            primary = true,
+            if (canConfirm) confirmLabel else stringResource(R.string.you_zepp_keep_sign_in), { onConfirm(strap) }, Modifier.fillMaxWidth().height(52.dp),
+            primary = true, icon = if (canConfirm) AppIcons.Bluetooth else null,
         )
-        PageButton(stringResource(R.string.you_zepp_other_account), onOtherAccount, Modifier.fillMaxWidth())
+        PageButton(stringResource(R.string.you_zepp_other_account), onOtherAccount, Modifier.fillMaxWidth().height(52.dp), icon = AppIcons.User)
         if (!canConfirm && requireKey) ComputerGuideButton()
     }
 }
@@ -301,7 +325,7 @@ private fun FoundStrap(
 @Composable
 private fun Line(label: String, value: String) {
     // The label is measured first and keeps to one line (spec 2.3), and the value takes what's left, ellipsized last.
-    Row(Modifier.fillMaxWidth()) {
+    Row(Modifier.fillMaxWidth().topHairline(true, Color.White.copy(alpha = 0.1f)).heightIn(min = 44.dp), verticalAlignment = Alignment.CenterVertically) {
         Text(label, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.body, maxLines = 1, modifier = Modifier.padding(end = 12.dp))
         Text(
             value, color = Color.White, style = GlowType.body, maxLines = 2, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,

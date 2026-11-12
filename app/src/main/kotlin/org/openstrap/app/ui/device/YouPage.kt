@@ -169,7 +169,7 @@ fun YouPage(
                 }
                 Text(
                     profile.summary(), Modifier.align(Alignment.BottomStart), color = Color.White,
-                    style = GlowType.sentence.copy(fontSize = 22.sp, lineHeight = 28.sp), maxLines = 2,
+                    style = GlowType.sentence, maxLines = 2,
                 )
             }
         }
@@ -178,17 +178,18 @@ fun YouPage(
                 PageRow(
                     org.openstrap.app.ui.workout.HeartZonesCopy.TITLE, org.openstrap.app.ui.workout.HeartZonesCopy.youLine(maxHeartRate), onClick = onHeartZones,
                     below = true, divider = false, icon = AppIcons.Heartbeat, selected = selected == PageRowKeys.HEART_ZONES,
+                    tint = Blends.Heart, iconSize = 36.dp,
                 )
-                PageRow(stringResource(R.string.you_row_goals), goalsLine(goals), onClick = onGoals, below = true, icon = AppIcons.Target)
+                PageRow(stringResource(R.string.you_row_goals), goalsLine(goals), onClick = onGoals, below = true, icon = AppIcons.Target, iconSize = 36.dp)
                 PageRow(
                     stringResource(R.string.you_row_sleep_goal), sleepGoalLine(goals, sleepNeedMinutes), onClick = onGoals, below = true,
-                    icon = AppIcons.Moon,
+                    icon = AppIcons.Moon, tint = Blends.Sleep, iconSize = 36.dp,
                 )
                 PageRow(
                     stringResource(R.string.you_row_goals_and_bests),
                     pluralStringResource(R.plurals.you_goals_and_bests_line, goals.workoutsPerWeek, goals.workoutsPerWeek),
                     onClick = onGoalsAndBests,
-                    below = true, icon = AppIcons.FlagCheckered, selected = selected == PageRowKeys.GOALS_AND_BESTS,
+                    below = true, icon = AppIcons.FlagCheckered, iconSize = 36.dp, selected = selected == PageRowKeys.GOALS_AND_BESTS,
                 )
             }
         }
@@ -212,7 +213,7 @@ fun YouPage(
         if (deletedSleep > 0) item {
             OutlineRow(
                 AppIcons.Trash, stringResource(R.string.you_row_deleted_sleep), onDeletedSleep,
-                iconFill = Blends.Sleep.first.copy(alpha = 0.26f),
+                iconFill = Blends.Sleep.first.copy(alpha = 0.26f), iconTint = Blends.Sleep.chart,
                 trailing = { CountChip(org.openstrap.app.ui.dashboard.SleepCopy.deletedCount(deletedSleep)) },
             )
         }

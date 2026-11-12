@@ -84,7 +84,7 @@ fun UpdatesPage(
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom) {
                     Text(
                         stringResource(R.string.you_updates_release, newest.versionName), Modifier.weight(1f), color = Color.White,
-                        style = GlowType.pageTitle.copy(fontWeight = FontWeight.Medium, fontSize = 24.sp, lineHeight = 30.sp), maxLines = 1,
+                        style = GlowType.pageTitle, maxLines = 1,
                     )
                     newest.publishedAt?.let { Text(UpdateCopy.date(it), color = Color.White.copy(alpha = 0.75f), style = GlowType.secondary) }
                 }
@@ -128,7 +128,7 @@ fun UpdatesPage(
                 Modifier.fillMaxWidth().clip(GlowShapes.Card).background(Paper.Fill).padding(20.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                Text(title, color = Paper.Ink, style = GlowType.cardTitle.copy(fontWeight = FontWeight.SemiBold, fontSize = 19.sp, lineHeight = 24.sp))
+                Text(title, color = Paper.Ink, style = GlowType.cardTitle, maxLines = 1)
                 shown.forEachIndexed { i, release ->
                     if (i > 0) Box(Modifier.fillMaxWidth().height(1.dp).background(Paper.Ink.copy(alpha = 0.1f)))
                     ReleaseNotesView(release)
@@ -151,7 +151,7 @@ private fun ReleaseNotesView(release: Release) {
     val blocks = remember(release.notes) { ReleaseNotes.parse(release.notes) }
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Text(release.versionName, color = Paper.Ink, style = GlowType.body.copy(fontWeight = FontWeight.Medium), modifier = Modifier.weight(1f))
+            Text(release.versionName, color = Paper.Ink, style = GlowType.body, modifier = Modifier.weight(1f))
             release.publishedAt?.let {
                 Text(UpdateCopy.date(it), color = Paper.Muted, style = GlowType.secondary)
             }
@@ -164,7 +164,7 @@ private fun ReleaseNotesView(release: Release) {
         }
         blocks.forEachIndexed { i, block -> when (block) {
             is NoteBlock.Heading -> Text(
-                spans(block.spans), color = Paper.Ink, style = GlowType.body.copy(fontWeight = FontWeight.Medium), modifier = Modifier.padding(top = 6.dp),
+                spans(block.spans), color = Paper.Ink, style = GlowType.body, modifier = Modifier.padding(top = 6.dp),
             )
             // The opening paragraph leads, larger; any later one reads like the bullets.
             is NoteBlock.Paragraph ->

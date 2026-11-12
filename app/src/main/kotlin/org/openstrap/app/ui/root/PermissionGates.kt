@@ -174,5 +174,11 @@ internal fun BluetoothBlockedDialog(gates: PermissionGates) {
         },
         onDismiss = gates::dismissBlocked,
         dismiss = stringResource(R.string.day_nearby_not_now),
+        icon = when (blocked) {
+            BlockedPermission.BLUETOOTH -> org.openstrap.app.ui.theme.AppIcons.Bluetooth
+            BlockedPermission.LOCATION -> org.openstrap.app.ui.theme.AppIcons.Location01
+            BlockedPermission.NOTIFICATIONS -> org.openstrap.app.ui.theme.AppIcons.Vibrate
+        },
+        dismissIcon = org.openstrap.app.ui.theme.AppIcons.X,
     )
 }

@@ -143,7 +143,7 @@ fun PhoneAlertsScreen(vm: PhoneAlertsViewModel, contentPadding: PaddingValues, o
                     divider = false,
                 )
                 if (phoneBlocked && !callPermission) {
-                    PageNote(stringResource(R.string.you_phone_calls_blocked), color = MetricColors.warn)
+                    PageNote(stringResource(R.string.you_phone_calls_blocked), color = Color.White)
                     PageButton(stringResource(R.string.you_phone_open_settings), openAppSettings, Modifier.fillMaxWidth())
                 }
                 if (calls && callPermission) {
@@ -151,7 +151,7 @@ fun PhoneAlertsScreen(vm: PhoneAlertsViewModel, contentPadding: PaddingValues, o
                         Text(stringResource(R.string.you_phone_call_buzz), style = GlowType.body, color = Color.White)
                         // Picking one plays it for a few seconds, so the two can be compared on the wrist.
                         GlowSegments(CallBuzz.entries.map { it.label }, callStyle.ordinal, { i -> vm.pickCallBuzz(CallBuzz.entries[i]) })
-                        callPreviewError?.let { PageNote(it, color = MetricColors.warn) }
+                        callPreviewError?.let { PageNote(it, color = Color.White) }
                     }
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text(stringResource(R.string.you_phone_call_length), style = GlowType.body, color = Color.White)
@@ -170,7 +170,7 @@ fun PhoneAlertsScreen(vm: PhoneAlertsViewModel, contentPadding: PaddingValues, o
                     },
                 )
                 if (notifications && !notificationAccess) {
-                    PageNote(stringResource(R.string.you_phone_notifications_access), color = MetricColors.warn)
+                    PageNote(stringResource(R.string.you_phone_notifications_access), color = Color.White)
                     PageButton(stringResource(R.string.you_phone_open_settings), openNotificationAccess, Modifier.fillMaxWidth())
                 }
                 if (notifications && notificationAccess) {
@@ -178,7 +178,7 @@ fun PhoneAlertsScreen(vm: PhoneAlertsViewModel, contentPadding: PaddingValues, o
                         Text(stringResource(R.string.you_phone_pattern), style = GlowType.body, color = Color.White)
                         // Picking a pattern plays it once, so it can be felt before the next notification.
                         GlowSegments(BuzzPattern.entries.map { it.label }, pattern.ordinal, { i -> vm.pickPattern(BuzzPattern.entries[i]) })
-                        previewError?.let { PageNote(it, color = MetricColors.warn) }
+                        previewError?.let { PageNote(it, color = Color.White) }
                     }
                     PageSwitchRow(
                         stringResource(R.string.you_phone_quiet), quietHoursSummary(quiet, calls && callPermission), quiet.on,
