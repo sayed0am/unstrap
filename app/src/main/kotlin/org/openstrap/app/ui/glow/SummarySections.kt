@@ -24,7 +24,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
+import org.openstrap.app.ui.theme.Blends
+import org.openstrap.app.ui.theme.GlowShapes
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -60,7 +61,6 @@ import org.openstrap.app.ui.workout.PhoneSummary
 import org.openstrap.app.ui.workout.RoundLine
 import org.openstrap.app.ui.workout.ZONE_COLORS
 import org.openstrap.app.ui.workout.ZONE_NAMES
-import org.openstrap.app.ui.workout.familyColor
 import org.openstrap.app.ui.dashboard.LocalHeartZones
 
 /*
@@ -283,7 +283,7 @@ private fun SentenceCard(title: String, sentence: String) {
 private fun SetsCard(groups: List<ExerciseSets>, maxHr: Int) {
     val heartZones = LocalHeartZones.current
     val shares = remember(groups) { FamilySummary.peakShares(groups.flatMap { g -> g.sets.map { it.peak } }) }
-    PictureCard(familyColor(Workouts.Family.Strength), Modifier.fillMaxWidth()) {
+    PictureCard(familyInk(Workouts.Family.Strength), Modifier.fillMaxWidth()) {
         EdgeTitle(stringResource(R.string.glow_summary_sets_title), stringResource(R.string.glow_summary_peak_heart_rate))
         var i = 0
         groups.forEachIndexed { gi, g ->
@@ -333,8 +333,8 @@ private fun RoundsCard(lines: List<RoundLine>, title: String, maxHr: Int) {
     val hardest = remember(lines) { FamilySummary.hardestRound(lines) }
     val labelled = lines.size <= LabelledRounds
     val gap = if (labelled) 6.dp else 3.dp
-    val shape = RoundedCornerShape(5.dp)
-    PictureCard(familyColor(Workouts.Family.Intervals), Modifier.fillMaxWidth()) {
+    val shape = GlowShapes.Small
+    PictureCard(familyInk(Workouts.Family.Intervals), Modifier.fillMaxWidth()) {
         EdgeTitle(title, stringResource(R.string.glow_summary_peak_then_rest))
         Row(Modifier.fillMaxWidth().height(84.dp).padding(top = 14.dp), horizontalArrangement = Arrangement.spacedBy(gap), verticalAlignment = Alignment.Bottom) {
             lines.forEachIndexed { i, r ->
@@ -382,8 +382,8 @@ private fun RepTimesCard(times: List<Long>) {
     val best = times.indexOf(fastest)
     val labelled = times.size <= LabelledRounds
     val gap = if (labelled) 6.dp else 3.dp
-    val shape = RoundedCornerShape(5.dp)
-    val color = familyColor(Workouts.Family.Intervals)
+    val shape = GlowShapes.Small
+    val color = familyInk(Workouts.Family.Intervals)
     PictureCard(color, Modifier.fillMaxWidth()) {
         EdgeTitle(stringResource(R.string.glow_summary_each_rep), stringResource(R.string.glow_summary_rep_times_time))
         Row(Modifier.fillMaxWidth().height(RoundColumnHeight + 14.dp).padding(top = 14.dp), horizontalArrangement = Arrangement.spacedBy(gap), verticalAlignment = Alignment.Bottom) {
@@ -417,7 +417,7 @@ private val RoundColumnHeight = 52.dp
  */
 @Composable
 private fun PeriodsCard(periods: List<PeriodLine>, of: Int, read: String?) {
-    val color = familyColor(Workouts.Family.Games)
+    val color = familyInk(Workouts.Family.Games)
     val shares = remember(periods) { FamilySummary.peakShares(periods.map { it.averageBpm }) }
     PictureCard(color, Modifier.fillMaxWidth()) {
         EdgeTitle(
@@ -491,7 +491,7 @@ internal fun ZoneStripPanel(zones: ZoneSeconds) {
 private fun ZonesCard(zones: ZoneSeconds) {
     val minutes = remember(zones) { FamilySummary.zoneMinutes(zones) }
     val most = zones.indices.maxByOrNull { zones[it] } ?: 0
-    PictureCard(ZONE_COLORS[most], Modifier.fillMaxWidth()) {
+    PictureCard(familyInk(Workouts.Family.IndoorCardio), Modifier.fillMaxWidth()) {
         EdgeTitle(stringResource(R.string.glow_summary_time_in_zones), FamilySummary.mostlyZone(zones))
         ZoneBar(
             zones, ZONE_COLORS, Modifier.padding(top = 10.dp, bottom = 6.dp), height = 12.dp, gap = 3.dp, corner = 4.dp, ends = 4.dp,
@@ -532,9 +532,9 @@ private fun IndoorHeartCard(readings: List<Pair<Long, Int>>, target: Pair<String
         target?.let { (text, reached) ->
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(
-                    Modifier.size(20.dp).background((if (reached) MetricColors.good else Color.White).copy(alpha = 0.16f), CircleShape),
+                    Modifier.size(20.dp).background((if (reached) Blends.Goals.first else Color.White).copy(alpha = 0.16f), CircleShape),
                     contentAlignment = Alignment.Center,
-                ) { Icon(if (reached) AppIcons.Tick02 else AppIcons.Target, null, tint = if (reached) MetricColors.good else Color.White, modifier = Modifier.size(12.dp)) }
+                ) { Icon(if (reached) AppIcons.Tick02 else AppIcons.Target, null, tint = if (reached) Blends.Goals.first else Color.White, modifier = Modifier.size(12.dp)) }
                 Text(text, color = Color.White, style = GlowType.secondary, modifier = Modifier.padding(start = 8.dp))
             }
         }
@@ -664,8 +664,8 @@ internal fun EarnedChips(lines: List<EarnedLine>) {
             lines.forEach { l ->
                 val (icon, color) = when (l.kind) {
                     EarnedLine.Kind.Best -> AppIcons.FlagCheckered to MetricColors.calories
-                    EarnedLine.Kind.Badge -> AppIcons.CheckCircle to MetricColors.good
-                    EarnedLine.Kind.Goal -> AppIcons.Target to if (l.met) MetricColors.good else Color.White
+                    EarnedLine.Kind.Badge -> AppIcons.CheckCircle to Blends.Goals.first
+                    EarnedLine.Kind.Goal -> AppIcons.Target to if (l.met) Blends.Goals.first else Color.White
                 }
                 val text = l.value?.let { stringResource(R.string.glow_summary_join, l.text, it) } ?: l.text
                 IconPill(text, null, icon = icon, tint = color, height = 36.dp, style = GlowType.secondary)

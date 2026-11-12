@@ -3,7 +3,6 @@ package org.openstrap.app.ui.glow
 import org.openstrap.app.R
 import org.openstrap.app.i18n.Strings
 import org.openstrap.app.presentation.DayWords
-import org.openstrap.app.ui.glow.draw.EdgeSurface
 import androidx.compose.ui.graphics.asAndroidPath
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.nativeCanvas
@@ -23,6 +22,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
+import org.openstrap.app.ui.theme.Blend
+import org.openstrap.app.ui.theme.Blends
+import org.openstrap.app.ui.theme.GlowShapes
+import org.openstrap.app.ui.theme.Ground
+import org.openstrap.app.ui.theme.litEdge
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -58,13 +62,10 @@ import org.openstrap.app.data.Strength
 import org.openstrap.app.data.Structure
 import org.openstrap.app.data.WorkoutRecorder
 import org.openstrap.app.data.Workouts
-import org.openstrap.app.ui.theme.AppIcons
-import org.openstrap.app.ui.theme.MetricColors
 import org.openstrap.app.presentation.EarnedLine
 import org.openstrap.app.ui.workout.FamilySummary
 import org.openstrap.app.ui.workout.PhoneSummary
 import org.openstrap.app.ui.workout.ZONE_COLORS
-import org.openstrap.app.ui.workout.familyColor
 import org.openstrap.app.ui.glow.draw.DotSize
 import org.openstrap.app.ui.dashboard.LocalHeartZones
 
@@ -320,28 +321,53 @@ internal object StoryRouteShape {
  */
 @Composable
 internal fun StoryCardView(card: StoryCard, photo: ImageBitmap?, route: List<Route.Point>, modifier: Modifier = Modifier) {
-    Box(modifier.size(StoryWidth, StoryHeight).background(EdgeSurface)) {
+    Box(modifier.size(StoryWidth, StoryHeight).background(Ground)) {
         if (photo != null) {
             Image(photo, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
             PhotoFade()
-        } else StoryGlow(storyColor(card))
+        } else StoryGlow(storyBlend(card))
         // In the picture zone, between the header and the stack at the foot.
         if (route.size >= 2) {
             val box = Modifier.fillMaxWidth().padding(horizontal = StoryRouteInset).padding(top = StoryRouteTop).height(StoryRouteHeight)
             RouteLine(route, box)
         }
-        Box(Modifier.fillMaxSize().padding(StoryGap.Part)) {
-            BrandRow(card.date)
-            StoryStack(card, modifier = Modifier.align(Alignment.BottomStart))
+        Box(Modifier.fillMaxSize()) {
+            BrandRow(card.date, Modifier.padding(start = StoryGap.Part, end = StoryGap.Part, top = 22.dp))
+            // Everything the card says sits in one dark glass block on the foot (Share board, decision 15): the light stays
+            // bright round it and the text passes 4.5:1 on it.
+            StoryBlock(card, Modifier.align(Alignment.BottomStart).padding(StoryGap.Block))
         }
     }
 }
 
 /** The three gaps on a card (mockups/share-cards-system.html): inside a part, stats to chips, and between parts. */
 private object StoryGap {
-    val Inner = 8.dp
-    val Near = 16.dp
+    val Inner = 10.dp
+    val Near = 14.dp
     val Part = 24.dp
+    /** The block's distance from the card's edge. */
+    val Block = 14.dp
+}
+
+/** The block's corner: 24 dp, a squircle. */
+private val BlockShape = GlowShapes.Card
+
+/**
+ * The glass block under the text on a lit card (decision 15): a dark gradient from 46% to 74%, a lit top edge and a
+ * ring. The saved picture is drawn off screen, where nothing blurs, so the darker end carries the contrast.
+ */
+@Composable
+private fun StoryBlock(card: StoryCard, modifier: Modifier = Modifier) {
+    Box(
+        modifier.fillMaxWidth().clip(BlockShape)
+            .background(
+                Brush.verticalGradient(
+                    0f to Color.Black.copy(alpha = 0.46f), 0.55f to Color.Black.copy(alpha = 0.62f), 1f to Color.Black.copy(alpha = 0.74f),
+                ),
+            )
+            .litEdge(BlockShape, top = 0.20f, ring = 0.07f)
+            .padding(start = 18.dp, end = 18.dp, top = 18.dp, bottom = 16.dp),
+    ) { StoryStack(card) }
 }
 
 /** Where a run's route sits in the picture zone: its top, height and side insets. */
@@ -358,7 +384,7 @@ private val StoryHeroRoom = 230.dp
  */
 @Composable
 private fun StoryStack(card: StoryCard, modifier: Modifier = Modifier) {
-    Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(StoryGap.Part)) {
+    Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(StoryGap.Near)) {
         Column(verticalArrangement = Arrangement.spacedBy(StoryGap.Inner)) {
             Text(card.title, color = Color.White, style = GlowType.cardTitle, maxLines = 1, overflow = TextOverflow.Ellipsis)
             HeroValue(card.value, card.unit, dot = DotSize.Detail, gap = 10.dp, maxWidth = StoryHeroRoom)
@@ -417,7 +443,7 @@ private fun StoryDetail(card: StoryCard) {
 private fun StatRow(stats: List<StoryStat>) {
     Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min)) {
         stats.forEachIndexed { i, s ->
-            if (i > 0) Box(Modifier.padding(end = StoryGap.Near).width(1.dp).fillMaxHeight().background(Color.White.copy(alpha = 0.18f)))
+            if (i > 0) Box(Modifier.padding(end = 12.dp).width(1.dp).fillMaxHeight().background(Color.White.copy(alpha = 0.14f)))
             Column(Modifier.weight(1f)) {
                 // The value and its unit as one line on one baseline; a long one ("10:05 /km") shrinks the value to fit.
                 val text = buildAnnotatedString {
@@ -444,39 +470,31 @@ private fun StatRow(stats: List<StoryStat>) {
 /** The smallest a stat's value shrinks to before its column is full. */
 private val StatMinSize = 20.sp
 
-/** A card's light: its kind's colour, as on Choose and Ready, and the week's goal green. */
-private fun storyColor(card: StoryCard): Color = when (card) {
-    is StoryCard.Week -> MetricColors.good
-    else -> familyColor(card.family)
+/** A card's light: its family's blend (Share board), and the Goals blend for the week. */
+private fun storyBlend(card: StoryCard): Blend = when (card) {
+    is StoryCard.Week -> Blends.Goals
+    else -> familyBlend(card.family)
 }
 
-/** How strong a card's light is at its foot, the same for every kind. */
-private const val STORY_LIGHT = 0.95f
-
-/** Where the board's light sits, in card heights from the top, and its size in card widths and heights. */
-private const val STORY_LIGHT_BELOW = 1.12f
-private const val STORY_LIGHT_WIDTH = 1.3f
-private const val STORY_LIGHT_HEIGHT = 0.65f
-
-/** The light's middle stop, as a share of its strength, and its fixed rim before it fades out. */
-private const val STORY_LIGHT_MID_AT = 0.38f
-private const val STORY_LIGHT_MID = 0.47f
-private const val STORY_LIGHT_RIM_AT = 0.7f
-private const val STORY_LIGHT_RIM = 0.08f
-
 /**
- * The board's light from below: an ellipse wider than the card centred under its foot, from [strength] of [color] to
- * black at its edge.
+ * The board's light from below: the blend's first stop in a wide blob at the lower left and its second in a smaller one at
+ * the lower right, both blurred (the board's 520 by 440 at 55% and 360 by 320 at 45%, on a 360 by 640 card).
  */
 @Composable
-private fun StoryGlow(color: Color, strength: Float = STORY_LIGHT) {
+private fun StoryGlow(blend: Blend) {
     Box(
         Modifier.fillMaxSize().drawBehind {
-            drawCardLight(
-                color, Offset(size.width / 2, size.height * STORY_LIGHT_BELOW),
-                size.width * STORY_LIGHT_WIDTH, size.height * STORY_LIGHT_HEIGHT,
-                listOf(0f to strength, STORY_LIGHT_MID_AT to strength * STORY_LIGHT_MID, STORY_LIGHT_RIM_AT to STORY_LIGHT_RIM),
-            )
+            fun blob(cx: Float, cy: Float, rx: Float, ry: Float, color: Color, alpha: Float) {
+                val c = Offset(cx.dp.toPx(), cy.dp.toPx())
+                val r = rx.dp.toPx()
+                val brush = Brush.radialGradient(
+                    0f to color.copy(alpha = alpha), 0.35f to color.copy(alpha = alpha * 0.9f), 0.6f to color.copy(alpha = alpha * 0.55f),
+                    0.8f to color.copy(alpha = alpha * 0.2f), 1f to Color.Transparent, center = c, radius = r,
+                )
+                scale(1f, ry / rx, pivot = c) { drawCircle(brush, r, c) }
+            }
+            blob(120f, 550f, 260f + 90f, 220f + 90f, blend.first, 0.55f)
+            blob(330f, 590f, 180f + 90f, 160f + 90f, blend.second, 0.45f)
         },
     )
 }
@@ -490,12 +508,12 @@ private fun PhotoFade() {
     Box(Modifier.fillMaxSize()) {
         Box(
             // Deep enough that the wordmark's red reads over a bright photo.
-            Modifier.fillMaxWidth().fillMaxHeight(0.3f)
-                .background(Brush.verticalGradient(listOf(Color.Black.copy(alpha = 0.85f), Color.Transparent))),
+            Modifier.fillMaxWidth().fillMaxHeight(0.22f)
+                .background(Brush.verticalGradient(listOf(Color.Black.copy(alpha = 0.7f), Color.Transparent))),
         )
         Box(
             Modifier.align(Alignment.BottomCenter).fillMaxWidth().fillMaxHeight(0.62f).background(
-                Brush.verticalGradient(0f to Color.Transparent, 0.35f to Color.Black.copy(alpha = 0.55f), 1f to Color.Black.copy(alpha = 0.85f)),
+                Brush.verticalGradient(0f to Color.Transparent, 0.4f to Color.Black.copy(alpha = 0.75f), 1f to Color.Black.copy(alpha = 0.9f)),
             ),
         )
     }
@@ -529,23 +547,24 @@ private fun RouteLine(route: List<Route.Point>, modifier: Modifier) {
  * and a photo is darkened at the top, so the red reads on every card.
  */
 @Composable
-private fun BrandRow(date: String) {
-    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+private fun BrandRow(date: String, modifier: Modifier = Modifier) {
+    Row(modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         Box(Modifier.weight(1f)) { Wordmark() }
-        Text(date, color = Color.White.copy(alpha = 0.6f), style = GlowType.secondary, maxLines = 1)
+        Text(date, color = Color.White.copy(alpha = 0.8f), style = GlowType.secondary, maxLines = 1)
     }
 }
 
-/** A best, the weekly goal or the weeks in a row on a dark pill, its icon in its colour. */
+/** A best, the weekly goal or the weeks in a row on a white 14% pill, with a small dot in the kind's colour. */
 @Composable
 private fun StoryChipView(chip: StoryChip) {
-    val (icon, tint) = if (chip.best) AppIcons.FlagCheckered to MetricColors.calories else AppIcons.Target to if (chip.met) MetricColors.good else Color.White
+    // A dot, not a tick: green and amber are status colours only, so a goal met is a white dot and a best the calories gold.
+    val dot = if (chip.best) org.openstrap.app.ui.theme.Blends.Calories.first else Color.White
     Row(
-        Modifier.height(30.dp).clip(CircleShape).background(Color.Black.copy(alpha = 0.45f)).padding(start = 10.dp, end = 12.dp),
+        Modifier.height(28.dp).clip(GlowShapes.Pill).background(Color.White.copy(alpha = 0.14f)).padding(horizontal = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(icon, null, tint = tint, modifier = Modifier.size(15.dp))
-        Text(chip.text, color = Color.White, style = ChipText, maxLines = 1, modifier = Modifier.padding(start = 7.dp))
+        Box(Modifier.size(6.dp).background(dot, CircleShape))
+        Text(chip.text, color = Color.White, style = ChipText, maxLines = 1, modifier = Modifier.padding(start = 6.dp))
     }
 }
 
