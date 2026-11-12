@@ -37,6 +37,10 @@ Each entry is first stop → second stop, then the v2 ink it replaces.
 | Strap (place) | #AEB6C2 → #4A5262 | `StrapLight` #7DE0C0 in `ui/glow/StrapDrawing.kt`, also on setup |
 | You (place) | #F0B48C → #A8613F | the grey on You pages |
 | Goals (place) | #9BFFB0 → #7C6BFF | `good` #3DDC97 wherever it lights goals and rewards |
+| Indoor cardio (family) | #C04FE0 → #6B3FD8 | zone blue and cyan |
+| Strength (family) | #B98A4E → #5A4636 | zone amber |
+| Intervals (family) | #FF44B0 → #0E8A87 | work red, rest teal |
+| Games (family) | #4CB85C → #2F6B3F | sky into mint |
 
 Rules kept and added:
 
@@ -167,13 +171,23 @@ All settled by the user. Where a call changes a board, the canvas is fixed in th
 12. **Today After "78":** the hero glow behind it is dimmed until 4.5:1, as on Waking, Recovery and Activity.
 13. **Info sheet HRV range:** the board's 46 to 58 ms is only an example. The app shows the user's own range, as it does now.
 
-The boards were updated to match on 2026-11-13 (canvas version 44). That pass turned up these points, still to decide:
+The boards were updated to match on 2026-11-13 (canvas version 44). That pass turned up five more points, settled by the user the same night (canvas version 45):
 
-- **Workout families lit by zone colours:** the Indoor cardio share card and summary are lit in zone blue and cyan, and Strength in zone amber, following Matrix's rule ("the zone into the next one up"). Zones are categories now, so these lights may need the family's blend instead.
-- **Share, Run lit:** most of the text fails 4.5:1 on its bright lime light, and did before the copy changed too. It needs a darker light or a heavier glass block.
-- **Hero title chevrons** ("Recovery ›" on Elements and Charts) and the note on the solid Energy card on States can't reach 4.5:1 even at full white.
-- **Older contrast failures:** DetailRecovery's dotted 77 at 2.5:1, six labels on DetailHabitAge, and Month and Year on DetailMetric.
-- States is dated Fri 13 Nov, not Sat 7 Nov.
+14. **Workout families have their own blends.** The family's blend lights Ready, live, summary, share and the notification, and zones never light a screen. Four families had zone colours as their light, so they got new blends, each at least 0.10 OKLab from every other blend, zone and status colour: Indoor cardio #C04FE0 → #6B3FD8 (violet into indigo), Strength #B98A4E → #5A4636 (bronze into iron), Intervals #FF44B0 → #0E8A87 (flare pink for work, deep teal for rest), Games #4CB85C → #2F6B3F (turf into pitch). Distance keeps Steps' blend and Mind and body the Evening's.
+15. **Share cards:** a heavier, darker glass block (dark gradient 0.46 to 0.74, blur 44) under the text on every lit share card, so the bright light stays and the text passes 4.5:1.
+16. **Hero titles and notes on bright light:** a soft dark scrim behind them (hero title and chevron on Elements, Charts and States, the note on the solid Energy card, the Goals and Weekly recap heroes, the widget notes).
+17. **Older contrast failures fixed:** DetailRecovery's 77 moved clear of the arc, DetailHabitAge and DetailMetric labels raised to 0.7 to 0.82 white, and similar raises on PageHeartZones, PageBackup, PageProfile and DetailWorkout.
+18. **States is dated Sat 7 Nov**, like the rest of the canvas.
+
+### Decided by the coordinator (2026-11-13 night, the user asleep, all recommended options)
+
+The user asked for the waves to run through without them, picking the recommended option at each gate and reporting it.
+
+- **Gate 0, numbers:** our own dot font (`DotSpec`) stays instead of Doto. It already draws round 5 by 7 dots like Doto, the widgets share its geometry (Canvas, no font needed there), and it can't drift between app and widgets. It takes the Numbers board's rules: a gap of half a digit before each group of three from five digits up, four digits with no gap, and grid cards at 3 dp (the Second size moves from 3.6 to 3).
+- **Gate 0, corners:** 28 dp squircles at smoothing 50, as decided. Checked on the emulator rather than the phone.
+- **Cards don't blur.** The boards' cards are a see-through fill with a lit edge over an already soft light, so only the nav bar, sheets and popups blur. That removes the blur-cost risk and makes Android 11 look the same.
+- **The screen's light is fixed to the screen**, not scrolled with the list, so lower cards stay lit.
+- **Gate 2** is the coordinator's emulator pass against every board, with the user's phone check left for the morning.
 
 ## 6. Risks
 
