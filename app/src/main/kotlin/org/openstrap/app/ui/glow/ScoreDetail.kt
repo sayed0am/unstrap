@@ -8,6 +8,8 @@ import org.openstrap.app.presentation.RecoveryCopy
 import org.openstrap.app.presentation.Units
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
+import org.openstrap.app.ui.dashboard.OffWords
+import org.openstrap.app.ui.dashboard.offTag
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
@@ -190,7 +192,12 @@ private fun RecoveryDetail(
         // The arc gauge (chart kit, spec 2.7) holds the day's score, centred, the number inside the half circle.
         heroValue = (score ?: estimate)?.takeIf { range == Range.Day }?.let { shown ->
             // One key for every day, so the arc sweeps from the score shown to the next day's instead of cutting.
-            { ArcGauge(shown / 100f, color, key = Score.Recovery) { DetailScoreNumber(shown, state.date) } }
+            {
+                // The number sits clear of the arc's ends (decision 17), a little above the line they stand on.
+                ArcGauge(shown / 100f, color, key = Score.Recovery) {
+                    Box(Modifier.padding(bottom = 10.dp)) { DetailScoreNumber(shown, state.date) }
+                }
+            }
         },
         // The Recovery card's picture under the gauge: the week to this morning as dots through the band of your usual.
         heroPicture = week.map { it.second?.toFloat() }.takeIf { range == Range.Day && it.any { v -> v != null } }?.let { dots ->
@@ -216,9 +223,10 @@ private fun RecoveryDetail(
             if (all.isNotEmpty()) item {
                 ListPanel(Modifier.padding(top = 8.dp), title = stringResource(R.string.glow_recovery_what_drove)) {
                     all.forEachIndexed { i, c ->
-                        ContributorRow(
-                            TabCopy.factorName(c.factor), MetricColors.readiness, TabCopy.contributorWord(c.score), c.score / 100f,
-                            offNormal = TabCopy.contributorOff(c.score), divider = i > 0, detail = RecoveryCopy.detail(c.detail),
+                        DriverRow(
+                            TabCopy.factorName(c.factor), TabCopy.contributorWord(c.score), c.score / 100f,
+                            offTag(OffWords.Usual, contributorOffStatus(c.score)), divider = i > 0, blend = factorBlend(c.factor),
+                            detail = RecoveryCopy.detail(c.detail),
                         )
                     }
                 }

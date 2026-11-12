@@ -23,7 +23,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
+import org.openstrap.app.ui.theme.Blends
+import org.openstrap.app.ui.theme.ScreenLight
+import org.openstrap.app.ui.glow.draw.LightAngle
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -182,7 +185,10 @@ fun GlowActivityScreen(
     if (partialInfo && wear != null) PartialDaySheet(wear, isToday, onDismiss = { partialInfo = false })
     androidx.compose.foundation.layout.Box(modifier) {
     CompositionLocalProvider(LocalGlowPaused provides { list.isScrollInProgress }) {
-        GlowScreenList(contentPadding, list) {
+        // Steps' blend from the upper right (Matrix board, Activity tab), day strength.
+        GlowScreenList(
+            contentPadding, list, light = ScreenLight(Blends.Steps, LightAngle.UpperRight, ScreenLight.DAY, 240f),
+        ) {
             add(Pane.Full, GlowBlocks.HEADER) { header() }
             tabCards(slots) { card, m ->
                 when (card) {
@@ -628,10 +634,10 @@ internal fun WorkoutDayHeader(text: String) {
     )
 }
 
-/** The effort light's tile, as the mock draws it: 38 dp, 12 dp corners, a shade above the panel. */
-private val EffortTile = 38.dp
-private val EffortShape = RoundedCornerShape(12.dp)
-private val EffortSurface = Color(0xFF151517)
+/** The effort light's tile, as the boards draw a row icon: a 36 dp circle on a faint white fill. */
+private val EffortTile = 36.dp
+private val EffortShape = CircleShape
+private val EffortSurface = Color.White.copy(alpha = 0.07f)
 private val EffortGap = 12.dp
 
 /**
