@@ -656,7 +656,7 @@ fun PageConfirm(
             Box(Modifier.size(40.dp).background(org.openstrap.app.ui.theme.Blends.Strap.first.copy(alpha = 0.18f), CircleShape), contentAlignment = Alignment.Center) {
                 Icon(icon, null, Modifier.size(20.dp), tint = Color.White)
             }
-            Text(title, color = Color.White, style = GlowType.cardTitle, maxLines = 2)
+            Text(title, color = Color.White, style = GlowType.cardTitle, maxLines = 1)
         }
         if (text != null) Text(text, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.body)
         content?.invoke(this)

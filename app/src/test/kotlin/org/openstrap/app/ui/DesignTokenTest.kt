@@ -148,12 +148,14 @@ class DesignTokenTest {
 
     @Test fun `Steps on Activity is a hero glow like Recovery and Sleep`() {
         // Spec 2.1 and 5.3: the tab's hero, lit all over with the core behind the number, not a level over a black top.
-        // The number at the foot in the second glow's dots, under the hour bars.
+        // The number in the hero dots (Glow x Glass, board TabActivity), the hour bars along the foot.
         val code = sources.getValue("glow/GlowActivityScreen.kt").joinToString("\n")
         val steps = code.substringAfter("private fun StepsGlow(").substringBefore("\n}\n")
         assertTrue("StepsGlow uses the hero recipe", "limeHero(MetricColors.steps" in steps)
-        assertTrue("StepsGlow's number is 3.6 dp", "DotSize.Second" in steps)
-        assertTrue("the bars come before the number", steps.indexOf("HourPills(") in 0 until steps.indexOf("TaggedNumber("))
+        // Glow x Glass (plan section 4, board TabActivity): the hero's number is the hero dot size, not the second glow's 3.6 dp.
+        assertTrue("StepsGlow's number is the hero size", "DotSize.Hero" in steps)
+        // The board draws the dotted number first and the hour bars along the card's foot.
+        assertTrue("the number comes before the bars", steps.indexOf("TaggedNumber(") in 0 until steps.indexOf("HourPills("))
     }
 
     @Test fun `every hypnogram is drawn in the stage colours`() {

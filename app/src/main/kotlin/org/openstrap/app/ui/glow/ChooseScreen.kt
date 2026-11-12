@@ -85,7 +85,6 @@ import org.openstrap.app.ui.theme.clearGlass
 import org.openstrap.app.ui.theme.ScreenLight
 import org.openstrap.app.ui.theme.tintedGlass
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.unit.sp
 
 /* ---------------------------------------------- Choose ----------------------------------------------- */
 
@@ -276,7 +275,7 @@ private fun RecentPill(sport: Int, name: String, onClick: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Box(Modifier.size(10.dp).clip(CircleShape).background(Brush.linearGradient(listOf(blend.first, blend.second))))
-        Text(name, color = Color.White, style = GlowType.secondary.copy(fontSize = 14.sp), maxLines = 1)
+        Text(name, color = Color.White, style = GlowType.chip, maxLines = 1)
     }
 }
 
