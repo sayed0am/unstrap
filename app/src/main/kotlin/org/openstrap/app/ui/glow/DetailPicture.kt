@@ -10,7 +10,7 @@ import androidx.compose.ui.unit.dp
 
 /*
  * A card's own picture on the page it opens (spec 2.7, "Each metric draws its own picture"): the page draws the same
- * picture its card draws, from the same data in the same ink, so tapping the card leads somewhere that visibly
+ * picture its card draws, from the same data in the same blend, so tapping the card leads somewhere that visibly
  * continues it. It sits under the headline, across the page at Wide, and never carries the card's rim: a page has no
  * card edge to light.
  */

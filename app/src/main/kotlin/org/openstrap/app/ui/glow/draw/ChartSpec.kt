@@ -9,6 +9,9 @@ import kotlin.math.sign
 import org.openstrap.app.data.db.SleepStage
 import org.openstrap.app.ui.glow.GlowLayout
 import org.openstrap.app.ui.glow.GlowStage
+import androidx.compose.ui.graphics.Brush
+import org.openstrap.app.ui.theme.Blend
+import org.openstrap.app.ui.theme.Blends
 import org.openstrap.app.ui.theme.MetricColors
 
 /*
@@ -23,8 +26,26 @@ object ChartInk {
     val Grid = Color.White.copy(alpha = GlowLayout.HairlineAlpha)
     val Target = Color.White.copy(alpha = 0.40f)
 
-    /** Your normal behind a chart: a band of the ink at 12%. */
+    /** Your normal behind a chart: a band of the metric's first colour at 12% (Charts board). */
     const val NORMAL_BAND_ALPHA = 0.12f
+
+    /** Your usual band behind a level fill: the first colour flat at 22%. */
+    const val LEVEL_BAND_ALPHA = 0.22f
+
+    /** Your usual band behind a week of dots: the first colour at 8%. */
+    const val DOTS_BAND_ALPHA = 0.08f
+
+    /** The marks inside your normal (a line, dots), dimmed in the first colour. Outside it they are full in the second. */
+    const val INSIDE_ALPHA = 0.45f
+
+    /** The halo round a chart's end dot, in the second colour. */
+    const val END_HALO_ALPHA = 0.25f
+
+    /** Axis labels and tick text: white, raised from the board's 50% to reach 4.5:1 on glass. */
+    const val AXIS_ALPHA = 0.68f
+
+    /** The ghost line of your usual: white at 35%. */
+    const val USUAL_ALPHA = 0.35f
 
     /** Grid rows, guides and baselines, dp. */
     const val HAIRLINE_DP = 1f
@@ -481,3 +502,25 @@ internal fun stageColor(stage: Int): Color = when (stage) {
     org.openstrap.app.data.db.SleepStage.AWAKE -> MetricColors.sleepAwake
     else -> MetricColors.sleepLight
 }
+
+
+/* ------------------------------------------------------------------------------------------------ */
+/* Blends on charts (Glow x Glass, Charts board)                                                     */
+/* ------------------------------------------------------------------------------------------------ */
+
+/**
+ * The blend a chart drawn in [ink] uses: the metric's blend for a v2 ink ([Blends.forInk]), else a flat one (white on
+ * a hero or a solid fill, a category colour) so the marks stay [ink] whole.
+ */
+fun chartBlend(ink: Color): Blend = Blends.forInk(ink) ?: Blend(ink, ink)
+
+/** [Blend.chartBrush] across [x0] to [x1] (px), the first colour at the start and the second on the answer. */
+fun Blend.chartBrushAcross(x0: Float, x1: Float): Brush =
+    Brush.horizontalGradient(listOf(chart, chartSecond), startX = x0, endX = if (x1 > x0) x1 else x0 + 1f)
+
+/** [Blend.chartBrush] from [y0] (the base, first colour) to [y1] (the top, second colour), px. */
+fun Blend.chartBrushUp(y0: Float, y1: Float): Brush =
+    Brush.verticalGradient(listOf(chart, chartSecond), startY = y0, endY = if (y1 != y0) y1 else y0 - 1f)
+
+/** [first] flat, or [second]: a small mark's colour by whether it is the answer. */
+internal fun Blend.mark(answer: Boolean): Color = if (answer) chartSecond else chart
