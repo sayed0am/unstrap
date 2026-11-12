@@ -13,6 +13,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
+import org.openstrap.app.ui.components.PageLightHost
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import java.time.Instant
 import java.time.LocalDate
@@ -73,7 +74,8 @@ internal fun DetailHost(
     val onSwitch: (Detail) -> Unit = { nav.replaceTop(tab, it) }
     val workouts by workoutsVm.workouts.collectAsStateWithLifecycle()
     val activity = shown.activity
-    when (detail) {
+    // The detail draws its own screen light (PageLight), the plain ground until it sets one.
+    PageLightHost { when (detail) {
         // A night signal's detail is always the night's, as its rows read it (SleepCopy.NIGHT_SIGNALS). Blood oxygen's
         // is the night's only when the Sleep or Recovery tab opened it, so it comes with its own scope.
         is Detail.OfMetric -> GlowMetricDetailScreen(
@@ -131,7 +133,7 @@ internal fun DetailHost(
                 contentPadding = padding, onOpen = push, recovery = shown.recovery, onRestore = dayVm::restoreSleep,
             )
         }
-    }
+    } }
 }
 
 /**

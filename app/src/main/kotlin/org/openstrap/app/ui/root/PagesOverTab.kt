@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -55,6 +54,8 @@ import org.openstrap.app.ui.components.GrowProgress
 import org.openstrap.app.ui.components.ListDetail
 import org.openstrap.app.ui.components.NavRailWidth
 import org.openstrap.app.ui.components.OledSurfaces
+import org.openstrap.app.ui.components.PageLightHost
+import org.openstrap.app.ui.theme.Ground
 import org.openstrap.app.ui.components.PushContent
 import org.openstrap.app.ui.components.SidePaneWidth
 import org.openstrap.app.ui.dashboard.StrapView
@@ -106,7 +107,7 @@ internal fun PagesOverTab(
         Modifier.fillMaxSize().padding(start = if (rail) NavRailWidth else 0.dp),
         progress = pageGrow,
     ) { closing ->
-        Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).hazeSource(navGlass, zIndex = 1f)) {
+        Box(Modifier.fillMaxSize().background(Ground).hazeSource(navGlass, zIndex = 1f)) {
             CompositionLocalProvider(LocalNavigationEventDispatcherOwner provides (if (closing || tabBack == null) idleBack else tabBack)) {
                 OledSurfaces {
                     OverPages(
@@ -160,14 +161,15 @@ private fun OverPages(
         val rowOpens: (Page) -> Unit = if (list != null) openBeside else open
         val selected = list?.getOrNull(1)
         val back = if (list != null) closeAll else close
-        when (shown) {
+        // Each page draws its own screen light (PageLight), the plain ground until it sets one.
+        PageLightHost { when (shown) {
             null -> Unit
             Page.You -> YouPageHost(hooks, profile, padding, rowOpens, selected, onGoals, back)
             Page.Strap, Page.Alarms, Page.HealthAlerts, Page.PhoneAlerts, Page.Firmware, Page.ZeppAccount -> {
                 StrapPage(shown, hooks, alarmsVm, requestBluetooth, padding, lastSeen, preview, rowOpens, selected, back, open, close)
             }
             else -> DataPage(shown, hooks, profile, padding, open, close)
-        }
+        } }
     }
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val root = pages.firstOrNull()
