@@ -44,11 +44,11 @@ import java.util.Locale
 /** OpenFreeMap's dark style: no API key, no cookies; attribution is shown by the map's own button. */
 private const val TILES_STYLE = "https://tiles.openfreemap.org/styles/dark"
 
-/** The black of [BLANK_STYLE], for a map that can't be drawn. */
-private val RouteOnlyBlack = Color(0xFF0B0B0D)
+/** The ground of [BLANK_STYLE], for a map that can't be drawn. */
+private val RouteOnlyBlack = org.openstrap.app.ui.theme.Ground
 
 /** "Route only": no tile requests at all, just the line on black. */
-private const val BLANK_STYLE = """{"version":8,"sources":{},"layers":[{"id":"bg","type":"background","paint":{"background-color":"#0B0B0D"}}]}"""
+private const val BLANK_STYLE = """{"version":8,"sources":{},"layers":[{"id":"bg","type":"background","paint":{"background-color":"#030304"}}]}"""
 
 /**
  * A workout's route on a map, each stretch in its heart-rate zone's colour ([Route.byZone]), with a white dot where

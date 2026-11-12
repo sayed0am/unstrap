@@ -22,7 +22,6 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -58,14 +57,16 @@ import org.openstrap.app.ui.components.HapticEvent
 import org.openstrap.app.ui.components.rememberHaptics
 import org.openstrap.app.ui.glow.DotMatrixText
 import org.openstrap.app.ui.glow.draw.DotSize
-import org.openstrap.app.ui.glow.PictureCard
 import org.openstrap.app.ui.glow.GlowType
 import org.openstrap.app.ui.glow.MediumBody
 import org.openstrap.app.ui.glow.TrendBad
 import org.openstrap.app.ui.glow.TrendGood
 import org.openstrap.app.ui.glow.activeSecondsState
 import org.openstrap.app.ui.glow.workoutColor
-import org.openstrap.app.ui.theme.MetricColors
+import org.openstrap.app.ui.theme.Blend
+import org.openstrap.app.ui.theme.Blends
+import org.openstrap.app.ui.theme.GlowShapes
+import org.openstrap.app.data.WorkoutTarget
 import org.openstrap.app.ui.glow.dotFitScale
 import org.openstrap.app.presentation.LiveView
 import org.openstrap.app.presentation.WorkoutCopy
@@ -79,7 +80,7 @@ import org.openstrap.app.R
 
 /**
  * A distance workout with GPS (workouts spec 2.3, boards Run and Map): two views, swiped, under the moving time. Pace:
- * the pace now large on a card lit in the distance lime, the average beside its title and a bar per kilometre, the one
+ * the pace now large on tinted glass in the distance blend, the average beside its title and a bar per kilometre, the one
  * under way growing; the heart rate on a strip in its zone's colour; then distance, climb and active kcal. Map: the
  * route in zone colours with the heart rate on it, then distance, pace and the last split. Opens on the view used last
  * ([liveView], saved through [onLiveView]). A ride shows its speed instead of a pace. With [split] the heart rate is on
@@ -120,7 +121,9 @@ internal fun LiveDistanceScreen(
     LaunchedEffect(pager) { snapshotFlow { pager.settledPage }.drop(1).collect { saveView(it) } }
     val scope = rememberCoroutineScope()
     val connected = connection is ConnectionState.Connected
+    val blend = Blends.Distance
     val color = workoutColor(r, liveHeartRate, connected, heartZones)
+    val target = remember(r.workout.target) { WorkoutTarget.parse(r.workout.target) }
     val bpm = liveHeartRate.takeIf { connected && !r.paused }
     ZoneTick(bpm, r)
     val distance = r.workout.distanceMeters ?: 0f
@@ -146,7 +149,7 @@ internal fun LiveDistanceScreen(
     val battery = (connection as? ConnectionState.Connected)?.batteryPercent
     if (r.paused) {
         LiveFrame(
-            r, color, connected, contentPadding, controls, lap, time = { active.value }, battery = battery, status = status,
+            r, blend, connected, contentPadding, controls, lap, time = { active.value }, battery = battery, status = status,
             paused = {
                 LivePaused(r, liveHeartRate.takeIf { connected }, recent, listOf(
                     Units.km(distance, Units.Precision.Workout) to stringResource(R.string.workout_live_figure_km),
@@ -180,14 +183,14 @@ internal fun LiveDistanceScreen(
             when (LiveView.entries[page]) {
                 // Reps (board RunIntervals): the total small on top, the rep the screen's number.
                 LiveView.Heart -> if (reps) LiveFrame(
-                    r, color, connected, pagePadding, controls, lap, time = { active.value }, smallTime = true, battery = battery,
+                    r, blend, connected, pagePadding, controls, lap, time = { active.value }, smallTime = true, battery = battery,
                     status = status,
                     fill = true, title = stringResource(R.string.workout_live_reps_title, Workouts.sportName(r.workout.sportType)),
                     bottomRoom = bar,
                 ) {
-                    RepPage(r, route, readings, bpm, color, compact, if (shortLandscape(compact)) Modifier else Modifier.weight(1f))
+                    RepPage(r, route, readings, bpm, color, target, connected, compact, if (shortLandscape(compact)) Modifier else Modifier.weight(1f))
                 } else LiveFrame(
-                    r, color, connected, pagePadding, controls, lap, time = { active.value }, smallTime = compact, battery = battery,
+                    r, blend, connected, pagePadding, controls, lap, time = { active.value }, smallTime = compact, battery = battery,
                     status = status, fill = true, bottomRoom = bar,
                 ) {
                     if (compact) Box(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
@@ -198,8 +201,8 @@ internal fun LiveDistanceScreen(
                             kcal?.active?.toInt()?.toString() to stringResource(R.string.workout_live_figure_active_kcal),
                         ))
                     } else Column(Modifier.fillMaxWidth().weight(1f), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                        PaceCard(pace, averagePace, splits, speed, Modifier.weight(1f))
-                        if (!split) LitHeartPill(bpm, r.maxHeartRate, color, r.paused, 56.dp, Modifier.fillMaxWidth())
+                        PaceCard(pace, averagePace, splits, speed, blend, Modifier.weight(1f))
+                        if (!split) LiveStrip(Modifier.fillMaxWidth()) { LiveZoneStrip(bpm, r.maxHeartRate, r.paused, connected, target) }
                         LiveFigures(listOf(
                             Units.km(distance, Units.Precision.Workout) to stringResource(R.string.workout_live_figure_km),
                             climb?.toInt()?.toString() to stringResource(R.string.workout_live_figure_climb),
@@ -239,7 +242,8 @@ internal fun LiveDistanceScreen(
  */
 @Composable
 private fun RepPage(
-    r: WorkoutState.Recording, route: List<Route.Point>, readings: List<Pair<Long, Int>>, bpm: Int?, color: Color, compact: Boolean,
+    r: WorkoutState.Recording, route: List<Route.Point>, readings: List<Pair<Long, Int>>, bpm: Int?, color: Color,
+    target: WorkoutTarget?, connected: Boolean, compact: Boolean,
     modifier: Modifier,
 ) {
     val now = nowTicking()
@@ -317,7 +321,7 @@ private fun RepPage(
             }
             if (line != null) Text(line, color = Color.White, style = GlowType.sentence, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
         }
-        LitHeartPill(bpm, r.maxHeartRate, color, r.paused, 56.dp, Modifier.fillMaxWidth())
+        LiveStrip(Modifier.fillMaxWidth()) { LiveZoneStrip(bpm, r.maxHeartRate, r.paused, connected, target) }
         val done = r.rounds.filter { it.workEnd != null }
         if (done.isNotEmpty()) Row(
             Modifier.fillMaxWidth().horizontalScroll(rememberScrollState(Int.MAX_VALUE)),
@@ -325,7 +329,7 @@ private fun RepPage(
         ) {
             done.forEach { round ->
                 Row(
-                    Modifier.clip(RoundedCornerShape(50)).background(org.openstrap.app.ui.glow.Raised).padding(horizontal = 14.dp, vertical = 9.dp),
+                    Modifier.clip(GlowShapes.Pill).background(org.openstrap.app.ui.glow.Raised).padding(horizontal = 14.dp, vertical = 9.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
@@ -359,12 +363,11 @@ internal fun speedText(secondsPerKm: Double?, locale: java.util.Locale = java.ut
 
 /**
  * The Pace card: "Pace" with the average beside it, the pace now in the card's one dotted number, and a bar per
- * kilometre under it ([KmSplitBars]). Lit in the distance lime from its edge, so it never looks like the heart strip
- * under it.
+ * kilometre under it ([KmSplitBars]). The hero's tinted glass in the distance blend (Steps), under it the clear glass zone strip.
  */
 @Composable
-private fun PaceCard(pace: Double?, averagePace: () -> Double?, splits: List<Route.Split>, speed: Boolean, modifier: Modifier = Modifier) {
-    PictureCard(MetricColors.steps, modifier.fillMaxWidth()) {
+private fun PaceCard(pace: Double?, averagePace: () -> Double?, splits: List<Route.Split>, speed: Boolean, blend: Blend, modifier: Modifier = Modifier) {
+    LiveHero(blend, modifier, verticalArrangement = Arrangement.spacedBy(0.dp)) {
         Row(Modifier.fillMaxWidth()) {
             Text(
                 stringResource(if (speed) R.string.workout_live_speed_title else R.string.workout_live_pace_title), color = Color.White,
@@ -391,7 +394,7 @@ private fun PaceCard(pace: Double?, averagePace: () -> Double?, splits: List<Rou
         }
         Spacer(Modifier.height(16.dp).weight(1f))
         if (splits.isNotEmpty()) {
-            KmSplitBars(splits)
+            KmSplitBars(splits, blend)
         }
     }
 }
@@ -410,7 +413,7 @@ private fun AveragePace(averagePace: () -> Double?, speed: Boolean) {
  * by its kilometre.
  */
 @Composable
-private fun KmSplitBars(splits: List<Route.Split>) {
+private fun KmSplitBars(splits: List<Route.Split>, blend: Blend) {
     val shown = splits.takeLast(SPLIT_SLOTS)
     val done = splits.filter { it.meters >= 1000 }
     val fastest = done.minByOrNull { it.pace }
@@ -433,19 +436,21 @@ private fun KmSplitBars(splits: List<Route.Split>) {
             }
             val best = s == fastest
             Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                val lime = MetricColors.steps
                 Canvas(Modifier.fillMaxWidth().height(30.dp)) {
                     val h = size.height * height
                     val corner = CornerRadius(5.dp.toPx())
                     if (underWay) {
                         val filled = size.height * (s.meters / 1000).toFloat().coerceIn(0f, 1f)
-                        drawRoundRect(lime.copy(alpha = 0.35f), Offset(0f, size.height - filled), Size(size.width, filled), corner)
+                        drawRoundRect(blend.second.copy(alpha = 0.45f), Offset(0f, size.height - filled), Size(size.width, filled), corner)
                         val w = 1.5.dp.toPx()
                         drawRoundRect(
-                            lime.copy(alpha = 0.6f), Offset(w / 2, w / 2), Size(size.width - w, size.height - w), corner,
+                            blend.second.copy(alpha = 0.7f), Offset(w / 2, w / 2), Size(size.width - w, size.height - w), corner,
                             style = androidx.compose.ui.graphics.drawscope.Stroke(w),
                         )
-                    } else drawRoundRect(if (best) lime else lime.copy(alpha = 0.35f), Offset(0f, size.height - h), Size(size.width, h), corner)
+                    } else if (best) drawRoundRect(
+                        androidx.compose.ui.graphics.Brush.verticalGradient(listOf(blend.second, blend.first), startY = size.height - h, endY = size.height),
+                        Offset(0f, size.height - h), Size(size.width, h), corner,
+                    ) else drawRoundRect(blend.first.copy(alpha = 0.35f), Offset(0f, size.height - h), Size(size.width, h), corner)
                 }
                 Text(
                     if (underWay) stringResource(R.string.workout_live_split_km, s.index + 1) else workoutClock(s.seconds),

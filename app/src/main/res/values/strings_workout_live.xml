@@ -198,6 +198,14 @@
     <string name="workout_live_heart_of_max"><xliff:g id="percent" example="78">%1$d</xliff:g>%% of max</string>
     <!-- Under the heart rate in dots, over a faint line of the last ten minutes behind it. One line. -->
     <string name="workout_live_heart_behind">bpm, line shows last 10 min</string>
+    <!-- Under the heart rate in dots on the zone arc: the zone's heart rates. One line. -->
+    <string name="workout_live_heart_range">bpm, <xliff:g id="range" example="130 to 147">%1$s</xliff:g></string>
+    <!-- The zone strip card's title under the heart card. One line. -->
+    <string name="workout_live_time_in_zones">Time in zones</string>
+    <!-- Right of the zone strip's title: the zone goal, short. -->
+    <string name="workout_live_target_short_zone">Target zone <xliff:g id="zone" example="2">%1$d</xliff:g></string>
+    <!-- Right of the zone strip's title: a goal of a range of zones, short. -->
+    <string name="workout_live_target_short_zones">Target zone <xliff:g id="from" example="2">%1$d</xliff:g> to <xliff:g id="to" example="3">%2$d</xliff:g></string>
     <!-- At the foot of the heart card with a zone goal: the zone. One line. -->
     <string name="workout_live_target_zone">Target zone <xliff:g id="zone" example="2">%1$d</xliff:g>. The strap buzzes if you drift</string>
     <!-- At the foot of the heart card with a goal of a range of zones. One line. -->

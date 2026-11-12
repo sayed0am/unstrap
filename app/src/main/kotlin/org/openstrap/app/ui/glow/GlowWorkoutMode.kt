@@ -35,7 +35,6 @@ import org.openstrap.app.ui.components.PinnedFade
 import org.openstrap.app.ui.components.pinnedFade
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -73,6 +72,13 @@ import org.openstrap.app.ui.workout.PhoneSummary
 import org.openstrap.app.ui.components.pressClickable
 import org.openstrap.app.ui.theme.MetricColors
 import org.openstrap.app.ui.theme.AppIcons
+import org.openstrap.app.ui.theme.Blend
+import org.openstrap.app.ui.theme.Blends
+import org.openstrap.app.ui.theme.GlowShapes
+import org.openstrap.app.ui.theme.LocalScreenLight
+import org.openstrap.app.ui.theme.ScreenLight
+import org.openstrap.app.ui.theme.screenLight
+import androidx.compose.runtime.CompositionLocalProvider
 import org.openstrap.app.ui.workout.ZONE_COLORS
 import androidx.compose.ui.semantics.onClick
 import org.openstrap.app.ui.workout.SummaryCopy
@@ -146,8 +152,8 @@ internal fun WorkoutButton(
     modifier: Modifier = Modifier, icon: androidx.compose.ui.graphics.vector.ImageVector? = null, height: Dp = 56.dp,
 ) {
     Row(
-        modifier.fillMaxWidth().height(height).shadow(28.dp, RoundedCornerShape(50), ambientColor = background, spotColor = background)
-            .clip(RoundedCornerShape(50)).background(background).pressClickable(onClick, RoundedCornerShape(50)),
+        modifier.fillMaxWidth().height(height).shadow(28.dp, GlowShapes.Pill, ambientColor = background, spotColor = background)
+            .clip(GlowShapes.Pill).background(background).pressClickable(onClick, GlowShapes.Pill),
         horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically,
     ) {
         if (icon != null) {
@@ -159,30 +165,23 @@ internal fun WorkoutButton(
 }
 
 /**
- * A workout screen: black, with the workout's colour glowing softly from the top, scrolling if it must but filling
+ * A workout screen lit by [light] (the family's blend, Workouts board) over the ground, scrolling if it must but filling
  * the height so the controls sit at the bottom. [pinned] (Start, Done) stays on the bottom edge while the rest
- * scrolls under it, behind the pinned buttons' fade ([pinnedFade], spec 6.3), and the content ends clear of it.
+ * scrolls under it, behind the pinned buttons' fade ([pinnedFade], spec 6.3), and the content ends clear of it. Null
+ * [light] is the plain ground.
  */
 @Composable
 internal fun WorkoutPage(
-    glow: Color, contentPadding: PaddingValues, scroll: Boolean = true,
+    light: ScreenLight?, contentPadding: PaddingValues, scroll: Boolean = true,
     pinned: (@Composable ColumnScope.() -> Unit)? = null,
-    /** Painted over the whole screen in place of the top glow (HIIT's phase light). */
+    /** Painted over the whole screen in place of the light (HIIT's phase light). */
     backdrop: Brush? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    BoxWithConstraints(Modifier.fillMaxSize().background(Color.Black)) {
-        val width = constraints.maxWidth.toFloat()
+    CompositionLocalProvider(LocalScreenLight provides light) { BoxWithConstraints(Modifier.fillMaxSize().then(if (backdrop != null) Modifier.screenLight(null) else Modifier.screenLight(light))) {
         val density = LocalDensity.current
         var pinnedHeight by remember { mutableStateOf(0.dp) }
-        // No wider than the box is tall: on a wide screen (unfolded) a wider glow would be cut off in a straight line.
-        val glowHeight = 420.dp
-        val radius = minOf(width * 0.9f, with(density) { glowHeight.toPx() })
-        if (backdrop != null) Box(Modifier.fillMaxSize().background(backdrop)) else Box(
-            Modifier.fillMaxWidth().height(glowHeight).background(
-                Brush.radialGradient(listOf(glow.copy(alpha = 0.22f), Color.Transparent), center = Offset(width / 2f, 0f), radius = radius),
-            ),
-        )
+        if (backdrop != null) Box(Modifier.fillMaxSize().background(backdrop))
         // On a wide screen the page keeps to one centred column (spec 2.4 Unfolded); the glow stays the screen's.
         val side = GlowLayout.pageSide(maxWidth, LocalPageColumn.current, GlowLayout.Gutter)
         // The content ends [PinnedFade.Ramp] above the pinned buttons (their box already counts the bottom padding),
@@ -200,7 +199,7 @@ internal fun WorkoutPage(
             verticalArrangement = Arrangement.spacedBy(14.dp),
             content = content,
         )
-        // Black from the bottom of the screen up to the buttons, fading out above them.
+        // Ground from the bottom of the screen up to the buttons, fading out above them.
         if (pinned != null) Column(
             Modifier.align(Alignment.BottomCenter).fillMaxWidth().pinnedFade()
                 .padding(contentPadding).padding(start = side, end = side, bottom = 16.dp)
@@ -208,8 +207,23 @@ internal fun WorkoutPage(
             verticalArrangement = Arrangement.spacedBy(4.dp),
             content = pinned,
         )
-    }
+    } }
 }
+
+/**
+ * [WorkoutPage] for a caller that still has one colour for the glow: transparent is the plain ground, any other is a
+ * single-stop light from the top. New screens pass a [ScreenLight] of their family's blend.
+ */
+@Composable
+internal fun WorkoutPage(
+    glow: Color, contentPadding: PaddingValues, scroll: Boolean = true,
+    pinned: (@Composable ColumnScope.() -> Unit)? = null,
+    backdrop: Brush? = null,
+    content: @Composable ColumnScope.() -> Unit,
+) = WorkoutPage(
+    if (glow == Color.Transparent) null else ScreenLight(Blends.forInk(glow) ?: Blend(glow, glow), 90f, 0.5f, 0f),
+    contentPadding, scroll, pinned, backdrop, content,
+)
 
 /* ----------------------------------------- Activity tab entry ---------------------------------------- */
 

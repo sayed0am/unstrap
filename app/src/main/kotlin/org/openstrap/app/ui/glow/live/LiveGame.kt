@@ -25,17 +25,14 @@ import org.openstrap.app.device.ConnectionState
 import org.openstrap.app.device.WorkoutState
 import org.openstrap.app.ui.glow.HeroValue
 import org.openstrap.app.ui.glow.draw.DotSize
-import org.openstrap.app.ui.glow.GlowCard
-import org.openstrap.app.ui.glow.draw.GlowMotion
+import org.openstrap.app.ui.theme.Blends
+import org.openstrap.app.data.WorkoutTarget
 import org.openstrap.app.ui.glow.GlowType
 import org.openstrap.app.ui.glow.Segment
 import org.openstrap.app.ui.glow.SegmentBar
-import org.openstrap.app.ui.glow.draw.LightAngle
 import org.openstrap.app.ui.glow.WorkoutButton
 import org.openstrap.app.ui.glow.activeSecondsState
-import org.openstrap.app.ui.glow.draw.heroStyle
 import org.openstrap.app.ui.glow.workoutClock
-import org.openstrap.app.ui.glow.workoutColor
 import org.openstrap.app.ui.theme.AppIcons
 import org.openstrap.app.ui.workout.StartCopy
 import org.openstrap.app.presentation.WorkoutCopy
@@ -73,7 +70,8 @@ internal fun LiveGameScreen(
     val connected = connection is ConnectionState.Connected
     val bpm = liveHeartRate.takeIf { connected && !r.paused }
     ZoneTick(bpm, r)
-    val color = workoutColor(r, liveHeartRate, connected, heartZones)
+    val blend = Blends.Games
+    val target = remember(r.workout.target) { WorkoutTarget.parse(r.workout.target) }
     val periods = r.structure as? Structure.Periods
     // The phase alone picks the buttons; its clock is read in [PeriodRow], so the screen holds still between seconds.
     val phase = remember(r) { androidx.compose.runtime.derivedStateOf { r.phase(now.value) } }.value
@@ -86,23 +84,28 @@ internal fun LiveGameScreen(
         hard.toString() to stringResource(R.string.workout_live_figure_hard_efforts),
     )
     LiveFrame(
-        r, color, connected, contentPadding, controls, time = { active.value }, smallTime = compact || periods != null,
+        r, blend, connected, contentPadding, controls, time = { active.value }, smallTime = compact || periods != null,
         paused = { LivePaused(r, liveHeartRate.takeIf { connected }, readings, figures) },
     ) {
         if (periods != null && phase != null) PeriodRow(r, periods, phase, { now.value }, { active.value })
-        val style = heroStyle(color, LightAngle.Below).let { s -> bpm?.let { s.copy(motion = GlowMotion.Heartbeat(it)) } ?: s }
-        if (split) EffortBar(effort) else GlowCard(style, Modifier.fillMaxWidth()) {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Row(verticalAlignment = androidx.compose.ui.Alignment.Bottom) {
-                    if (bpm != null) HeroValue("$bpm", stringResource(R.string.workout_live_unit_bpm), dot = DotSize.Detail)
-                    else Text(WorkoutCopy.noHeartRate(r.paused, connected), color = Color.White, style = GlowType.sentence)
-                    Spacer(Modifier.weight(1f))
-                    WorkoutRecorder.liveZone(bpm, r.maxHeartRate, heartZones)?.let { z ->
-                        Text(WorkoutCopy.zoneLine(z), color = Color.White, style = GlowType.secondary)
-                    }
+        if (split) EffortCard(effort) else {
+            // The heart on tinted glass: the zone named with its dot, the reading in the live dots, the zone's track.
+            LiveHero(blend) {
+                val zone = WorkoutRecorder.liveZone(bpm, r.maxHeartRate, heartZones)
+                Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                    if (zone != null) {
+                        org.openstrap.app.ui.glow.PulseDot(ZONE_COLORS[zone], bpm, 8.dp)
+                        Spacer(Modifier.width(8.dp))
+                        Text(WorkoutCopy.zoneLine(zone), color = Color.White, style = GlowType.cardTitle, maxLines = 1)
+                    } else Text(WorkoutCopy.noZone(r.paused), color = Color.White, style = GlowType.cardTitle, maxLines = 1)
                 }
-                EffortBar(effort)
+                Spacer(Modifier.height(10.dp))
+                if (bpm != null) HeroValue("$bpm", stringResource(R.string.workout_live_unit_bpm), dot = DotSize.Live, maxWidth = 280.dp)
+                else Text(WorkoutCopy.noHeartRate(r.paused, connected), color = Color.White, style = GlowType.sentence)
+                Spacer(Modifier.height(14.dp))
+                ZoneTrack(bpm, r.maxHeartRate, target as? WorkoutTarget.Zones)
             }
+            EffortCard(effort)
         }
         LiveFigures(figures)
         Spacer(Modifier.weight(1f))
@@ -133,18 +136,23 @@ private fun PeriodRow(r: WorkoutState.Recording, periods: Structure.Periods, pha
     }
 }
 
-/** Effort 1 to 5 as five steps, lit up to it in the zones' colours, "Effort 3 of 5" beside them. */
+/** The effort card: clear glass under the heart card, [EffortBar] on it. */
+@Composable
+private fun EffortCard(effort: Int?) = LiveStrip(Modifier.fillMaxWidth()) { EffortBar(effort) }
+
+/**
+ * Effort 1 to 5 as five blocks, lit up to it in the zones' flat colours (the others white at 12%), "4 of 5 effort"
+ * above them in the dots, "From your time in zones" beside it (board LiveGame).
+ */
 @Composable
 internal fun EffortBar(effort: Int?) {
     val of = effort?.let { stringResource(R.string.workout_live_effort_of, it) }
     val described = of ?: stringResource(R.string.workout_live_effort_none)
-    Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
-        SegmentBar(
-            List(5) { i -> Segment(1f, if (effort != null && i < effort) ZONE_COLORS[i] else Color.Black.copy(alpha = 0.35f)) },
-            Modifier.weight(1f).semantics { contentDescription = described },
-            height = 8.dp, gap = 4.dp,
-        )
-        Spacer(Modifier.width(12.dp))
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.semantics { contentDescription = described }) {
         Text(of ?: stringResource(R.string.workout_live_effort), color = Color.White, style = GlowType.secondary)
+        SegmentBar(
+            List(5) { i -> Segment(1f, if (effort != null && i < effort) ZONE_COLORS[i] else Color.White.copy(alpha = 0.12f)) },
+            height = 28.dp, gap = 6.dp, corner = 10.dp, ends = 10.dp,
+        )
     }
 }
