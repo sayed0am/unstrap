@@ -235,6 +235,9 @@ fun PageRow(
     icon: ImageVector? = null,
     selected: Boolean = false,
     dot: Boolean = false,
+    /** Tints the icon as the boards draw a metric's rows: its circle the blend's first stop at 18%, the glyph in the blend. */
+    tint: org.openstrap.app.ui.theme.Blend? = null,
+    iconSize: Dp = 32.dp,
     trailing: (@Composable () -> Unit)? = null,
 ) {
     Row(
@@ -252,7 +255,7 @@ fun PageRow(
             .padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        if (icon != null) RowIcon(icon)
+        if (icon != null) RowIcon(icon, tint, iconSize)
         if (below) Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
             if (dot) Row(verticalAlignment = Alignment.CenterVertically) {
                 RowName(title, titleColor)
@@ -273,9 +276,10 @@ fun PageRow(
 
 /** A settings row's [icon], quiet on the left and centred on the row, with the gap to its title after it. */
 @Composable
-private fun RowIcon(icon: ImageVector) {
-    Box(Modifier.padding(end = 12.dp).size(32.dp).background(RowIconFill, CircleShape), contentAlignment = Alignment.Center) {
-        Icon(icon, null, Modifier.size(18.dp), tint = Color.White.copy(alpha = 0.78f))
+private fun RowIcon(icon: ImageVector, tint: org.openstrap.app.ui.theme.Blend? = null, size: Dp = 32.dp) {
+    val fill = if (tint != null) tint.first.copy(alpha = 0.18f) else RowIconFill
+    Box(Modifier.padding(end = 12.dp).size(size).background(fill, CircleShape), contentAlignment = Alignment.Center) {
+        Icon(icon, null, Modifier.size(18.dp), tint = tint?.chart ?: Color.White.copy(alpha = 0.78f))
     }
 }
 
@@ -501,7 +505,7 @@ fun PageButton(
             Icon(icon, null, Modifier.size(size.icon), tint = color)
             Spacer(Modifier.width(8.dp))
         }
-        val style = if (size == ButtonSize.Row) GlowType.secondary else GlowType.body.copy(fontWeight = FontWeight.Medium)
+        val style = if (size == ButtonSize.Row) GlowType.secondary else GlowType.body
         Text(text, color = color, style = style, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }
@@ -529,7 +533,7 @@ fun PageTextButton(
 
 /**
  * A text field in the input style: white 8% glass with 14 dp corners, the [label] over it in
- * Secondary, the text in Body, an optional [unit] after it. [error] draws an amber hairline round it.
+ * Secondary, the text in Body, an optional [unit] after it. [error] draws a white ring round it.
  */
 @Composable
 fun PageField(
@@ -549,7 +553,7 @@ fun PageField(
         if (label != null) Text(label, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary)
         Row(
             Modifier.fillMaxWidth().heightIn(min = 52.dp).clip(GlowShapes.Icon).background(Color.White.copy(alpha = 0.08f))
-                .let { if (error) it.border(1.dp, MetricColors.warn, GlowShapes.Icon) else it }
+                .let { if (error) it.border(1.5.dp, Color.White.copy(alpha = 0.9f), GlowShapes.Icon) else it }
                 .padding(start = 16.dp, end = if (trailing != null) 4.dp else 16.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -641,14 +645,24 @@ fun PageConfirm(
     onDismiss: () -> Unit,
     dismiss: String = stringResource(R.string.glow_cancel),
     confirmEnabled: Boolean = true,
+    /** A 40 dp round icon before the title (the permission sheets), and glyphs in the two buttons. */
+    icon: ImageVector? = null,
+    confirmIcon: ImageVector? = null,
+    dismissIcon: ImageVector? = null,
     content: (@Composable ColumnScope.() -> Unit)? = null,
 ) {
-    PageSheet(onDismiss, title) {
+    PageSheet(onDismiss, if (icon == null) title else null) {
+        if (icon != null) Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Box(Modifier.size(40.dp).background(org.openstrap.app.ui.theme.Blends.Strap.first.copy(alpha = 0.18f), CircleShape), contentAlignment = Alignment.Center) {
+                Icon(icon, null, Modifier.size(20.dp), tint = Color.White)
+            }
+            Text(title, color = Color.White, style = GlowType.cardTitle, maxLines = 2)
+        }
         if (text != null) Text(text, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.body)
         content?.invoke(this)
         Row(Modifier.fillMaxWidth().padding(top = 4.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            PageButton(dismiss, onDismiss, Modifier.weight(1f))
-            PageButton(confirm, onConfirm, Modifier.weight(1f), enabled = confirmEnabled, primary = true)
+            PageButton(dismiss, onDismiss, Modifier.weight(1f).height(52.dp), icon = dismissIcon)
+            PageButton(confirm, onConfirm, Modifier.weight(1f).height(52.dp), enabled = confirmEnabled, primary = true, icon = confirmIcon)
         }
     }
 }

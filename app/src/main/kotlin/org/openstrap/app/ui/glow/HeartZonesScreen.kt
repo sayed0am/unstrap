@@ -74,7 +74,7 @@ fun HeartZonesScreen(
         }
         item { Text(HeartZonesCopy.NOTE, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary, modifier = Modifier.padding(horizontal = 4.dp)) }
         if (!zones.standard) item {
-            PageButton(HeartZonesCopy.RESET, { onZones(HeartZones.STANDARD) }, Modifier.fillMaxWidth(), icon = AppIcons.ArrowCounterClockwise)
+            org.openstrap.app.ui.device.OutlinePill(HeartZonesCopy.RESET, AppIcons.ArrowCounterClockwise, { onZones(HeartZones.STANDARD) })
         }
     }
     val zone = editing

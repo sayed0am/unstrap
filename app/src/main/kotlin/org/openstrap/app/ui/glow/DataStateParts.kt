@@ -42,7 +42,6 @@ import org.openstrap.app.ui.dashboard.PARTIAL_DAY_ROWS
 import org.openstrap.app.ui.dashboard.PairStep
 import org.openstrap.app.ui.dashboard.Wear
 import org.openstrap.app.ui.dashboard.partialLine
-import org.openstrap.app.ui.theme.MetricColors
 
 /*
  * The pieces of the data states (spec 4.3): the pairing stage on Today's hero, and the partial day sheet a card's
@@ -54,7 +53,7 @@ import org.openstrap.app.ui.theme.MetricColors
  * is always a solid 1 dp hairline (spec 2.7), and each [step] moves in its own way: still while it waits; ripples out of
  * the phone while it searches; the strap answering with a pulse once it's in reach; sparks running along the line while
  * they connect; the line lighting up from the phone to the strap with a flash at the pod when connected; and the line
- * broken in the middle, amber, when it couldn't.
+ * broken in the middle when it couldn't.
  */
 @Composable
 internal fun PairingStage(step: PairStep, modifier: Modifier = Modifier) {
@@ -142,7 +141,7 @@ internal fun PairingStage(step: PairStep, modifier: Modifier = Modifier) {
                     // Broken in the middle.
                     val mid = (start + end) / 2
                     val broken = 7.dp.toPx()
-                    val amber = MetricColors.warn.copy(alpha = 0.75f)
+                    val amber = Color.White.copy(alpha = 0.5f)
                     drawLine(amber, Offset(start, y), Offset(mid - broken, y), hair, StrokeCap.Round)
                     drawLine(amber, Offset(mid + broken, y), Offset(end, y), hair, StrokeCap.Round)
                 }

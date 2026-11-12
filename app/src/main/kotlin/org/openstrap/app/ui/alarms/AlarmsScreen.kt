@@ -1,7 +1,19 @@
 package org.openstrap.app.ui.alarms
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.height
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.unit.sp
+import org.openstrap.app.ui.device.PlaceIcon
+import org.openstrap.app.ui.device.placeHero
+import org.openstrap.app.ui.glow.topHairline
+import org.openstrap.app.ui.theme.AppIcons
+import org.openstrap.app.ui.theme.Blends
+import org.openstrap.app.ui.theme.GlowShapes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -209,7 +221,7 @@ fun HealthAlertsScreen(vm: AlarmsViewModel, state: AlarmsUiState, contentPadding
 @Composable
 private fun ErrorPanel(message: String, busy: Boolean, onRetry: () -> Unit) {
     PagePanel {
-        PageNote(message, color = MetricColors.warn)
+        PageNote(message, color = Color.White)
         PageButton(stringResource(R.string.you_alarms_try_again), onRetry, Modifier.fillMaxWidth(), enabled = !busy)
     }
 }
@@ -222,36 +234,71 @@ private fun AlarmsPanel(
     onAdd: () -> Unit,
     onDeleteAll: () -> Unit,
 ) {
-    PagePanel(
-        title = stringResource(R.string.you_alarms_on_strap),
-        note = state.caps?.let { stringResource(R.string.you_alarms_count, state.alarms.size, it.maxCount) },
-    ) {
-        if (state.alarms.isEmpty()) PageNote(stringResource(R.string.you_alarms_none))
-        state.alarms.forEach { a ->
-            Row(Modifier.fillMaxWidth().clickable(enabled = !state.busy) { onEdit(a) }.padding(vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.weight(1f)) {
-                    val ink = if (a.enabled) Color.White else Color.White.copy(alpha = 0.45f)
-                    val (digits, marker) = dotClock(a.hour, a.minute)
-                    Row(verticalAlignment = Alignment.Bottom) {
-                        org.openstrap.app.ui.glow.DotMatrixText(digits, dot = org.openstrap.app.ui.glow.draw.DotSize.Edge, color = ink)
-                        marker?.let { Text(it, style = GlowType.secondary, color = ink, modifier = Modifier.padding(start = 6.dp)) }
-                    }
-                    Text(daysLabel(a.days), style = GlowType.secondary, color = Color.White.copy(alpha = 0.6f), modifier = Modifier.padding(top = 6.dp))
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        // The board's hero panel: strap glass from the top, the title and count on one line, 84 dp rows of 40 sp time.
+        Column(
+            Modifier.fillMaxWidth().clip(GlowShapes.Card)
+                .placeHero(180f, 0f to Blends.Strap.first.copy(alpha = 0.22f), 0.6f to Color.White.copy(alpha = 0.06f), 1f to Color.White.copy(alpha = 0.06f))
+                .padding(start = 18.dp, end = 18.dp, top = 16.dp, bottom = 6.dp),
+        ) {
+            Row(Modifier.fillMaxWidth().height(24.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Bottom) {
+                Text(stringResource(R.string.you_alarms_on_strap), color = Color.White, style = GlowType.cardTitle, maxLines = 1)
+                state.caps?.let {
+                    Text(
+                        stringResource(R.string.you_alarms_count, state.alarms.size, it.maxCount),
+                        color = Color.White.copy(alpha = 0.65f), style = GlowType.secondary,
+                    )
                 }
-                org.openstrap.app.ui.glow.GlowSwitch(a.enabled, { onToggle(a, it) }, enabled = !state.busy)
+            }
+            Spacer(Modifier.height(6.dp))
+            if (state.alarms.isEmpty()) PageNote(stringResource(R.string.you_alarms_none))
+            state.alarms.forEachIndexed { i, a ->
+                Row(
+                    Modifier.fillMaxWidth().topHairline(i > 0).height(84.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(
+                        Modifier.weight(1f).fillMaxHeight().clickable(enabled = !state.busy) { onEdit(a) },
+                        verticalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterVertically),
+                    ) {
+                        val ink = if (a.enabled) Color.White else Color.White.copy(alpha = 0.45f)
+                        val (digits, marker) = dotClock(a.hour, a.minute)
+                        Row(verticalAlignment = Alignment.Bottom) {
+                            Text(digits, color = ink, style = GlowType.goalValue)
+                            marker?.let { Text(it, style = GlowType.secondary, color = ink, modifier = Modifier.padding(start = 6.dp, bottom = 4.dp)) }
+                        }
+                        Text(daysLabel(a.days), style = GlowType.secondary, color = Color.White.copy(alpha = 0.6f))
+                    }
+                    org.openstrap.app.ui.glow.GlowSwitch(a.enabled, { onToggle(a, it) }, enabled = !state.busy)
+                }
             }
         }
-        if (state.canAdd) {
-            PageButton(stringResource(R.string.you_alarms_add), onAdd, Modifier.fillMaxWidth(), enabled = !state.busy, primary = true)
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            if (state.canAdd) {
+                PageButton(
+                    stringResource(R.string.you_alarms_add), onAdd, Modifier.fillMaxWidth().height(52.dp), enabled = !state.busy, primary = true,
+                    icon = AppIcons.Plus,
+                )
+            }
+            if (state.alarms.size > 1) {
+                PageTextButton(
+                    stringResource(R.string.you_alarms_delete_all), onDeleteAll, Modifier.align(Alignment.CenterHorizontally).height(44.dp),
+                    enabled = !state.busy, color = DestructiveInk,
+                )
+            }
         }
-        if (state.alarms.size > 1) {
-            PageTextButton(
-                stringResource(R.string.you_alarms_delete_all), onDeleteAll, Modifier.align(Alignment.CenterHorizontally),
-                enabled = !state.busy, color = DestructiveInk,
+        // Zepp's tip for this strap (alarm_stuttgart_close_tips), in an outlined panel with the hand.
+        Row(
+            Modifier.fillMaxWidth().clip(GlowShapes.Card).border(1.dp, Color.White.copy(alpha = 0.14f), GlowShapes.Card)
+                .padding(horizontal = 18.dp, vertical = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(14.dp), verticalAlignment = Alignment.CenterVertically,
+        ) {
+            PlaceIcon(AppIcons.HandPalm, 32.dp, 0.08f, tint = Color.White.copy(alpha = 0.78f))
+            Text(
+                stringResource(R.string.you_alarms_tip), Modifier.weight(1f), color = Color.White.copy(alpha = 0.72f),
+                style = GlowType.body,
             )
         }
-        // Zepp's tip for this strap (alarm_stuttgart_close_tips).
-        PageNote(stringResource(R.string.you_alarms_tip))
     }
 }
 

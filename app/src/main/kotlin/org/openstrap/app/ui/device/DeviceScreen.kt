@@ -267,12 +267,12 @@ fun DeviceScreen(
             }
         }
         item {
-            PageRows {
-                PageSwitchRow(
-                    stringResource(R.string.you_strap_row_off_body), null, wearReminder, vm::setWearReminder, divider = false,
-                    icon = AppIcons.HandPalm,
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                StatusTile(
+                    AppIcons.HandPalm, stringResource(R.string.you_strap_row_off_body), Modifier.weight(1f),
+                    checked = wearReminder, onChange = vm::setWearReminder,
                 )
-                KeepConnectedRow(vm, keepConnected, device.address)
+                KeepConnectedTile(vm, keepConnected, device.address, Modifier.weight(1f))
             }
         }
         item {
@@ -368,7 +368,7 @@ private tailrec fun android.content.Context.findActivity(): android.app.Activity
  * battery-optimization prompt.
  */
 @Composable
-private fun KeepConnectedRow(vm: DeviceViewModel, keepConnected: KeepConnected, address: String) {
+private fun KeepConnectedTile(vm: DeviceViewModel, keepConnected: KeepConnected, address: String, modifier: Modifier) {
     val context = LocalContext.current
     val associated by vm.companionAssociated.collectAsStateWithLifecycle()
     val ignoringBattery by vm.ignoringBatteryOptimizations.collectAsStateWithLifecycle()
@@ -380,9 +380,9 @@ private fun KeepConnectedRow(vm: DeviceViewModel, keepConnected: KeepConnected, 
     val failed = stringResource(R.string.you_strap_battery_settings_failed)
     val icon = AppIcons.Bluetooth
     when {
-        associated -> PageRow(title, on, icon = icon)
-        vm.companionSupported && !declined && !hidden -> PageRow(title, off, onClick = { keepConnected.associate(address) }, icon = icon)
-        !ignoringBattery -> PageRow(title, off, icon = icon, onClick = {
+        associated -> StatusTile(icon, title, modifier, chip = on)
+        vm.companionSupported && !declined && !hidden -> StatusTile(icon, title, modifier, chip = off, onClick = { keepConnected.associate(address) })
+        !ignoringBattery -> StatusTile(icon, title, modifier, chip = off, onClick = {
             runCatching {
                 context.startActivity(
                     android.content.Intent(android.provider.Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS)
@@ -390,7 +390,7 @@ private fun KeepConnectedRow(vm: DeviceViewModel, keepConnected: KeepConnected, 
                 )
             }.onFailure { vm.showMessage(failed) }
         })
-        else -> PageRow(title, on, icon = icon)
+        else -> StatusTile(icon, title, modifier, chip = on)
     }
 }
 
@@ -419,7 +419,7 @@ internal fun StrapHero(name: String, connection: ConnectionState, sync: SyncStat
                     Spacer(Modifier.width(7.dp))
                     Text(
                         strapStateLine(connection, sync, lastSeen, now, lastSync = lastSync),
-                        color = Color.White.copy(alpha = 0.82f), style = GlowType.secondary.copy(fontSize = 14.sp, lineHeight = 20.sp),
+                        color = Color.White.copy(alpha = 0.82f), style = GlowType.body,
                     )
                 }
             }
@@ -434,7 +434,7 @@ internal fun StrapHero(name: String, connection: ConnectionState, sync: SyncStat
                 }
                 when {
                     connection is ConnectionState.Failed && !connection.keyRejected -> {
-                        Text(connection.reason, color = MetricColors.warn, style = GlowType.secondary)
+                        Text(connection.reason, color = Color.White, style = GlowType.secondary)
                         Text(
                             stringResource(R.string.you_strap_retrying),
                             style = GlowType.secondary, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA),
@@ -442,7 +442,7 @@ internal fun StrapHero(name: String, connection: ConnectionState, sync: SyncStat
                     }
                     sync is SyncState.Failed -> {
                         Text(
-                            stringResource(R.string.you_strap_sync_stopped, sync.reason), color = MetricColors.warn,
+                            stringResource(R.string.you_strap_sync_stopped, sync.reason), color = Color.White,
                             style = GlowType.secondary,
                         )
                         Text(
@@ -597,14 +597,14 @@ private fun ManualPairSheet(
             )
         }
         if (locationOff) {
-            PageNote(stringResource(R.string.you_pair_scan_location_off), color = MetricColors.warn)
+            PageNote(stringResource(R.string.you_pair_scan_location_off), color = Color.White)
             PageButton(
                 stringResource(R.string.you_pair_scan_location_on),
                 { context.startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)) },
                 Modifier.fillMaxWidth(), icon = AppIcons.Location01,
             )
         }
-        scan.error?.let { PageNote(stringResource(R.string.you_pair_scan_failed, it), color = MetricColors.warn) }
+        scan.error?.let { PageNote(stringResource(R.string.you_pair_scan_failed, it), color = Color.White) }
         if (scan.scanning && scan.found.isEmpty()) PageNote(stringResource(R.string.you_pair_scan_looking))
         if (scan.found.isNotEmpty()) PageRows {
             scan.found.forEachIndexed { i, d ->

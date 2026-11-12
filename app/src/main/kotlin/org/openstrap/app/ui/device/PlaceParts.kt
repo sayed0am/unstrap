@@ -50,6 +50,7 @@ import org.openstrap.app.ui.theme.GlowShapes
 import org.openstrap.app.ui.theme.ScreenLight
 import org.openstrap.app.ui.theme.clearGlass
 import org.openstrap.app.ui.theme.litEdge
+import org.openstrap.app.ui.theme.tintedGlass
 
 /*
  * The parts the You and Strap pages share on the Glow × Glass boards (PageYou, PageStrap and what they open): the place
@@ -151,7 +152,7 @@ internal fun PlaceTile(
             if (caret) TapCaret(CARET, Modifier.padding(top = 4.dp))
         }
         Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
-            Text(title, color = Color.White, style = GlowType.body.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Medium), maxLines = 2)
+            Text(title, color = Color.White, style = GlowType.body, maxLines = 2)
             Text(note, color = Color.White.copy(alpha = 0.65f), style = GlowType.secondary, maxLines = 3, overflow = TextOverflow.Ellipsis)
         }
     }
@@ -170,6 +171,7 @@ internal fun OutlineRow(
     note: String? = null,
     iconFill: Color = Color.White.copy(alpha = 0.10f),
     dot: Boolean = false,
+    iconTint: Color = Color.White,
     trailing: (@Composable () -> Unit)? = null,
 ) {
     val shape = GlowShapes.Tile
@@ -180,7 +182,7 @@ internal fun OutlineRow(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(Modifier.size(36.dp).background(iconFill, CircleShape), contentAlignment = Alignment.Center) {
-            Icon(icon, null, Modifier.size(18.dp), tint = Color.White)
+            Icon(icon, null, Modifier.size(18.dp), tint = iconTint)
         }
         Spacer(Modifier.width(14.dp))
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
@@ -196,11 +198,52 @@ internal fun OutlineRow(
     }
 }
 
+/**
+ * A 128 dp tile of the Strap page's two-up row (PageStrap): a 36 dp round icon at the top left, the [title] at the bottom
+ * left, and at the top right either a switch ([onChange] set) or a chip with [chip] ("On"). Clear glass for a switch,
+ * tinted strap glass for the chip; a tap flips the switch, or runs [onClick] when the chip is something to turn on.
+ */
+@Composable
+internal fun StatusTile(
+    icon: ImageVector,
+    title: String,
+    modifier: Modifier = Modifier,
+    checked: Boolean = false,
+    onChange: ((Boolean) -> Unit)? = null,
+    chip: String? = null,
+    onClick: (() -> Unit)? = null,
+) {
+    val shape = GlowShapes.Card
+    Column(
+        modifier.height(128.dp).clip(shape)
+            .let { if (onChange != null) it.clearGlass(shape) else it.tintedGlass(Blends.Strap, shape) }
+            .let {
+                when {
+                    onChange != null -> it.toggleable(checked, role = Role.Switch, onValueChange = onChange)
+                    onClick != null -> it.pressClickable(onClick, shape).semantics { role = Role.Button }
+                    else -> it
+                }
+            }
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+        verticalArrangement = Arrangement.SpaceBetween,
+    ) {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+            PlaceIcon(icon, 36.dp, 0.08f, tint = Color.White.copy(alpha = 0.78f))
+            if (onChange != null) org.openstrap.app.ui.glow.GlowSwitch(checked, onChange, Modifier.clearAndSetSemantics {})
+            else if (chip != null) Text(
+                chip, color = Color.White, style = GlowType.secondary,
+                modifier = Modifier.clip(GlowShapes.Pill).background(Color.White.copy(alpha = 0.12f)).padding(horizontal = 10.dp, vertical = 4.dp),
+            )
+        }
+        Text(title, color = Color.White, style = GlowType.body, maxLines = 2)
+    }
+}
+
 /** A small white 14% chip with [text] ("2 to restore"), the board's count tag. */
 @Composable
 internal fun CountChip(text: String) {
     Text(
-        text, color = Color.White, style = GlowType.secondary.copy(fontSize = 12.sp),
+        text, color = Color.White, style = GlowType.caption,
         modifier = Modifier.clip(GlowShapes.Pill).background(Color.White.copy(alpha = 0.14f)).padding(horizontal = 10.dp, vertical = 4.dp),
     )
 }
@@ -225,7 +268,7 @@ internal fun OutlinePill(text: String, icon: ImageVector?, onClick: () -> Unit, 
     ) {
         val ink = Color.White.copy(alpha = 0.72f)
         if (icon != null) { Icon(icon, null, Modifier.size(18.dp), tint = ink); Spacer(Modifier.width(8.dp)) }
-        Text(text, color = ink, style = GlowType.body.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Medium), maxLines = 1)
+        Text(text, color = ink, style = GlowType.body, maxLines = 1)
     }
 }
 
@@ -255,8 +298,8 @@ internal fun SwitchHero(
                     org.openstrap.app.ui.glow.GlowSwitch(checked, onChange, Modifier.clearAndSetSemantics {})
                 }
                 Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    Text(title, color = Color.White, style = GlowType.cardTitle)
-                    Text(line, color = Color.White.copy(alpha = 0.85f), style = GlowType.secondary.copy(fontSize = 14.sp, lineHeight = 20.sp))
+                    Text(title, color = Color.White, style = GlowType.cardTitle, maxLines = 1)
+                    Text(line, color = Color.White.copy(alpha = 0.85f), style = GlowType.body)
                 }
             }
             if (below != null) { Spacer(Modifier.height(10.dp)); below() }

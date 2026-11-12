@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -22,6 +23,10 @@ import androidx.compose.ui.unit.sp
 import org.openstrap.app.ui.components.PageLight
 import org.openstrap.app.ui.device.OutlinePanel
 import org.openstrap.app.ui.device.PlaceHero
+import org.openstrap.app.ui.device.PlaceIcon
+import org.openstrap.app.ui.theme.GlowShapes
+import org.openstrap.app.ui.theme.clearGlass
+import androidx.compose.foundation.layout.offset
 import org.openstrap.app.ui.device.StrapPageLight
 import org.openstrap.app.ui.device.strapHero
 import androidx.compose.runtime.DisposableEffect
@@ -95,12 +100,12 @@ fun FirmwareScreen(vm: FirmwareViewModel, contentPadding: PaddingValues, onBack:
             PlaceHero(Modifier.strapHero()) {
                 val c = connection as? ConnectionState.Connected
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text(stringResource(R.string.you_firmware_this_strap), color = Color.White, style = GlowType.cardTitle)
+                    Text(stringResource(R.string.you_firmware_this_strap), color = Color.White, style = GlowType.cardTitle, maxLines = 1)
                     Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                         Text(stringResource(R.string.you_firmware_title), color = Color.White.copy(alpha = 0.78f), style = GlowType.secondary)
                         Text(
                             info?.firmware ?: c?.firmware ?: stringResource(R.string.you_firmware_unknown), color = Color.White,
-                            style = GlowType.sentence.copy(fontSize = 34.sp, lineHeight = 40.sp),
+                            style = GlowType.smallValue,
                         )
                     }
                     Row(Modifier.fillMaxWidth().padding(top = 4.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -213,7 +218,7 @@ private fun StepPanel(step: FirmwareStep, vm: FirmwareViewModel, onInstall: (Rea
             }
             is FirmwareStep.Failed -> {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Icon(AppIcons.WarningCircle, null, tint = MetricColors.warn)
+                    Icon(AppIcons.WarningCircle, null, tint = Color.White)
                     CardTitle(stringResource(R.string.you_firmware_failed))
                 }
                 Body(step.message)
@@ -286,8 +291,12 @@ private fun AccountPanel(
             onConfirm = { listing, strap -> mode = AccountMode.Idle; onSignIn(listing, strap) },
         )
     }
-    PagePanel {
+    Column(
+        Modifier.fillMaxWidth().clearGlass(GlowShapes.Card).padding(20.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp),
+    ) {
         if (mode != AccountMode.EditingToken) {
+            PlaceIcon(AppIcons.Key, 44.dp, 0.12f)
             Body(
                 when {
                     account == null -> stringResource(R.string.you_zepp_account_none)
@@ -298,21 +307,22 @@ private fun AccountPanel(
             PageButton(
                 stringResource(if (account == null) R.string.you_pair_sign_in else R.string.you_zepp_sign_in_again),
                 { mode = AccountMode.SigningIn },
-                Modifier.fillMaxWidth(), enabled = enabled, primary = true,
+                Modifier.fillMaxWidth().height(52.dp), enabled = enabled, primary = true, icon = AppIcons.Key,
             )
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(Modifier.offset(y = (-4).dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 PageButton(
                     stringResource(if (account == null) R.string.you_zepp_paste_token else R.string.you_zepp_edit),
                     { mode = AccountMode.EditingToken },
-                    Modifier.weight(1f), enabled = enabled,
+                    Modifier.weight(1f).height(52.dp), enabled = enabled, icon = AppIcons.PencilEdit,
                 )
                 if (account != null) {
                     PageButton(
-                        stringResource(R.string.you_zepp_remove), onClear, Modifier.weight(1f), enabled = enabled, color = DestructiveInk,
+                        stringResource(R.string.you_zepp_remove), onClear, Modifier.weight(1f).height(52.dp), enabled = enabled,
+                        color = DestructiveInk, icon = AppIcons.Trash,
                     )
                 }
             }
-            return@PagePanel
+            return@Column
         }
         // Keyed on the account, so a fresh sign-in or renewed token starts the fields again from it and a stale copy
         // can't be written back over it. The pasted token is the secret: plain remember, so it never reaches the saved state.
@@ -395,7 +405,7 @@ private fun Point(icon: ImageVector, title: String, body: String) {
 @Composable
 private fun Fact(label: String, value: String, modifier: Modifier = Modifier) {
     Column(modifier, verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Text(label, color = Color.White.copy(alpha = 0.72f), style = GlowType.secondary.copy(fontSize = 12.sp, lineHeight = 16.sp), maxLines = 1)
+        Text(label, color = Color.White.copy(alpha = 0.72f), style = GlowType.caption, maxLines = 1)
         Text(value, color = Color.White, style = GlowType.body, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }
@@ -411,7 +421,7 @@ private fun InfoLine(label: String, value: String) {
 @Composable
 private fun Warning(text: String) {
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        Icon(AppIcons.Warning, null, tint = MetricColors.warn, modifier = Modifier.size(20.dp))
+        Icon(AppIcons.Warning, null, tint = Color.White, modifier = Modifier.size(20.dp))
         Text(text, style = GlowType.secondary, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA))
     }
 }
