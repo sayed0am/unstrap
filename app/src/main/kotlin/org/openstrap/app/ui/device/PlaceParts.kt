@@ -110,7 +110,7 @@ internal fun Modifier.strapHero(blend: Blend = Blends.Strap): Modifier = placeHe
 
 /** A hero card of a place's page: tinted glass of [lookModifier], padded 20 dp, [onClick] makes the whole card a button. */
 @Composable
-@Suppress("ModifierWithoutDefault") // the look is the card's design, always passed by the caller
+@Suppress("ModifierWithoutDefault", "ComposeModifierWithoutDefault") // the look is the card's design, always passed by the caller
 internal fun PlaceHero(
     lookModifier: Modifier,
     modifier: Modifier = Modifier,

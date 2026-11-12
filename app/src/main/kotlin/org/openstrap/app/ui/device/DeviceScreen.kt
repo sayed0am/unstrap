@@ -370,7 +370,7 @@ private tailrec fun android.content.Context.findActivity(): android.app.Activity
  * battery-optimization prompt.
  */
 @Composable
-private fun KeepConnectedTile(vm: DeviceViewModel, keepConnected: KeepConnected, address: String, modifier: Modifier) {
+private fun KeepConnectedTile(vm: DeviceViewModel, keepConnected: KeepConnected, address: String, modifier: Modifier = Modifier) {
     val context = LocalContext.current
     val associated by vm.companionAssociated.collectAsStateWithLifecycle()
     val ignoringBattery by vm.ignoringBatteryOptimizations.collectAsStateWithLifecycle()

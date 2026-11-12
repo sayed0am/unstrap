@@ -46,7 +46,7 @@ import org.openstrap.app.ui.theme.AppIcons
  * rows' toasts can't hold one.
  */
 // A whole page, placed by the page host like the Strap page's others, so there's nothing for a caller to modify.
-@Suppress("ModifierMissing")
+@Suppress("ModifierMissing", "ComposeModifierMissing")
 @Composable
 fun HealthConnectPage(
     auto: HealthConnectAuto,

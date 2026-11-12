@@ -86,9 +86,10 @@
     <string name="workout_live_map_show_map">显示地图</string>
     <string name="workout_live_map_route_only">仅显示轨迹，不显示地图</string>
     <string name="workout_live_map_follow">跟随我的位置</string>
-    <string name="workout_live_heart_title">心率</string>
-    <string name="workout_live_heart_of_max">最大心率的 %1$d%%</string>
-    <string name="workout_live_heart_behind">bpm，折线显示最近 10 分钟</string>
+    <string name="workout_live_heart_range">bpm，%1$s</string>
+    <string name="workout_live_time_in_zones">各区用时</string>
+    <string name="workout_live_target_short_zone">目标 %1$d 区</string>
+    <string name="workout_live_target_short_zones">目标 %1$d 至 %2$d 区</string>
     <string name="workout_live_target_zone">目标 %1$d 区。偏离时手环会振动</string>
     <string name="workout_live_target_zones">目标 %1$d 至 %2$d 区。偏离时手环会振动</string>
     <string name="workout_live_time_target">%1$s / 共 %2$d 分钟</string>
@@ -138,14 +139,12 @@
     <plurals name="workout_live_sets_all_done">
         <item quantity="other">已完成全部 %1$d 组。长按方块结束，或继续训练。</item>
     </plurals>
-    <string name="workout_live_sets_in_this_set">本组用时</string>
     <string name="workout_live_sets_rest_after">%1$s 后休息</string>
     <string name="workout_live_sets_ready_first">准备第 1 组</string>
     <string name="workout_live_sets_rest_over">休息结束</string>
     <string name="workout_live_sets_next_tap_start">接下来进行 %1$s。拿起器械时点击“开始”。</string>
     <string name="workout_live_sets_rest_title">休息</string>
     <string name="workout_live_sets_after">%1$s 后</string>
-    <string name="workout_live_sets_next">接下来</string>
     <string name="workout_live_sets_next_set">第 %1$d 组</string>
     <string name="workout_live_sets_next_set_exercise">第 %1$d 组，%2$s</string>
     <string name="workout_live_sets_falling_description">本组结束后的心率变化</string>

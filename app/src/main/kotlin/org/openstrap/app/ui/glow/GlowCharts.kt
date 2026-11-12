@@ -362,6 +362,7 @@ fun GlowBars(
 )
 
 /** [GlowBars] in [blend]. [othersAlpha] dims the columns that aren't the [highlight] (1 draws every bar in full, as the board does). */
+@Suppress("UnstableCollections", "ComposeUnstableCollections")
 @Composable
 fun GlowBars(
     values: List<Float>,
@@ -433,6 +434,7 @@ fun GlowTrend(
 ) = GlowTrend(days, remember(color) { chartBlend(color) }, modifier, height, average)
 
 /** [GlowTrend] in [blend]. */
+@Suppress("UnstableCollections", "ComposeUnstableCollections")
 @Composable
 fun GlowTrend(
     days: List<GlowDay>,
@@ -673,6 +675,7 @@ data class GlowStage(val from: Float, val to: Float, val row: Int)
  * Sleep stages as white pills on hairline rows (row 0 at the top, e.g. Awake), joined by thin connectors, deeper rows
  * drawn brighter so deep sleep stands out on the dark core; or, with [rowColors], as solid bands in the stage colours.
  */
+@Suppress("UnstableCollections", "ComposeUnstableCollections")
 @Composable
 fun GlowHypnogram(
     stages: List<GlowStage>,
@@ -762,6 +765,7 @@ fun GhostLine(today: List<Float?>, color: Color, max: Float, modifier: Modifier 
     GhostLine(today, remember(color) { chartBlend(color) }, max, modifier, usual, height)
 
 /** [GhostLine] in [blend]: today's line runs from the first colour to the second, which lands on the end dot. */
+@Suppress("UnstableCollections", "ComposeUnstableCollections")
 @Composable
 fun GhostLine(today: List<Float?>, blend: Blend, max: Float, modifier: Modifier = Modifier, usual: List<Float>? = null, height: Dp = 56.dp) {
     Spacer(
@@ -792,6 +796,7 @@ fun TrendDots(values: List<Int?>, modifier: Modifier = Modifier, height: Dp = 52
     TrendDots(values, remember(color) { chartBlend(color) }, modifier, height, band)
 
 /** [TrendDots] in [blend]: days inside your normal dim in the first colour, those outside and today in the second. */
+@Suppress("UnstableCollections", "ComposeUnstableCollections")
 @Composable
 fun TrendDots(values: List<Int?>, blend: Blend, modifier: Modifier = Modifier, height: Dp = 52.dp, band: ClosedFloatingPointRange<Float>? = null) {
     Canvas(modifier.fillMaxWidth().height(height)) {
@@ -829,6 +834,7 @@ fun TrendDots(values: List<Int?>, blend: Blend, modifier: Modifier = Modifier, h
  * otherwise spread across. Holding scrubs: [onScrub] gets the point under the finger, or null on release, so the
  * headline can follow it (spec 2.7).
  */
+@Suppress("UnstableCollections", "ComposeUnstableCollections")
 @Composable
 internal fun NormalTrend(
     values: List<Float?>,
@@ -844,6 +850,7 @@ internal fun NormalTrend(
 ) = NormalTrend(values, levels, remember(color) { chartBlend(color) }, modifier, height, labels, band, bandLabel, onScrub)
 
 /** [NormalTrend] in [blend]: the line runs from the first colour to the second at the latest day, outside days lit in the second. */
+@Suppress("UnstableCollections", "ComposeUnstableCollections")
 @Composable
 internal fun NormalTrend(
     values: List<Float?>,
