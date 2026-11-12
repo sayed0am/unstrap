@@ -204,8 +204,8 @@ private fun ShareScreen(card: StoryCard, route: List<Route.Point>, fileName: Str
         saved = null
     }
 
-    LightPage(
-        Modifier.screenLight(null), contentPadding, scroll = false,
+    WorkoutPage(
+        null, contentPadding, scroll = false,
         pinned = {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 val saveLabel = stringResource(
