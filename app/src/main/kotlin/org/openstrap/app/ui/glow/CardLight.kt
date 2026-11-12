@@ -1,7 +1,5 @@
 package org.openstrap.app.ui.glow
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -18,7 +16,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.unit.dp
-import org.openstrap.app.ui.glow.draw.EdgeSurface
+import org.openstrap.app.ui.theme.GlowShapes
+import org.openstrap.app.ui.theme.clearGlass
 import org.openstrap.app.ui.glow.draw.GlowStyle
 import org.openstrap.app.ui.glow.draw.LightAngle
 import org.openstrap.app.ui.glow.draw.chart
@@ -57,12 +56,11 @@ internal fun LitPanel(
     content: @Composable ColumnScope.() -> Unit,
 ) {
     Column(
-        modifier.fillMaxWidth().clip(GlowLayout.CardShape).background(EdgeSurface)
+        modifier.fillMaxWidth().clip(GlowShapes.Card).clearGlass(GlowShapes.Card)
             .drawBehind {
                 val r = reach(size)
                 drawCardLight(color, lightCenter(size), r.width, r.height, stops)
             }
-            .border(1.dp, color.copy(alpha = 0.3f), GlowLayout.CardShape)
             .padding(horizontal = 20.dp, vertical = 18.dp),
         verticalArrangement = verticalArrangement,
         content = content,
