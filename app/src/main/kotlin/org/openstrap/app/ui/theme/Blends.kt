@@ -58,6 +58,18 @@ object Blends {
     val You = Blend(Color(0xFFF0B48C), Color(0xFFA8613F))
     val Goals = Blend(Color(0xFF9BFFB0), Color(0xFF7C6BFF))
 
+    /**
+     * Workout families (Workouts board): the family's blend lights Ready, live, summary, share and the notification.
+     * Zones never light a screen. Distance is Steps' blend and Mind and body is the Evening's.
+     */
+    val Distance = Steps
+    val IndoorCardio = Blend(Color(0xFFC04FE0), Color(0xFF6B3FD8))
+    val Strength = Blend(Color(0xFFB98A4E), Color(0xFF5A4636))
+    /** Flare pink for work, deep teal for rest: the light that means the phase. */
+    val Intervals = Blend(Color(0xFFFF44B0), Color(0xFF0E8A87))
+    val Games = Blend(Color(0xFF4CB85C), Color(0xFF2F6B3F))
+    val MindAndBody = Evening
+
     /** Flat Deep for small marks (legend dots), lightened to 3:1. The stage bars keep [MetricColors.sleepDeep]. */
     val SleepDeepMark = Color(0xFF5A7BFF)
 
@@ -89,6 +101,7 @@ object Blends {
         "Load" to Load, "Evening" to Evening, "Habit Age" to HabitAge, "Stress" to Stress, "Heart rate" to Heart,
         "Energy" to Energy, "Skin temperature" to Temperature, "Calories" to Calories, "Steps" to Steps,
         "Strap" to Strap, "You" to You, "Goals" to Goals,
+        "Indoor cardio" to IndoorCardio, "Strength" to Strength, "Intervals" to Intervals, "Games" to Games,
     )
 }
 
