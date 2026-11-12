@@ -675,7 +675,7 @@ data class GlowStage(val from: Float, val to: Float, val row: Int)
  * Sleep stages as white pills on hairline rows (row 0 at the top, e.g. Awake), joined by thin connectors, deeper rows
  * drawn brighter so deep sleep stands out on the dark core; or, with [rowColors], as solid bands in the stage colours.
  */
-@Suppress("UnstableCollections", "ComposeUnstableCollections")
+@Suppress("UnstableCollections", "ComposeUnstableCollections", "CyclomaticComplexMethod")
 @Composable
 fun GlowHypnogram(
     stages: List<GlowStage>,
@@ -850,7 +850,7 @@ internal fun NormalTrend(
 ) = NormalTrend(values, levels, remember(color) { chartBlend(color) }, modifier, height, labels, band, bandLabel, onScrub)
 
 /** [NormalTrend] in [blend]: the line runs from the first colour to the second at the latest day, outside days lit in the second. */
-@Suppress("UnstableCollections", "ComposeUnstableCollections")
+@Suppress("UnstableCollections", "ComposeUnstableCollections", "CyclomaticComplexMethod")
 @Composable
 internal fun NormalTrend(
     values: List<Float?>,
