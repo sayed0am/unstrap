@@ -38,7 +38,7 @@ import org.openstrap.app.ui.glow.draw.GlowMood
 import org.openstrap.app.ui.glow.draw.drawStageBar
 import org.openstrap.app.ui.glow.draw.renderToBitmap
 import org.openstrap.app.ui.glow.draw.stageColor
-import org.openstrap.app.ui.theme.MetricColors
+import org.openstrap.app.ui.theme.Blends
 
 /**
  * The Sleep widget (widgets spec 3.2): last night's score, time asleep and stages, as the Sleep tab's hero tells them.
@@ -77,7 +77,7 @@ class SleepWidgetReceiver : PlacedWidgetReceiver() {
 /* ------------------------------------------------------------------------------------------------ */
 
 /** Sleep's ink, as the Sleep tab and Today's Last night card. */
-private val Ink = MetricColors.sleepDeep
+private val Ink = Blends.Sleep.chart
 
 /** The legend's labels: Caption size and weight, at Secondary's 72% (the mockup's). */
 private val LegendStyle = WidgetType.caption.copy(color = ColorProvider(Color.White.copy(alpha = 0.72f)))
