@@ -8,14 +8,21 @@ import org.junit.Test
 class DotSpecTest {
     @Test fun `8,432 in the second glow's dots`() {
         val l = dotLayout("8,432", DotSize.Second, density = 1f)
-        // Four 5-wide digits, the 1-wide comma and four empty columns between them.
-        assertEquals(25, DotFont.columns("8,432"))
-        // 8 has 17 dots, 4 has 14, 3 has 15, 2 has 14, the comma 2.
-        assertEquals(62, l.centers.size)
-        val pitch = 3.6f + 3.6f * DotSize.DOT_GAP
-        assertEquals(pitch * 25 - 3.6f * DotSize.DOT_GAP, l.width, 1e-4f)
-        assertEquals(pitch * 7 - 3.6f * DotSize.DOT_GAP, l.height, 1e-4f)
-        assertEquals(1.8f, l.radius, 1e-6f)
+        // Four digits read without a gap (Numbers board): four 5-wide digits and three empty columns between them.
+        assertEquals(23, DotFont.columns("8,432"))
+        // 8 has 17 dots, 4 has 14, 3 has 15, 2 has 14.
+        assertEquals(60, l.centers.size)
+        val pitch = 3f + 3f * DotSize.DOT_GAP
+        assertEquals(pitch * 23 - 3f * DotSize.DOT_GAP, l.width, 1e-4f)
+        assertEquals(pitch * 7 - 3f * DotSize.DOT_GAP, l.height, 1e-4f)
+        assertEquals(1.5f, l.radius, 1e-6f)
+    }
+
+    @Test fun `five digits keep a gap of half a digit before the last three`() {
+        assertEquals("12,480", DotFont.grouped("12,480"))
+        assertEquals("8412", DotFont.grouped("8,412"))
+        // Five 5-wide digits, four gaps between glyphs, and the 2-wide group gap with its own column.
+        assertEquals(5 * 5 + 2 + 5, DotFont.columns("12,480"))
     }
 
     @Test fun `every dot sits inside the box at any density`() {

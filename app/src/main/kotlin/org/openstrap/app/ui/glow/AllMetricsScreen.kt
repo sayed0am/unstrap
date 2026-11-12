@@ -292,7 +292,7 @@ fun AllMetricsSheet(
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             Column(Modifier.padding(horizontal = 4.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(stringResource(R.string.glow_metrics_all_metrics), color = Color.White, style = GlowType.cardTitle)
+                Text(stringResource(R.string.glow_metrics_all_metrics), color = Color.White, style = GlowType.cardTitle, maxLines = 1)
                 Text(dayName(date), color = Color.White.copy(alpha = 0.62f), style = GlowType.secondary)
             }
             Column(Modifier.fillMaxWidth().clearGlass(GlowShapes.Card).padding(horizontal = 18.dp, vertical = 4.dp)) {
@@ -329,7 +329,7 @@ private fun MetricRow(r: IndexRow, divider: Boolean, onClick: () -> Unit) {
         }
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(r.name, color = Color.White, style = GlowType.body)
-            Text(r.status, color = Color.White.copy(alpha = 0.6f), style = GlowType.secondary.copy(fontSize = 12.sp, lineHeight = 16.sp))
+            Text(r.status, color = Color.White.copy(alpha = 0.6f), style = GlowType.label)
         }
         if (r.value != null) Text(r.value, color = Color.White, style = GlowType.rowValue, maxLines = 1) else WaitingDash()
         Icon(AppIcons.CaretRight, null, Modifier.size(16.dp), tint = Color.White.copy(alpha = 0.48f))

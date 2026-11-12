@@ -108,7 +108,7 @@ private fun StrapAndWords(text: String) {
 private fun PillText(text: String) {
     Text(
         text, maxLines = 1, softWrap = false, color = Color.White,
-        style = GlowType.secondary.copy(fontSize = 14.sp, fontWeight = FontWeight.Normal, fontFeatureSettings = "tnum"),
+        style = GlowType.chip,
     )
 }
 

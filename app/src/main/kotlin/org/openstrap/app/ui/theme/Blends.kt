@@ -95,13 +95,13 @@ object Blends {
         else -> all.firstOrNull { it.second.first == ink }?.second
     }
 
-    /** Every blend, for tests and the debug gallery. */
+    /** Every blend by an id (not user-facing), for tests and the debug gallery. */
     val all: List<Pair<String, Blend>> = listOf(
-        "Recovery" to Recovery, "HRV" to Hrv, "Blood oxygen" to Spo2, "Breathing rate" to Breathing, "Sleep" to Sleep,
-        "Load" to Load, "Evening" to Evening, "Habit Age" to HabitAge, "Stress" to Stress, "Heart rate" to Heart,
-        "Energy" to Energy, "Skin temperature" to Temperature, "Calories" to Calories, "Steps" to Steps,
-        "Strap" to Strap, "You" to You, "Goals" to Goals,
-        "Indoor cardio" to IndoorCardio, "Strength" to Strength, "Intervals" to Intervals, "Games" to Games,
+        "recovery" to Recovery, "hrv" to Hrv, "blood-oxygen" to Spo2, "breathing-rate" to Breathing, "sleep" to Sleep,
+        "load" to Load, "evening" to Evening, "habit-age" to HabitAge, "stress" to Stress, "heart-rate" to Heart,
+        "energy" to Energy, "skin-temperature" to Temperature, "calories" to Calories, "steps" to Steps,
+        "strap" to Strap, "you" to You, "goals" to Goals,
+        "indoor-cardio" to IndoorCardio, "strength" to Strength, "intervals" to Intervals, "games" to Games,
     )
 }
 

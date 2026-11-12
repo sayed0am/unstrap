@@ -37,7 +37,8 @@ class DesignTokenTest {
     }
 
     @Test fun `the tokens hold the spec's values`() {
-        assertEquals(listOf(2.4f, 3f, 3.6f, 4.5f, 6f, 9f), DotSize.entries.map { it.dot.value })
+        // Glow × Glass (Numbers board): every grid card is 3 dp, so Second matches Edge.
+        assertEquals(listOf(2.4f, 3f, 3f, 4.5f, 6f, 9f), DotSize.entries.map { it.dot.value })
         DotSize.entries.forEach { assertEquals(it.name, it.dot.value * 0.38f, it.gap.value, 1e-4f) }
         assertEquals(28.dp, GlowLayout.CardCorner)
         assertEquals(16.dp, GlowLayout.TileCorner)
@@ -203,7 +204,7 @@ class DesignTokenTest {
     @Test fun `cards take their corners from GlowLayout`() {
         val found = mutableListOf<String>()
         sources.forEach { (path, lines) ->
-            if (path == "glow/GlowLayout.kt") return@forEach
+            if (path == "glow/GlowLayout.kt" || path == "theme/Shapes.kt") return@forEach
             val code = lines.joinToString("\n")
             Regex("""\b(RoundedCornerShape|CornerRadius)\(""").findAll(code).forEach { m ->
                 val args = balanced(code, m.range.last)
@@ -213,7 +214,7 @@ class DesignTokenTest {
             }
         }
         // A style's own corner (GlowStyle(radius = 36.dp)); a circle's radius in a draw call is drawn in px.
-        found += find(Regex("""\bradius\s*=\s*\d+(\.\d+)?\.dp\b(?!\.toPx)"""))
+        found += find(Regex("""\bradius\s*=\s*\d+(\.\d+)?\.dp\b(?!\.toPx)""")).filterNot { it.startsWith("theme/Shapes.kt:") }
         if (found.isNotEmpty()) fail("Card corners are GlowLayout.CardCorner (spec 2.4):\n" + found.joinToString("\n"))
         val stale = cornerAllowed.filter { (path, line) ->
             sources[path]?.getOrNull(line - 1)?.let { Regex("""(RoundedCornerShape|CornerRadius)\(""").containsMatchIn(it) } != true

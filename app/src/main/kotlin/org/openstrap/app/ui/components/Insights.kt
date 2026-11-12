@@ -240,7 +240,7 @@ private fun NavCell(item: NavItem, on: Boolean, modifier: Modifier, verticalArra
             if (on) item.selectedIcon else item.icon, item.label, tint = tint,
             modifier = Modifier.size(22.dp).graphicsLayer { scaleX = iconScale; scaleY = iconScale },
         )
-        Text(item.label, style = GlowType.caption.copy(fontSize = 12.sp, lineHeight = 14.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Normal), color = tint, maxLines = 1)
+        Text(item.label, style = GlowType.label, color = tint, maxLines = 1)
     }
 }
 

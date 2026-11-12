@@ -225,7 +225,7 @@ private fun RowLine(status: String?, tag: org.openstrap.app.ui.dashboard.NewsTag
             status,
             Modifier.weight(1f, fill = false),
             color = if (waiting) Color.White.copy(alpha = 0.5f) else Color.White.copy(alpha = 0.65f),
-            style = GlowType.secondary.copy(fontSize = 12.sp),
+            style = GlowType.label,
             // Beside a tag the line stays on one row, the tag keeping its place.
             maxLines = if (tag != null) 1 else Int.MAX_VALUE,
             overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,

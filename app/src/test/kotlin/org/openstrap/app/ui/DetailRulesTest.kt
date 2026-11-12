@@ -56,7 +56,8 @@ class DetailRulesTest {
         val charts = sources.getValue("glow/GlowCharts.kt")
         listOf("fun ArcGauge(", "fun HorizonArc(").forEach { head ->
             val body = charts.substringAfter(head).substringBefore("\n}\n")
-            assertTrue("$head has round caps and no halo", "StrokeCap.Round" in body && "drawCircle" !in body && "Brush" !in body)
+            // Glow × Glass: the arc draws its blend along its length (Charts board), still round capped with no halo.
+            assertTrue("$head has round caps and no halo", "StrokeCap.Round" in body && "drawCircle" !in body)
             assertTrue("$head fills from the value shown", "rememberGaugeProgress(" in body)
         }
         val progress = charts.substringAfter("fun rememberGaugeProgress(").substringBefore("\n}\n")

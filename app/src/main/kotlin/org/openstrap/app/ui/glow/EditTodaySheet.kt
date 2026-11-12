@@ -4,6 +4,7 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -72,7 +73,7 @@ internal fun EditTodaySheet(edits: TodayEdits, onSave: (TodayEdits) -> Unit, onD
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
                     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Text(stringResource(R.string.glow_today_edit), color = Color.White, style = GlowType.cardTitle)
+                        Text(stringResource(R.string.glow_today_edit), color = Color.White, style = GlowType.cardTitle, maxLines = 1)
                         Text(
                             stringResource(R.string.glow_today_edit_note), color = Color.White.copy(alpha = 0.62f),
                             style = GlowType.secondary,
@@ -120,14 +121,14 @@ internal fun EditTodaySheet(edits: TodayEdits, onSave: (TodayEdits) -> Unit, onD
 private val SheetFade = Color(0xFF16161A).copy(alpha = 0.95f)
 
 private val PinIcon: ImageVector by lazy {
-    ImageVector.Builder("Pin", 14.dp, 14.dp, 24f, 24f).addPath(
+    ImageVector.Builder("pin", 14.dp, 14.dp, 24f, 24f).addPath(
         addPathNodes("M9 4h6l-1 6 4 3v1H6v-1l4-3zM12 14v6"), stroke = SolidColor(Color.White), strokeLineWidth = 1.8f,
         strokeLineCap = StrokeCap.Round, strokeLineJoin = StrokeJoin.Round,
     ).build()
 }
 
 private val CheckIcon: ImageVector by lazy {
-    ImageVector.Builder("Check", 18.dp, 18.dp, 24f, 24f).addPath(
+    ImageVector.Builder("check", 18.dp, 18.dp, 24f, 24f).addPath(
         addPathNodes("M5 12.5l4.5 4.5L19 7.5"), stroke = SolidColor(Color.White), strokeLineWidth = 2f,
         strokeLineCap = StrokeCap.Round, strokeLineJoin = StrokeJoin.Round,
     ).build()
@@ -174,8 +175,9 @@ private fun EditSwitch(on: Boolean, label: String, onToggle: () -> Unit) {
     val knob by animateColorAsState(if (on) Color(0xFF0B0B0D) else Color.White, label = "edit switch knob colour")
     Box(
         Modifier.height(44.dp)
-            .clickable(role = Role.Switch, onClick = onToggle)
-            .semantics { contentDescription = label; stateDescription = if (on) "On" else "Off" },
+            // Toggleable, so TalkBack and tests read its on or off state.
+            .toggleable(value = on, role = Role.Switch, onValueChange = { onToggle() })
+            .semantics { contentDescription = label },
         contentAlignment = Alignment.CenterStart,
     ) {
         Box(Modifier.size(48.dp, 29.dp).clip(GlowShapes.Pill).background(track)) {

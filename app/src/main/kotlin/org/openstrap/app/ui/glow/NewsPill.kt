@@ -29,7 +29,7 @@ fun NewsPill(text: String, modifier: Modifier = Modifier) {
         text,
         modifier.background(NewsPillFill, GlowShapes.Pill).padding(horizontal = 8.dp, vertical = 2.dp),
         color = Color.White,
-        style = GlowType.caption.copy(fontSize = 12.sp, lineHeight = 16.sp),
+        style = GlowType.label,
         maxLines = 1,
     )
 }
