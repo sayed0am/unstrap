@@ -155,12 +155,15 @@ fun ProfileScreen(profile: UserProfile, contentPadding: PaddingValues, onSave: (
         val bottom = if (keyboard) 0.dp else contentPadding.calculateBottomPadding()
         val side = GlowLayout.pageSide(maxWidth, LocalPageColumn.current, GlowLayout.Gutter)
         // The list ends clear of Save and the fade behind it (ScreenList adds its own 24 dp).
+        org.openstrap.app.ui.components.PageLight(
+            org.openstrap.app.ui.theme.ScreenLight(org.openstrap.app.ui.theme.Blends.You, angle = 30f, strength = 0.75f, heroCenterY = 165f),
+        )
         ScreenList(PaddingValues(bottom = PinnedFade.listClearance(bottom + 12.dp + SaveHeight, listEnd = 24.dp)), gutter = GlowLayout.Gutter) {
             item { PageHeader(stringResource(R.string.you_profile_title), back) }
+            item { PageNote(stringResource(R.string.you_profile_note), Color.White.copy(alpha = 0.65f)) }
             item {
                 PagePanel {
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        PageNote(stringResource(R.string.you_profile_note))
                         PageNumberField(
                             age, { age = it }, stringResource(R.string.you_profile_age), stringResource(R.string.you_profile_age_unit),
                             age.isNotBlank() && ageValue == null,

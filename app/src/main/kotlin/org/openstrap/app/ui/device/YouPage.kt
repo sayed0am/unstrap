@@ -1,7 +1,18 @@
 package org.openstrap.app.ui.device
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.unit.sp
+import org.openstrap.app.ui.components.PageLight
+import org.openstrap.app.ui.glow.CARD_CARET_ALPHA
+import org.openstrap.app.ui.glow.TapCaret
+import org.openstrap.app.ui.theme.Blends
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
@@ -30,7 +41,6 @@ import org.openstrap.app.ui.glow.GlowType
 import org.openstrap.app.ui.glow.PageHeader
 import org.openstrap.app.update.UpdateCopy
 import org.openstrap.app.ui.glow.PageRow
-import org.openstrap.app.ui.glow.PanelLabelInset
 import org.openstrap.app.ui.glow.SectionLabel
 import org.openstrap.app.ui.glow.PageRows
 import org.openstrap.app.ui.theme.AppIcons
@@ -142,18 +152,32 @@ fun YouPage(
     selected: String? = null,
 ) {
     BackHandler(onBack = onBack)
+    PageLight(YouLight)
     ScreenList(contentPadding, gutter = GlowLayout.Gutter) {
         item { PageHeader(stringResource(R.string.you_title), onBack) }
         item {
+            // The profile, as the page's hero: tinted copper glass, the summary in Sentence type at the bottom.
+            PlaceHero(Modifier.youHero(), Modifier.height(160.dp), onClick = onProfile) {
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    PlaceIcon(AppIcons.User, 52.dp, 0.16f)
+                    Spacer(Modifier.width(14.dp))
+                    Text(
+                        stringResource(R.string.you_row_profile), Modifier.weight(1f), color = Color.White,
+                        style = GlowType.cardTitle, maxLines = 1,
+                    )
+                    TapCaret(CARD_CARET_ALPHA)
+                }
+                Text(
+                    profile.summary(), Modifier.align(Alignment.BottomStart), color = Color.White,
+                    style = GlowType.sentence.copy(fontSize = 22.sp, lineHeight = 28.sp), maxLines = 2,
+                )
+            }
+        }
+        item {
             PageRows {
                 PageRow(
-                    stringResource(R.string.you_row_profile), profile.summary(), onClick = onProfile, below = true, divider = false,
-                    icon = AppIcons.User,
-                    selected = selected == PageRowKeys.PROFILE,
-                )
-                PageRow(
                     org.openstrap.app.ui.workout.HeartZonesCopy.TITLE, org.openstrap.app.ui.workout.HeartZonesCopy.youLine(maxHeartRate), onClick = onHeartZones,
-                    below = true, icon = AppIcons.Heartbeat, selected = selected == PageRowKeys.HEART_ZONES,
+                    below = true, divider = false, icon = AppIcons.Heartbeat, selected = selected == PageRowKeys.HEART_ZONES,
                 )
                 PageRow(stringResource(R.string.you_row_goals), goalsLine(goals), onClick = onGoals, below = true, icon = AppIcons.Target)
                 PageRow(
@@ -168,30 +192,31 @@ fun YouPage(
                 )
             }
         }
-        item { SectionLabel(stringResource(R.string.you_section_your_data), Modifier.padding(top = 4.dp), PanelLabelInset) }
+        item { SectionLabel(stringResource(R.string.you_section_your_data), Modifier.padding(top = 4.dp)) }
         item {
-            PageRows {
-                // Read again whenever either changes, so "today" and "yesterday" follow the last one.
-                val now = remember(healthConnectAuto, backup) { System.currentTimeMillis() / 1000 }
-                val zone = java.time.ZoneId.systemDefault()
-                PageRow(
-                    stringResource(R.string.you_row_health_connect),
-                    healthConnectSummary(healthConnectAuto, now, zone, availability = healthConnectAvailability), onClick = onHealthConnect,
-                    below = true, divider = false,
-                    icon = AppIcons.Heartbeat, selected = selected == PageRowKeys.HEALTH_CONNECT,
+            // Read again whenever either changes, so "today" and "yesterday" follow the last one.
+            val now = remember(healthConnectAuto, backup) { System.currentTimeMillis() / 1000 }
+            val zone = java.time.ZoneId.systemDefault()
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                PlaceTile(
+                    AppIcons.Heartbeat, stringResource(R.string.you_row_health_connect),
+                    healthConnectSummary(healthConnectAuto, now, zone, availability = healthConnectAvailability),
+                    onHealthConnect, Modifier.weight(1f),
                 )
-                PageRow(
-                    stringResource(R.string.you_row_backup), BackupCopy.summary(backup, now, zone), onClick = onBackup, below = true,
-                    icon = AppIcons.ShieldCheck, selected = selected == PageRowKeys.BACKUP,
-                )
-                if (deletedSleep > 0) PageRow(
-                    stringResource(R.string.you_row_deleted_sleep), org.openstrap.app.ui.dashboard.SleepCopy.deletedCount(deletedSleep),
-                    onClick = onDeletedSleep, below = true,
-                    icon = AppIcons.Trash, selected = selected == PageRowKeys.DELETED_SLEEP,
+                PlaceTile(
+                    AppIcons.ShieldCheck, stringResource(R.string.you_row_backup), BackupCopy.summary(backup, now, zone),
+                    onBackup, Modifier.weight(1f),
                 )
             }
         }
-        item { SectionLabel(stringResource(R.string.you_section_help), Modifier.padding(top = 4.dp), PanelLabelInset) }
+        if (deletedSleep > 0) item {
+            OutlineRow(
+                AppIcons.Trash, stringResource(R.string.you_row_deleted_sleep), onDeletedSleep,
+                iconFill = Blends.Sleep.first.copy(alpha = 0.26f),
+                trailing = { CountChip(org.openstrap.app.ui.dashboard.SleepCopy.deletedCount(deletedSleep)) },
+            )
+        }
+        item { SectionLabel(stringResource(R.string.you_section_help), Modifier.padding(top = 4.dp)) }
         item {
             PageRows {
                 val now = remember(updates) { System.currentTimeMillis() / 1000 }
@@ -215,7 +240,7 @@ fun YouPage(
             Text(
                 stringResource(R.string.you_footer, BuildConfig.VERSION_NAME),
                 Modifier.fillMaxWidth().padding(top = 4.dp),
-                color = Color.White.copy(alpha = 0.45f), style = GlowType.secondary, textAlign = TextAlign.Center,
+                color = Color.White.copy(alpha = 0.58f), style = GlowType.secondary, textAlign = TextAlign.Center,
             )
         }
     }
