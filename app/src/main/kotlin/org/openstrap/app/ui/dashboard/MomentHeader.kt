@@ -21,7 +21,7 @@ import androidx.compose.foundation.layout.size
 import org.openstrap.app.ui.theme.ControlSurface
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.shape.CircleShape
+import org.openstrap.app.ui.theme.GlowShapes
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -176,7 +176,7 @@ private fun DaySwitcher(
     ) {
         Peek(peekDay(date.minusDays(1)))
         Column(
-            Modifier.padding(horizontal = 16.dp).widthIn(max = 200.dp).clip(CircleShape)
+            Modifier.padding(horizontal = 16.dp).widthIn(max = 200.dp).clip(GlowShapes.Pill)
                 .clickable(onClickLabel = stringResource(R.string.day_header_pick_day), onClick = onPick)
                 .padding(horizontal = 10.dp, vertical = 4.dp)
                 .semantics { contentDescription = description },

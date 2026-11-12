@@ -90,6 +90,12 @@ import org.openstrap.app.presentation.wakingLead
 import org.openstrap.app.ui.dashboard.todayCards
 import org.openstrap.app.ui.theme.AppIcons
 import org.openstrap.app.ui.theme.MetricColors
+import org.openstrap.app.ui.theme.Blend
+import org.openstrap.app.ui.theme.Blends
+import org.openstrap.app.ui.theme.LocalScreenLight
+import org.openstrap.app.ui.theme.ScreenLight
+import org.openstrap.app.ui.theme.GlowShapes
+import org.openstrap.app.ui.theme.clearGlass
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -262,7 +268,9 @@ fun GlowTodayScreen(
             val across = GlowLayout.smallsAcross(maxWidth)
             val slots = varyLooks(applyEdits(todayCards(moment, facts, morning), edits, moment, unavailable), looksFor, live, wide, across)
             val panes = todayPanes(slots, across)
-            GlowScreenList(contentPadding, list) {
+            val light = todayLight(heroKindOf(ctx, pairing, running), ctx, running)
+            CompositionLocalProvider(LocalScreenLight provides light) {
+            GlowScreenList(contentPadding, list, light = light) {
                 add(Pane.Full, GlowBlocks.HEADER) { header() }
                 if (waiting) return@GlowScreenList
                 // One block per grid row: a Small pair stays side by side, and on a wide screen in one column. Each is
@@ -300,6 +308,7 @@ fun GlowTodayScreen(
                     // The hero and strips span the width on a wide screen; the rows between take turns.
                     add(panes[row.items().first()], GlowBlocks.cardsKey(row.items().map { slots[it].card }), block)
                 }
+            }
             }
         }
     }
@@ -412,24 +421,7 @@ private fun Hero(
     // every hero's content, so none shows an empty band.
     val m = Modifier.fillMaxWidth().gridSize(CardSize.Wide)
     // The hero's content crossfades when the moment moves on (spec 3.5); the rows below change only with it.
-    val kind = when {
-        pairing != null -> HeroKind.Pair
-        ctx.stuck -> HeroKind.Stuck
-        else -> when (ctx.moment) {
-            Moment.During -> if (running != null) HeroKind.During else HeroKind.Midday
-            Moment.After -> if (ctx.lastWorkout != null) HeroKind.After else HeroKind.Midday
-            Moment.WorkoutWindow -> HeroKind.Window
-            Moment.Midday -> HeroKind.Midday
-            Moment.Evening, Moment.Night -> HeroKind.Evening
-            Moment.Waking -> HeroKind.Waking
-            null -> if (LocalTime.now().hour < 12 || !ctx.isToday) HeroKind.Waking else HeroKind.Midday
-        }
-    }.let {
-        // No sleep last night: nothing for Recovery to score, so Charge leads from waking on (spec 4.3). Only once
-        // the day has loaded, or every cold start would flash the no-sleep hero first.
-        if (it == HeroKind.Waking && ctx.state.loaded && ctx.recoveryFailure == null && wakingLead(ctx.firstNights, ctx.state.asleepSeconds, ctx.isToday) == WakingLead.Charge) HeroKind.NoSleep
-        else it
-    }
+    val kind = heroKindOf(ctx, pairing, running)
     // The During hero keeps drawing while it fades out after the workout ends, when [running] is already gone. Kept
     // once each composition is applied, not written during it (audit K6). Only the fading hero reads it.
     val lastRunning = remember { androidx.compose.runtime.mutableStateOf(running) }
@@ -450,6 +442,61 @@ private fun Hero(
 }
 
 private enum class HeroKind { Pair, Stuck, Waking, NoSleep, Midday, Window, After, Evening, During }
+
+/** Which hero Today shows: the pairing stage, a stuck sync, or the moment's. */
+private fun heroKindOf(ctx: TodayContext, pairing: PairStep?, running: org.openstrap.app.device.WorkoutState.Recording?): HeroKind = when {
+    pairing != null -> HeroKind.Pair
+    ctx.stuck -> HeroKind.Stuck
+    else -> when (ctx.moment) {
+        Moment.During -> if (running != null) HeroKind.During else HeroKind.Midday
+        Moment.After -> if (ctx.lastWorkout != null) HeroKind.After else HeroKind.Midday
+        Moment.WorkoutWindow -> HeroKind.Window
+        Moment.Midday -> HeroKind.Midday
+        Moment.Evening, Moment.Night -> HeroKind.Evening
+        Moment.Waking -> HeroKind.Waking
+        null -> if (LocalTime.now().hour < 12 || !ctx.isToday) HeroKind.Waking else HeroKind.Midday
+    }
+}.let {
+    // No sleep last night: nothing for Recovery to score, so Charge leads from waking on (spec 4.3). Only once
+    // the day has loaded, or every cold start would flash the no-sleep hero first.
+    if (it == HeroKind.Waking && ctx.state.loaded && ctx.recoveryFailure == null && wakingLead(ctx.firstNights, ctx.state.asleepSeconds, ctx.isToday) == WakingLead.Charge) HeroKind.NoSleep
+    else it
+}
+
+/**
+ * The screen's light for the hero shown (Matrix board, Today by moment): the hero's blend from where its light comes
+ * from, at the mood's strength. None while the pairing stage or a stuck sync leads, or before the day has loaded.
+ * A past day is always the waking light, as its layout is.
+ */
+private fun todayLight(kind: HeroKind, ctx: TodayContext, running: org.openstrap.app.device.WorkoutState.Recording?): ScreenLight? {
+    if (!ctx.state.loaded) return null
+    // The hero's centre is about this far down the screen: status bar, the 60 dp header, then half a hero.
+    val y = 190f
+    return when (kind) {
+        HeroKind.Pair, HeroKind.Stuck -> null
+        HeroKind.Waking -> ScreenLight(Blends.Recovery, LightAngle.LowerLeft, ScreenLight.DAY, y)
+        HeroKind.Midday, HeroKind.NoSleep -> ScreenLight(Blends.Energy, LightAngle.Below, ScreenLight.DAY, y)
+        HeroKind.Window -> ScreenLight(Blends.Heart, LightAngle.UpperRight, ScreenLight.DAY, y)
+        HeroKind.During -> ScreenLight(running?.let { familyBlend(it.workout.sportType) } ?: Blends.Heart, LightAngle.Below, ScreenLight.DAY, y)
+        // Recovery's first stop settling into HRV's ocean.
+        HeroKind.After -> ScreenLight(AfterBlend, LightAngle.Below, ScreenLight.DAY, y)
+        HeroKind.Evening ->
+            if (ctx.moment == Moment.Night) ScreenLight(Blends.Sleep, LightAngle.Below, ScreenLight.NIGHT, y)
+            else ScreenLight(Blends.Evening, LightAngle.LowerRight, ScreenLight.EVENING, y)
+    }
+}
+
+private val AfterBlend = Blend(Blends.Recovery.first, Blends.Hrv.second)
+
+/** The workout family's blend, which lights the screen during a workout (Palette board; zones never light a screen). */
+private fun familyBlend(sportType: Int): Blend = when (Workouts.family(sportType)) {
+    Workouts.Family.Distance -> Blends.Steps
+    Workouts.Family.IndoorCardio -> Blends.IndoorCardio
+    Workouts.Family.Strength -> Blends.Strength
+    Workouts.Family.Intervals -> Blends.Intervals
+    Workouts.Family.MindBody -> Blends.Evening
+    Workouts.Family.Games -> Blends.Games
+}
 
 /**
  * Waking up: how you slept and what Recovery says, the score in dots with its word, and Charge at waking as text
@@ -637,7 +684,7 @@ private fun EveningHero(ctx: TodayContext, lightAngle: Float?, bedtime: LocalTim
     val goals = LocalGoals.current
     val sports = ctx.dayWorkouts.map { it.workout.sportType }
     val night = ctx.moment == Moment.Night
-    val style = heroStyle(if (night) MetricColors.sleepDeep else MetricColors.evening, lightAngle)
+    val style = heroStyle(if (night) Blends.Sleep.first else Blends.Evening.first, lightAngle)
     // The evening's violet is lit lighter so it reads as violet, not as a second night (spec 4.2).
     GlowCard(if (night) style else style.copy(bodyLightness = EVENING_BODY), modifier, onClick = onOpen) {
         Column {
@@ -692,10 +739,11 @@ private fun DuringHero(r: org.openstrap.app.device.WorkoutState.Recording, onOpe
         LiveHero(glance, r.workout.sportType, glance.clock, onOpen, hooks.onAction, modifier)
         glance.split?.let { (title, line) ->
             Row(
-                Modifier.fillMaxWidth().clip(GlowLayout.CardShape).background(ListSurface).padding(horizontal = 18.dp, vertical = 14.dp),
+                Modifier.fillMaxWidth().clearGlass(GlowShapes.Card).padding(horizontal = 18.dp, vertical = 14.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Canvas(Modifier.size(8.dp)) { drawCircle(TrendGood) }
+                // A plain white dot: green stays for the strap's status, and zones are drawn small in the hero only.
+                Canvas(Modifier.size(8.dp)) { drawCircle(Color.White) }
                 Spacer(Modifier.width(12.dp))
                 Column {
                     Text(title, color = Color.White, style = GlowType.body)
@@ -715,7 +763,7 @@ private fun DuringHero(r: org.openstrap.app.device.WorkoutState.Recording, onOpe
 private fun PairHero(step: PairStep, onPair: () -> Unit, modifier: Modifier) {
     val haptics = rememberHaptics()
     LaunchedEffect(step) { if (step == PairStep.Connected) haptics.perform(HapticEvent.PairingDone) }
-    GlowCard(heroStyle(Color(0xFF4E8F86), LightAngle.Below), modifier, onClick = onPair) {
+    GlowCard(heroStyle(Blends.Strap.first, LightAngle.Below), modifier, onClick = onPair) {
         Column {
             GlowHeader(stringResource(R.string.glow_today_pair_title))
             HeroSentence(pairSentence(step))
@@ -737,7 +785,7 @@ private fun PairHero(step: PairStep, onPair: () -> Unit, modifier: Modifier) {
 private fun StuckHero(ctx: TodayContext, strap: TodayStrap, onSyncNow: () -> Unit, modifier: Modifier) {
     val haptics = rememberHaptics()
     val copy = stuckCopy(ctx.state.asleepSeconds != null, ctx.newest?.let { TimeOfDay.format(it, ctx.zone) })
-    GlowCard(heroStyle(MetricColors.warn, LightAngle.Below), modifier) {
+    GlowCard(heroStyle(Blends.Strap.first, LightAngle.Below), modifier) {
         Column {
             GlowHeader(copy.title, trailing = lastTried(strap.record, ctx.zone))
             HeroSentence(copy.sentence)

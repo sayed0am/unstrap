@@ -3,6 +3,8 @@ package org.openstrap.app.ui.glow
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.foundation.border
 import org.openstrap.app.ui.theme.MetricColors
+import org.openstrap.app.ui.theme.GlowShapes
+import org.openstrap.app.ui.theme.clearGlass
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -23,7 +25,7 @@ import org.openstrap.app.ui.components.pressClickable
  * special.
  */
 
-/** A quiet panel: the [ListPanel] surface and its 6% hairline, [GlowLayout.CardPadding] inside, blocks 14 dp apart. */
+/** A quiet panel: clear glass (white 7%, lit top edge), [GlowLayout.CardPadding] inside, blocks 14 dp apart. */
 @Composable
 fun QuietPanel(
     modifier: Modifier = Modifier,
@@ -34,8 +36,7 @@ fun QuietPanel(
         modifier
             .fillMaxWidth()
             .let { if (onClick != null) it.pressClickable(onClick, GlowLayout.CardShape) else it }
-            .background(ListSurface, GlowLayout.CardShape)
-            .border(1.dp, CardHairline, GlowLayout.CardShape)
+            .clearGlass(GlowShapes.Card)
             .padding(GlowLayout.CardPadding),
         verticalArrangement = Arrangement.spacedBy(14.dp),
         content = content,
@@ -55,8 +56,8 @@ internal fun OutlineCard(
     content: @Composable ColumnScope.() -> Unit,
 ) {
     Column(
-        modifier.fillMaxWidth().clip(GlowLayout.CardShape)
-            .border(1.5.dp, Color.White.copy(alpha = 0.2f), GlowLayout.CardShape).padding(20.dp),
+        modifier.fillMaxWidth().clip(GlowShapes.Card)
+            .border(1.5.dp, Color.White.copy(alpha = 0.2f), GlowShapes.Card).padding(20.dp),
         verticalArrangement = verticalArrangement,
         horizontalAlignment = horizontalAlignment,
         content = content,
@@ -69,8 +70,8 @@ internal fun OutlineCard(
  * presses like the rest of the glow controls.
  */
 fun Modifier.glass(shape: Shape, onClick: (() -> Unit)? = null, scale: Float = 0.98f): Modifier =
-    background(Color.White.copy(alpha = 0.08f), shape)
-        .border(1.dp, Color.White.copy(alpha = 0.12f), shape)
+    background(Color.White.copy(alpha = 0.12f), shape)
+        .border(1.dp, Color.White.copy(alpha = 0.08f), shape)
         .let { if (onClick != null) it.pressClickable(onClick, shape, scale) else it }
 
 /** A change for the better, or a GPS fix good enough: the app's good green. */
