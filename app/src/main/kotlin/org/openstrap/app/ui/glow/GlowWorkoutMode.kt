@@ -74,6 +74,7 @@ import org.openstrap.app.ui.theme.MetricColors
 import org.openstrap.app.ui.theme.AppIcons
 import org.openstrap.app.ui.theme.Blend
 import org.openstrap.app.ui.theme.Blends
+import org.openstrap.app.ui.theme.litEdge
 import org.openstrap.app.ui.theme.GlowShapes
 import org.openstrap.app.ui.theme.LocalScreenLight
 import org.openstrap.app.ui.theme.ScreenLight
@@ -85,7 +86,6 @@ import org.openstrap.app.ui.workout.SummaryCopy
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
-import org.openstrap.app.ui.theme.ControlSurface
 import org.openstrap.app.data.HeartZones
 import org.openstrap.app.ui.dashboard.LocalHeartZones
 import androidx.compose.runtime.ReadOnlyComposable
@@ -96,7 +96,8 @@ import androidx.compose.runtime.ReadOnlyComposable
 internal val PausedColor = Color(WorkoutColors.PAUSED_GREY)
 
 /** The Control surface (spec 2.2): round buttons, chips, pills, tiles and fields on the workout pages. */
-internal val Raised = ControlSurface
+/** A secondary control's fill: white 12% glass (Elements board), never a solid slab. */
+internal val Raised = Color.White.copy(alpha = 0.12f)
 
 /** A button's label: Body (spec 2.3), a step heavier so it reads as the thing to press. */
 private val ButtonText = GlowType.body.copy(fontWeight = FontWeight.SemiBold)
@@ -152,8 +153,11 @@ internal fun WorkoutButton(
     modifier: Modifier = Modifier, icon: androidx.compose.ui.graphics.vector.ImageVector? = null, height: Dp = 56.dp,
 ) {
     Row(
-        modifier.fillMaxWidth().height(height).shadow(28.dp, GlowShapes.Pill, ambientColor = background, spotColor = background)
-            .clip(GlowShapes.Pill).background(background).pressClickable(onClick, GlowShapes.Pill),
+        modifier.fillMaxWidth().height(height)
+            .let { if (background.alpha >= 1f) it.shadow(28.dp, GlowShapes.Pill, ambientColor = background, spotColor = background) else it }
+            .clip(GlowShapes.Pill).background(background)
+            .let { if (background.alpha < 1f) it.litEdge(GlowShapes.Pill, top = 0.2f, ring = 0f) else it }
+            .pressClickable(onClick, GlowShapes.Pill),
         horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically,
     ) {
         if (icon != null) {
@@ -176,9 +180,19 @@ internal fun WorkoutPage(
     pinned: (@Composable ColumnScope.() -> Unit)? = null,
     /** Painted over the whole screen in place of the light (HIIT's phase light). */
     backdrop: Brush? = null,
+    /** The summary's light sized by effort (read while drawing) and its blend; it paints the ground too, in place of [light]. */
+    effortLight: Pair<() -> Float, Blend>? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    CompositionLocalProvider(LocalScreenLight provides light) { BoxWithConstraints(Modifier.fillMaxSize().then(if (backdrop != null) Modifier.screenLight(null) else Modifier.screenLight(light))) {
+    CompositionLocalProvider(LocalScreenLight provides light) { BoxWithConstraints(
+        Modifier.fillMaxSize().then(
+            when {
+                effortLight != null -> Modifier.effortLight(effortLight.second, effortLight.first)
+                backdrop != null -> Modifier.screenLight(null)
+                else -> Modifier.screenLight(light)
+            },
+        ),
+    ) {
         val density = LocalDensity.current
         var pinnedHeight by remember { mutableStateOf(0.dp) }
         if (backdrop != null) Box(Modifier.fillMaxSize().background(backdrop))
@@ -220,9 +234,9 @@ internal fun WorkoutPage(
     pinned: (@Composable ColumnScope.() -> Unit)? = null,
     backdrop: Brush? = null,
     content: @Composable ColumnScope.() -> Unit,
-) = WorkoutPage(
+): Unit = WorkoutPage(
     if (glow == Color.Transparent) null else ScreenLight(Blends.forInk(glow) ?: Blend(glow, glow), 90f, 0.5f, 0f),
-    contentPadding, scroll, pinned, backdrop, content,
+    contentPadding, scroll, pinned, backdrop, content = content,
 )
 
 /* ----------------------------------------- Activity tab entry ---------------------------------------- */
@@ -382,13 +396,13 @@ internal fun ColumnScope.SummaryActions(justEnded: Boolean, onDone: () -> Unit, 
     DeleteWorkout(stringResource(R.string.glow_workout_delete_phone), onDelete, Modifier.align(Alignment.CenterHorizontally))
 }
 
-/** "Delete this workout" as a warn coloured button with a trash icon, asking first; [what] says what deleting it does. */
+/** "Delete this workout" as a quiet white button with a trash icon, asking first; [what] says what deleting it does. */
 @Composable
 internal fun DeleteWorkout(what: String, onDelete: () -> Unit, modifier: Modifier = Modifier) {
     var confirmDelete by rememberSaveable { mutableStateOf(false) }
     PageButton(
         stringResource(R.string.glow_workout_delete), { confirmDelete = true }, modifier.fillMaxWidth(),
-        color = MetricColors.warn, icon = AppIcons.Trash,
+        color = Color.White.copy(alpha = 0.72f), icon = AppIcons.Trash,
     )
     if (confirmDelete) {
         PageConfirm(

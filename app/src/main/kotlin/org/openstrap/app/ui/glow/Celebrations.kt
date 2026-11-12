@@ -70,8 +70,8 @@ private fun CloseRow(title: String?, onClose: () -> Unit) {
 fun BestCardScreen(best: Rewards.NewBest, sportName: String, contentPadding: PaddingValues, onContinue: () -> Unit) {
     BackHandler(onBack = onContinue)
     val now = System.currentTimeMillis() / 1000
-    LightPage(
-        Modifier.screenLight(ScreenLight(Blends.Calories, 270f, ScreenLight.DAY, 260f)), contentPadding,
+    WorkoutPage(
+        ScreenLight(Blends.Calories, 270f, ScreenLight.DAY, 260f), contentPadding,
         pinned = { WorkoutButton(stringResource(R.string.glow_continue), Color.White, Color.Black, onContinue) },
     ) {
         CloseRow(stringResource(R.string.glow_celebrate_personal_best), onContinue)
@@ -98,8 +98,8 @@ fun BestCardScreen(best: Rewards.NewBest, sportName: String, contentPadding: Pad
 @Composable
 fun GoalMomentScreen(count: Int, goal: Int, inARow: Int, weekStarts: List<Long>, contentPadding: PaddingValues, onSettings: () -> Unit, onContinue: () -> Unit) {
     BackHandler(onBack = onContinue)
-    LightPage(
-        Modifier.screenLight(ScreenLight(Blends.Goals, 270f, ScreenLight.DAY, 190f)), contentPadding,
+    WorkoutPage(
+        ScreenLight(Blends.Goals, 270f, ScreenLight.DAY, 190f), contentPadding,
         pinned = {
             WorkoutButton(stringResource(R.string.glow_continue), Color.White, Color.Black, onContinue)
             PageTextButton(stringResource(R.string.glow_celebrate_settings), onSettings, Modifier.align(Alignment.CenterHorizontally))
@@ -169,8 +169,8 @@ fun CelebrationsSheet(goalMoment: Boolean, weeklyRecap: Boolean, onGoalMoment: (
 @Composable
 fun HistoryBadgesScreen(badges: List<Rewards.Badge>, contentPadding: PaddingValues, onContinue: () -> Unit, face: (Rewards.Badge) -> String = { it.short }) {
     BackHandler(onBack = onContinue)
-    LightPage(
-        Modifier.screenLight(ScreenLight(Blends.Goals, 270f, ScreenLight.DAY, 190f)), contentPadding,
+    WorkoutPage(
+        ScreenLight(Blends.Goals, 270f, ScreenLight.DAY, 190f), contentPadding,
         pinned = { WorkoutButton(stringResource(R.string.glow_continue), Color.White, Color.Black, onContinue) },
     ) {
         CloseRow(null, onContinue)

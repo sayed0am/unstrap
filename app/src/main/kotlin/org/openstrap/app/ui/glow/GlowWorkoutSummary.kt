@@ -19,6 +19,10 @@ import org.openstrap.app.ui.components.PinnedFade
 import org.openstrap.app.ui.components.pinnedFade
 import org.openstrap.app.ui.theme.Blend
 import org.openstrap.app.ui.theme.Blends
+import org.openstrap.app.ui.theme.litEdge
+import org.openstrap.app.ui.glow.draw.GlowStyle
+import org.openstrap.app.ui.glow.draw.chart
+import org.openstrap.app.presentation.Ranges
 import org.openstrap.app.ui.glow.draw.LightAngle
 import org.openstrap.app.ui.glow.draw.heroStyle
 import org.openstrap.app.ui.theme.Ground
@@ -189,12 +193,13 @@ fun GlowWorkoutSummaryScreen(
     val swell = remember { Animatable(0f) }
     // Share and Done stay on the bottom edge; Delete waits at the end of the page. Nothing to share until the workout
     // has loaded.
-    LightPage(
-        Modifier.effortLight(familyBlend(family)) { effort + SwellLevel * swell.value }, contentPadding,
+    WorkoutPage(
+        null, contentPadding,
         pinned = {
             if (a != null && hero != null) SummaryButtons(onShare = { sharing = true }, onDone = done)
             else WorkoutButton(stringResource(R.string.glow_done), Color.White, Color.Black, onDone)
         },
+        effortLight = { effort + SwellLevel * swell.value } to familyBlend(family),
     ) {
         // The sport, then when, with Trim beside them.
         Row(Modifier.padding(start = 4.dp, top = 12.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -214,7 +219,7 @@ fun GlowWorkoutSummaryScreen(
         }
         if (summary == null || a == null || trim == null) {
             PageNote(stringResource(R.string.glow_workout_loading))
-            return@LightPage
+            return@WorkoutPage
         }
         val w = a.workout
         val others = remember(workouts, w.start) { workouts.filter { it.workout.start != w.start }.sortedByDescending { it.workout.start } }
@@ -238,7 +243,10 @@ fun GlowWorkoutSummaryScreen(
         val zones = remember(a, heartZones) {
             WorkoutRecorder.liveZoneSeconds(a.heartRate.filter { it.timestamp <= a.end }.map { it.timestamp to it.bpm }, a.maxHeartRate, heartZones).toList()
         }
-        SummaryHeroCard(hero ?: summaryHero(family, summary, usualLoad), familyInk(family), effort) { swell.value }
+        SummaryHeroCard(
+            hero ?: summaryHero(family, summary, usualLoad), familyInk(family), effort, { swell.value },
+            title = a.sportName, range = Ranges.times(a.shownStart, a.end),
+        )
         // What was done to the times, under the hero that says them.
         TrimNote(summary, trim.undo, Modifier.padding(horizontal = 4.dp), onCard = false)
         val weekStarts = remember(workouts) { goalWeekStarts(workouts) }
@@ -264,17 +272,23 @@ fun GlowWorkoutSummaryScreen(
  * one number in dots, then a sentence or three figures in text. [swell] lifts the light for a personal best.
  */
 @Composable
-internal fun SummaryHeroCard(hero: SummaryHero, color: Color, effort: Float, swell: () -> Float = { 0f }) {
+internal fun SummaryHeroCard(
+    hero: SummaryHero, color: Color, effort: Float, swell: () -> Float = { 0f },
+    /** The family's title and the time range, on the card's title row (board SummaryRun); null on pages that head themselves. */
+    title: String? = null, range: String? = null,
+) {
     // Tinted glass of the family's blend, its tint as strong as the effort (Matrix board: an easy hero is 20% where a hard one is
     // 42%); the light behind the screen does the size ([effortLight]). The swell is drawn there, not here.
     val style = remember(color, effort) { heroStyle(color, LightAngle.Below, rim = 0.5f + 0.5f * effort.coerceIn(0f, 1f)) }
     GlowCard(style, Modifier.fillMaxWidth()) {
         Column {
-            HeroValue(hero.value, hero.unit)
-            hero.sentence?.let { HeroSentence(it) }
+            if (title != null) GlowHeader(title, trailing = range)
+            hero.sentence?.let { HeroSentence(it, Modifier) }
+            HeroValue(hero.value, hero.unit, Modifier.padding(top = if (hero.sentence != null || title != null) 14.dp else 0.dp))
             hero.line?.let { Text(it, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary, modifier = Modifier.padding(top = 6.dp)) }
             if (hero.figures.isNotEmpty()) {
-                DetailFigures(hero.figures, Modifier.padding(top = 18.dp), valueStyle = GlowType.rowValue, missing = null, gap = 0.dp)
+                Box(Modifier.padding(top = 14.dp).fillMaxWidth().height(1.dp).background(Color.White.copy(alpha = 0.14f)))
+                DetailFigures(hero.figures, Modifier.padding(top = 12.dp), valueStyle = GlowType.rowValue, missing = null, gap = 0.dp)
             }
         }
     }
@@ -302,7 +316,7 @@ private fun CalmDownHero(summary: PhoneSummary, live: CalmDown?, usualDrop: Int?
     val line: CalmDownLine = SummaryCopy.calmDown(readings, a.end, now, live != null && now <= live.until, a.maxHeartRate, usualDrop)
     val bpmNow = live?.readings?.lastOrNull()?.takeIf { now <= live.until && now - it.first <= 5 }?.second
     // A level glow is always at full: its light is the value (spec 2.1).
-    GlowCard(effortGlow(MetricColors.heart, effort + SwellLevel * swell), Modifier.fillMaxWidth()) {
+    GlowCard(GlowStyle.chart(MetricColors.heart).copy(dark = true), Modifier.fillMaxWidth()) {
         Column {
             GlowHeader(
                 stringResource(R.string.glow_summary_drop_title), trailing = stringResource(R.string.glow_summary_drop_since, clock(a.end)),
@@ -314,6 +328,11 @@ private fun CalmDownHero(summary: PhoneSummary, live: CalmDown?, usualDrop: Int?
             }
             val shown = readings.filter { it.first in (a.end - BeforeS)..(a.end + WorkoutSession.CALM_S) }
             if (shown.size >= 2) DropLine(shown, a.end, Modifier.padding(top = 16.dp))
+            // The effort as a thin bar in the heart blend (the light was a heavy red band).
+            val level = (effort + SwellLevel * swell).coerceIn(0f, 1f)
+            Box(Modifier.padding(top = 14.dp).fillMaxWidth().height(4.dp).clip(CircleShape).background(Color.White.copy(alpha = 0.10f))) {
+                Box(Modifier.fillMaxWidth(level).fillMaxHeight().clip(CircleShape).background(Blends.Heart.brush()))
+            }
         }
     }
 }
@@ -575,36 +594,3 @@ internal fun Modifier.effortLight(blend: Blend, effort: () -> Float): Modifier =
     )
 }
 
-/**
- * A workout's page: the same layout as [WorkoutPage] (content scrolling under the pinned buttons, on one centred column
- * on a wide screen) on a [background] light, which paints the ground too. [WorkoutPage] stays for the live screens.
- */
-@Composable
-internal fun LightPage(
-    background: Modifier, contentPadding: PaddingValues, scroll: Boolean = true,
-    pinned: (@Composable ColumnScope.() -> Unit)? = null,
-    content: @Composable ColumnScope.() -> Unit,
-) {
-    BoxWithConstraints(Modifier.fillMaxSize().then(background)) {
-        val density = LocalDensity.current
-        var pinnedHeight by remember { mutableStateOf(0.dp) }
-        val side = GlowLayout.pageSide(maxWidth, LocalPageColumn.current, GlowLayout.Gutter)
-        val padTop = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + contentPadding.calculateTopPadding() + 8.dp
-        val padBottom = contentPadding.calculateBottomPadding()
-        val end = if (pinned != null) (PinnedFade.listClearance(pinnedHeight) - padBottom).coerceAtLeast(16.dp) else 16.dp
-        Column(
-            Modifier.fillMaxSize().then(if (scroll) Modifier.imePadding().verticalScroll(rememberScrollState()) else Modifier).statusBarsPadding()
-                .padding(contentPadding).padding(start = side, end = side, top = 8.dp, bottom = end)
-                .then(if (scroll) Modifier.heightIn(min = (maxHeight - padTop - padBottom - end).coerceAtLeast(0.dp)) else Modifier),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-            content = content,
-        )
-        if (pinned != null) Column(
-            Modifier.align(Alignment.BottomCenter).fillMaxWidth().pinnedFade()
-                .padding(contentPadding).padding(start = side, end = side, bottom = 16.dp)
-                .onSizeChanged { pinnedHeight = with(density) { it.height.toDp() } },
-            verticalArrangement = Arrangement.spacedBy(4.dp),
-            content = pinned,
-        )
-    }
-}
