@@ -233,6 +233,7 @@ dependencies {
 
     implementation(libs.datastore.preferences)
     implementation(libs.health.connect)
+    constraints { implementation(libs.guava) }
     implementation(libs.coroutines.android)
     implementation(libs.core.ktx)
     implementation(libs.window)
