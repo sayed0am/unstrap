@@ -37,7 +37,18 @@ import org.openstrap.app.data.Rewards
 import org.openstrap.app.i18n.Strings
 import org.openstrap.app.ui.dashboard.ScreenList
 import org.openstrap.app.ui.theme.AppIcons
-import org.openstrap.app.ui.theme.MetricColors
+import org.openstrap.app.ui.theme.Blends
+import org.openstrap.app.ui.theme.DarkGlowFill
+import org.openstrap.app.ui.theme.litEdge
+import org.openstrap.app.ui.theme.GlowShapes
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.drawscope.scale
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import org.openstrap.app.presentation.RewardsCopy
 import org.openstrap.app.presentation.RewardsView
 import org.openstrap.app.ui.glow.draw.GlowStyle
@@ -50,7 +61,7 @@ import org.openstrap.app.ui.glow.draw.level
  */
 
 /** The goal colour: met weeks, the goal moment. */
-private val GoalColor = MetricColors.good
+private val GoalColor = Blends.Goals.first
 
 /** The days of [first]'s week, each a letter and whether a workout in [view] counted on it. */
 private fun weekDots(view: RewardsView, first: LocalDate, zone: ZoneId = ZoneId.systemDefault()): List<Pair<String, Boolean>> {
@@ -61,8 +72,53 @@ private fun weekDots(view: RewardsView, first: LocalDate, zone: ZoneId = ZoneId.
 }
 
 /**
- * A week against its goal on a glow lit as far as the count is toward it: the count in dots, "of 4 workouts", its days,
- * and [line] under them. [trailing] goes on the title row.
+ * The Goals blend's page light (boards RewardsGoals, RewardsBadges, RewardsWeeklyRecap, WorkoutCelebration): the second
+ * stop big at the upper left, the first small at the lower right, both muted, over the ground. [top] and [bottom] are
+ * the two blobs' strengths.
+ */
+internal fun Modifier.goalsLight(top: Float = 0.5f, bottom: Float = 0.22f, topY: Float = 200f, bottomY: Float = 680f): Modifier = drawBehind {
+    drawRect(org.openstrap.app.ui.theme.Ground)
+    fun blob(c: Offset, rx: Float, ry: Float, color: Color, alpha: Float) {
+        val brush = Brush.radialGradient(
+            0f to color.copy(alpha = alpha), 0.35f to color.copy(alpha = alpha * 0.9f), 0.6f to color.copy(alpha = alpha * 0.55f),
+            0.8f to color.copy(alpha = alpha * 0.2f), 1f to Color.Transparent, center = c, radius = rx,
+        )
+        scale(1f, ry / rx, pivot = c) { drawCircle(brush, rx, c) }
+    }
+    val w = size.width
+    blob(Offset(w * 0.3f, topY.dp.toPx()), w * 0.82f + 100.dp.toPx(), 240.dp.toPx() + 100.dp.toPx(), Blends.Goals.lightSecond, top)
+    blob(Offset(w * 0.8f, bottomY.dp.toPx()), w * 0.5f + 100.dp.toPx(), 170.dp.toPx() + 100.dp.toPx(), Blends.Goals.light, bottom)
+}
+
+/**
+ * The Goals hero's fill (board RewardsGoals, decision 7): the Goals blend left to right as far as [level] of the goal,
+ * then a soft fade into the dark just past it (not a hard stop), with three dark pools behind the text.
+ */
+private fun Modifier.goalsFill(level: Float): Modifier = drawWithCache {
+    val dark = DarkGlowFill
+    val l = level.coerceIn(0f, 1f)
+    val fade = (l * 1.2f).coerceAtMost(1f)
+    val fill = Brush.horizontalGradient(
+        0f to Blends.Goals.first.copy(alpha = 0.78f), (l * 0.96f) to Blends.Goals.second.copy(alpha = 0.62f),
+        fade to DarkGlowFill.copy(alpha = 0.88f), 1f to DarkGlowFill.copy(alpha = 0.88f),
+    )
+    onDrawBehind {
+        drawRect(fill)
+        fun pool(cx: Float, cy: Float, rx: Float, ry: Float, a: Float) {
+            val c = Offset(size.width * cx, size.height * cy)
+            val r = size.width * rx
+            val b = Brush.radialGradient(0f to dark.copy(alpha = a), 0.5f to dark.copy(alpha = a * 0.66f), 1f to Color.Transparent, center = c, radius = r)
+            scale(1f, size.height * ry / r, pivot = c) { drawCircle(b, r, c) }
+        }
+        pool(0.18f, 0.10f, 0.6f, 0.30f, 0.6f)
+        pool(0.38f, 0.94f, 0.9f, 0.32f, 0.82f)
+        pool(0.14f, 0.46f, 0.4f, 0.46f, 0.9f)
+    }
+}
+
+/**
+ * A week against its goal on a glow filled as far as the count is toward it, fading out softly just past it: the count
+ * in dots, "of 4 workouts", its days, and [line] under them. [trailing] goes on the title row.
  */
 @Composable
 private fun GoalWeekCard(
@@ -70,8 +126,9 @@ private fun GoalWeekCard(
     /** The week as a bar of the goal's workouts (board AchievementsV1) rather than its days (WeeklyRecap). */
     bar: Boolean = false, trailing: @Composable (() -> Unit)? = null,
 ) {
-    val style = GlowStyle.level(GoalColor, (count.toFloat() / goal).coerceIn(0f, 1f))
-    GlowCard(style, Modifier.fillMaxWidth()) {
+    val shape = GlowShapes.Card
+    val level = (count.toFloat() / goal).coerceIn(0f, 1f)
+    Box(Modifier.fillMaxWidth().clip(shape).goalsFill(level).litEdge(shape, top = 0.3f, ring = 0.1f).padding(GlowLayout.CardPadding)) {
         Column {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(title, color = Color.White, style = GlowType.cardTitle, maxLines = 1, modifier = Modifier.weight(1f))
@@ -175,7 +232,7 @@ fun GoalsAndBestsPage(
     BackHandler(onBack = onBack)
     var openBadge by rememberSaveable { mutableStateOf<String?>(null) }
     var openBest by rememberSaveable { mutableStateOf<String?>(null) }
-    ScreenList(contentPadding, gutter = GlowLayout.Gutter) {
+    Box(Modifier.fillMaxSize().goalsLight()) { ScreenList(contentPadding, gutter = GlowLayout.Gutter) {
         item { PageHeader(stringResource(R.string.glow_goals_title), onBack) }
         if (view == null) {
             item { PageNote(stringResource(R.string.glow_goals_loading)) }
@@ -192,7 +249,7 @@ fun GoalsAndBestsPage(
         view.next?.let { next -> item { NextBadgeCard(next, view, onOpen = { openBadge = it.id }) } }
         item { BadgesPanel(view, onOpen = { openBadge = it.id }, onAllBadges = onAllBadges) }
         item { WaysOn(onAllBadges, onRecap, onCelebrations) }
-    }
+    } }
     if (view != null) {
         openBadge?.let(Rewards::badge)?.let { b -> BadgeSheet(b, view, onDismiss = { openBadge = null }) }
         openBest?.let { kind -> BestSheet(kind, view, onDismiss = { openBest = null }) }
@@ -217,7 +274,7 @@ private fun WaysOn(onAllBadges: () -> Unit, onRecap: () -> Unit, onCelebrations:
 fun AllBadgesPage(view: RewardsView?, contentPadding: PaddingValues, onBack: () -> Unit) {
     BackHandler(onBack = onBack)
     var open by rememberSaveable { mutableStateOf<String?>(null) }
-    ScreenList(contentPadding, gutter = GlowLayout.Gutter) {
+    Box(Modifier.fillMaxSize().goalsLight(top = 0.38f, bottom = 0.2f, topY = 100f, bottomY = 560f)) { ScreenList(contentPadding, gutter = GlowLayout.Gutter) {
         item {
             val subtitle = view?.let { stringResource(R.string.glow_goals_earned_count, it.earned.size, Rewards.BADGES.size) }
             PageHeader(stringResource(R.string.glow_goals_all_badges), onBack, subtitle = subtitle)
@@ -238,7 +295,7 @@ fun AllBadgesPage(view: RewardsView?, contentPadding: PaddingValues, onBack: () 
                 }
             }
         }
-    }
+    } }
     if (view != null) open?.let(Rewards::badge)?.let { b -> BadgeSheet(b, view, onDismiss = { open = null }) }
 }
 
@@ -256,7 +313,7 @@ fun WeeklyRecapPage(view: RewardsView?, first: LocalDate, contentPadding: Paddin
         return
     }
     BackHandler(onBack = onBack)
-    ScreenList(contentPadding, gutter = GlowLayout.Gutter) {
+    Box(Modifier.fillMaxSize().goalsLight(top = 0.55f, bottom = 0.3f, topY = 220f, bottomY = 670f)) { ScreenList(contentPadding, gutter = GlowLayout.Gutter) {
         item { PageHeader(stringResource(R.string.glow_goals_your_week), onBack, subtitle = RewardsCopy.weekRange(first)) }
         if (view == null) return@ScreenList
         val week = view.week(first)
@@ -322,5 +379,5 @@ fun WeeklyRecapPage(view: RewardsView?, first: LocalDate, contentPadding: Paddin
                 )
             }
         }
-    }
+    } }
 }

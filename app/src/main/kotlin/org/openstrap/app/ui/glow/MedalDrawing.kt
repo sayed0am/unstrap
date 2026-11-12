@@ -44,6 +44,10 @@ internal enum class MedalShape(val top: Float, val bottom: Float, val content: F
     Rosette(ROSETTE_TOP, ROSETTE_BOTTOM, ROSETTE_CONTENT),
 }
 
+/** The white glass medal's fill and ring. */
+private const val GLASS_FILL = 0.13f
+private const val GLASS_RING = 0.2f
+
 /** A medal's tones from its ink, by the glow cards' formula: the light at the foot, the body, the core, the picture. */
 internal class MedalTones(ink: Color) {
     private val palette = GlowPalette(GlowStyle(color = ink))
@@ -51,6 +55,9 @@ internal class MedalTones(ink: Color) {
     val body: Color = palette.mid
     val core: Color = palette.core
     val mark: Color = lerp(Color.White, palette.light, MARK_TINT)
+
+    /** White ink is "something new" (decision 8): a white glass medal at 13%, no tint, so nothing competes with the group colours. */
+    val glass: Boolean = ink == Color.White
 }
 
 /** The medal on the frame: the laurel or rosette's edge behind, then the face, lit or quiet, and its inner ring. */
@@ -64,6 +71,10 @@ internal fun DrawScope.drawFrame(shape: MedalShape, tones: MedalTones, locked: B
     if (locked) {
         drawPath(face, LockedFill)
         drawPath(face, LockedRim, style = Stroke(RIM_LINE))
+    } else if (tones.glass) {
+        drawPath(face, Color.White.copy(alpha = GLASS_FILL))
+        drawPath(face, Color.White.copy(alpha = GLASS_RING), style = Stroke(RIM_LINE))
+        return
     } else {
         drawLitFace(shape, face, tones, lit.coerceIn(0f, 1f))
     }
