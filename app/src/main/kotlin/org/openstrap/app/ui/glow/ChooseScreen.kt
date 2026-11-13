@@ -83,6 +83,7 @@ import org.openstrap.app.ui.theme.Blends
 import org.openstrap.app.ui.theme.GlowShapes
 import org.openstrap.app.ui.theme.clearGlass
 import org.openstrap.app.ui.theme.ScreenLight
+import org.openstrap.app.ui.theme.screenLight
 import org.openstrap.app.ui.theme.tintedGlass
 import androidx.compose.ui.graphics.Brush
 
@@ -112,6 +113,7 @@ fun GlowChooseScreen(
 ) {
     var page by rememberSaveable { mutableStateOf(ChoosePage.Choose) }
     BackHandler { if (page != ChoosePage.Choose) page = ChoosePage.Choose else onBack() }
+    val light = remember(usual?.type) { chooseLight(usual?.type) }
     SharedTransitionLayout {
         AnimatedContent(page, transitionSpec = { choosePageMotion(initialState, targetState) }, label = "choose") { shown ->
             // The search box glides from its place on Choose to the top of its page, and back, as the rest crossfades.
@@ -120,14 +122,33 @@ fun GlowChooseScreen(
                 resizeMode = SharedTransitionScope.ResizeMode.RemeasureToBounds,
             )
             when (shown) {
-                ChoosePage.Search -> SearchPage(contentPadding, onReady, { page = ChoosePage.Choose }, searchBox)
-                ChoosePage.More -> MoreSports(contentPadding, onReady) { page = ChoosePage.Choose }
+                ChoosePage.Search -> LitPage(light) { SearchPage(contentPadding, onReady, { page = ChoosePage.Choose }, searchBox) }
+                ChoosePage.More -> MoreSports(contentPadding, onReady, light) { page = ChoosePage.Choose }
                 ChoosePage.Choose -> ChooseBody(
                     usual, recent, connection, liveHeartRate, contentPadding, onStartUsual, onReady, onBack, onSaved,
                     onSearch = { page = ChoosePage.Search }, onMore = { page = ChoosePage.More }, modifier = searchBox,
                 )
             }
         }
+    }
+}
+
+/** The usual sport's family lights Choose and its pages from the top left (board WorkoutChoose); with none, the distance lime. */
+private fun chooseLight(usualType: Int?) =
+    ScreenLight(usualType?.let { sportBlend(it) } ?: Blends.Distance, CHOOSE_ANGLE, CHOOSE_STRENGTH, CHOOSE_HERO_Y)
+
+private const val CHOOSE_ANGLE = 135f
+private const val CHOOSE_STRENGTH = 0.85f
+private const val CHOOSE_HERO_Y = 170f
+
+/** A page of Choose lit as Choose is, the light going up as its list scrolls. */
+@Composable
+private fun LitPage(light: ScreenLight, content: @Composable () -> Unit) {
+    val scroll = remember { org.openstrap.app.ui.theme.ScrollSource() }
+    CompositionLocalProvider(
+        org.openstrap.app.ui.theme.LocalScreenLight provides light, org.openstrap.app.ui.theme.LocalScrollSource provides scroll,
+    ) {
+        Box(Modifier.fillMaxSize().screenLight(light) { scroll.scrolled?.invoke() ?: 0f }) { content() }
     }
 }
 
@@ -176,7 +197,7 @@ private fun ChooseBody(
     modifier: Modifier = Modifier,
 ) {
     // The usual sport's family lights the screen from the top left (board WorkoutChoose); with none, the distance lime.
-    val light = remember(usual?.type) { ScreenLight(usual?.let { sportBlend(it.type) } ?: Blends.Distance, 135f, 0.85f, 170f) }
+    val light = remember(usual?.type) { chooseLight(usual?.type) }
     val header: @Composable () -> Unit = {
         Row(verticalAlignment = Alignment.CenterVertically) {
             RoundIcon(AppIcons.X, stringResource(R.string.glow_close), onBack)
@@ -293,7 +314,7 @@ internal fun SportTile(
     modifier: Modifier,
     outdoor: Boolean,
     selected: Boolean = false,
-    /** The sport's family blend: the tile shows it as a dot (board WorkoutChoose) in place of the [icon]. */
+    /** The sport's family blend: a faint tint behind the white [icon], as a row icon sits on its blend. */
     blend: Blend? = null,
     onClick: () -> Unit,
 ) {
@@ -305,14 +326,17 @@ internal fun SportTile(
     ) {
         Box(
             Modifier.size(SportTileSize).clip(GlowLayout.TileShape)
-                .background(if (selected) Color.White else Color.White.copy(alpha = 0.1f)),
+                .background(
+                    when {
+                        selected -> Color.White
+                        blend != null -> blend.first.copy(alpha = SPORT_TINT)
+                        else -> Color.White.copy(alpha = 0.1f)
+                    },
+                ),
             contentAlignment = Alignment.Center,
         ) {
             val ink = if (selected) Color.Black else Color.White
-            if (blend != null) Box(
-                Modifier.size(12.dp).clip(CircleShape)
-                    .background(if (selected) SolidColor(Color.Black) else Brush.linearGradient(listOf(blend.first, blend.second))),
-            ) else Icon(icon, null, tint = ink, modifier = Modifier.size(24.dp))
+            Icon(icon, null, tint = ink, modifier = Modifier.size(24.dp))
             if (outdoor) Icon(
                 SportIcons.Location, stringResource(R.string.glow_choose_outdoors), tint = ink.copy(alpha = 0.7f),
                 modifier = Modifier.align(Alignment.TopEnd).padding(6.dp).size(12.dp),
@@ -330,6 +354,9 @@ internal fun SportTile(
 }
 
 private val SportTileSize = 64.dp
+
+/** The family's tint behind a sport's icon, as the row icons' 16%. */
+private const val SPORT_TINT = 0.16f
 
 /** The sport list on its own, for saving a stretch nobody started. */
 @Composable
@@ -375,7 +402,9 @@ internal fun SportPicker(selected: Int, recent: List<Int>, contentPadding: Paddi
 
 /** The rest of the sports, A to Z, as a list page of their own. */
 @Composable
-private fun MoreSports(contentPadding: PaddingValues, onPick: (Int) -> Unit, onBack: () -> Unit) {
+private fun MoreSports(
+    contentPadding: PaddingValues, onPick: (Int) -> Unit, light: ScreenLight = chooseLight(null), onBack: () -> Unit,
+) = LitPage(light) {
     ScreenList(contentPadding, gutter = GlowLayout.Gutter) {
         item { PageHeader(stringResource(R.string.glow_choose_more_sports), onBack) }
         item { MoreSportsList(onPick) }
@@ -386,7 +415,7 @@ private fun MoreSports(contentPadding: PaddingValues, onPick: (Int) -> Unit, onB
 @Composable
 private fun MoreSportsList(onPick: (Int) -> Unit) = ListPanel {
     Workouts.MORE.forEachIndexed { i, type ->
-        PageRow(Workouts.sportName(type), icon = SportIcons.of(type), divider = i > 0, onClick = { onPick(type) })
+        PageRow(Workouts.sportName(type), icon = SportIcons.of(type), divider = i > 0, tint = sportBlend(type), onClick = { onPick(type) })
     }
 }
 
@@ -478,7 +507,10 @@ private fun SearchPage(contentPadding: PaddingValues, onPick: (Int) -> Unit, onB
         if (found.isNotEmpty()) item {
             ListPanel {
                 found.forEachIndexed { i, type ->
-                    PageRow(Workouts.sportName(type), icon = SportIcons.of(type), divider = i > 0, onClick = { keyboard?.hide(); onPick(type) })
+                    PageRow(
+                        Workouts.sportName(type), icon = SportIcons.of(type), divider = i > 0, tint = sportBlend(type),
+                        onClick = { keyboard?.hide(); onPick(type) },
+                    )
                 }
             }
         }

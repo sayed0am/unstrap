@@ -137,7 +137,10 @@ class MainActivity : ComponentActivity() {
         if (savedInstanceState == null && !launchedFromHistory(intent)) showWorkoutFromIntent()
         setContent {
             OpenStrapTheme {
-                AppRoot(container, navRequests, previews, pendingStrap)
+                androidx.compose.foundation.layout.Box {
+                    AppRoot(container, navRequests, previews, pendingStrap)
+                    if (BuildConfig.DEBUG) org.openstrap.app.ui.components.CornerPanel()
+                }
             }
         }
     }

@@ -119,6 +119,21 @@ fun BackButton(onBack: () -> Unit, enabled: Boolean = true) =
         enabled = enabled,
     )
 
+/**
+ * A round button in a header (the detail's (i), You and All metrics on Today): the back button's size and glass, the
+ * same as the strap pill's, so every header button matches.
+ */
+@Composable
+fun HeaderButton(
+    icon: ImageVector,
+    label: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    clickLabel: String = label,
+    dot: Boolean = false,
+) =
+    RoundIconButton(icon, label, onClick, modifier, size = BackButtonSize, iconSize = 20.dp, clickLabel = clickLabel, dot = dot)
+
 /** How much of a [RoundIconButton] its icon takes by default. */
 private const val ROUND_ICON_SHARE = 0.47f
 
@@ -208,7 +223,7 @@ fun PagePanel(modifier: Modifier = Modifier, title: String? = null, note: String
 fun PageRows(modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
     Column(
         // Clipped, so a selected row's tint keeps to the panel's corners.
-        modifier.fillMaxWidth().clearGlass(PanelShape).clip(PanelShape).padding(horizontal = PanelInset, vertical = 6.dp),
+        modifier.fillMaxWidth().clearGlass(PanelShape).clip(PanelShape).padding(horizontal = PanelInset, vertical = 12.dp),
         content = content,
     )
 }

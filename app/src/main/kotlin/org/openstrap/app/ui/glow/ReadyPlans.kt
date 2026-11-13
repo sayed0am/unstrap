@@ -207,7 +207,11 @@ internal fun GamePlanCard(type: Int, periods: Structure.Periods?, onChange: (Str
 /** Ready's switch rows under the plan card, on a plain panel. */
 @Composable
 internal fun ReadyRows(content: @Composable ColumnScope.() -> Unit) {
-    Column(Modifier.fillMaxWidth().clip(GlowLayout.CardShape).background(ListSurface).padding(horizontal = 18.dp), content = content)
+    // Room above the first row and below the last, so the switches clear the 48 dp corners.
+    Column(
+        Modifier.fillMaxWidth().clip(GlowLayout.CardShape).background(ListSurface).padding(horizontal = 22.dp, vertical = 12.dp),
+        content = content,
+    )
 }
 
 /** Work and rest along the rounds, each as wide as its time: work in flare pink, rest in deep teal. */

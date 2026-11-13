@@ -28,6 +28,7 @@ private const val TAG = "unstrap"
 private const val HEX = 16
 private const val SIMULATED_BATTERY = 80
 private const val SCORE_MAX = 100
+private const val PERCENT = 100f
 
 private val MainActivity.container: AppContainer get() = (application as OpenStrapApp).container
 
@@ -41,6 +42,23 @@ internal fun MainActivity.handleDebugIntent(previews: DebugPreviews) {
     shownStates(previews)
     workoutSamples()
     dumpRaw()
+    corners()
+    level()
+}
+
+/** `--ez corners true` shows the corner panel (two sliders over the real screens), `false` hides it. */
+private fun MainActivity.corners() {
+    if (!intent.hasExtra("corners")) return
+    org.openstrap.app.ui.theme.CornerTuning.panel = intent.getBooleanExtra("corners", false)
+    intent.removeExtra("corners")
+}
+
+/** `--ei level 50` draws every level card's fill at 50%, `--ei level -1` goes back to the real levels. */
+private fun MainActivity.level() {
+    if (!intent.hasExtra("level")) return
+    val v = intent.getIntExtra("level", -1)
+    org.openstrap.app.ui.theme.CornerTuning.levelOverride = if (v < 0) null else v / PERCENT
+    intent.removeExtra("level")
 }
 
 /**

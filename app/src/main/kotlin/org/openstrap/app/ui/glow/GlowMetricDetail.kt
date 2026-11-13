@@ -106,6 +106,8 @@ import org.openstrap.app.ui.dashboard.SleepCopy
 import org.openstrap.app.ui.dashboard.siblingsOf
 import java.time.LocalDate
 import org.openstrap.app.ui.glow.draw.DotSize
+import org.openstrap.app.ui.theme.AppIcons
+import org.openstrap.app.ui.theme.litEdge
 import org.openstrap.app.ui.glow.pictures.DayStrip
 import org.openstrap.app.ui.glow.pictures.PictureSize
 import org.openstrap.app.ui.theme.ControlSurface
@@ -190,13 +192,15 @@ internal fun DetailTemplate(
     CompositionLocalProvider(LocalGlowPaused provides { list.isScrollInProgress }, LocalCardsGrow provides false) {
         ScreenList(contentPadding, list, gutter = gutter) {
             item {
-                DetailHero(pageBlend, ring = heroValue == null, gutter) {
+                DetailNav(title, siblings.size > 1, onBack, onInfo, onSwitch = { switching = true })
+            }
+            item {
+                DetailHero(pageBlend) {
                     // A scrub is read here, so only the hero follows the finger, not the whole detail (audit K4).
                     val scrub = scrubbed()
                     val shown = scrub ?: headline
                     // A scrubbed reading takes the gauge's place, as the value row.
                     val gauge = heroValue.takeIf { scrub == null }
-                    DetailNav(title, siblings.size > 1, onBack, onInfo, onSwitch = { switching = true })
                     // A score gauge, its label and status word make one block, centred in the header (spec 6.1).
                     if (gauge != null) Column(
                         Modifier.fillMaxWidth().padding(top = 22.dp), horizontalAlignment = Alignment.CenterHorizontally,
@@ -369,32 +373,22 @@ private class PlainNumber(val number: Float, decimals: Int, grouped: Boolean) {
 /** Sleep's details sit in a little less light than the others (DetailSleep board, 0.55 against 0.6). */
 private const val SLEEP_DETAIL_STRENGTH = 0.9f
 private const val HERO_GLOW_RISE = 0.12f
+/** The hero card's side inset: a little more than a card's, it holds the biggest number. */
+private val HERO_INSET = 24.dp
 private const val HERO_GLOW_RADIUS = 0.75f
-private const val RING_MID_STOP = 0.3f
-private const val RING_END_STOP = 0.62f
 
 /** The corners of the hero's foot: 32 dp, only at the bottom, as a squircle. */
-private val HeroShape = sv.lib.squircleshape.SquircleShape(
-    topStart = 0.dp, topEnd = 0.dp, bottomStart = 32.dp, bottomEnd = 32.dp, smoothing = GlowShapes.SMOOTHING,
-)
-
 /**
  * The hero's surface (DetailRecovery and DetailMetric boards): the blend's first stop as a soft glow from the top
- * centre over a deep tint of it fading toward the ground, a squircle foot, a hairline along it and, when [ring], the
- * blend as a 2 dp edge that fades out down the sides. As wide as the screen.
+ * centre over a deep tint of it fading toward the ground, as a card under the page header (moved below the header on
+ * the phone, 13 Nov, so the status bar and the header sit on the page's light). No coloured ring round it.
  */
 @Composable
-private fun DetailHero(blend: Blend, ring: Boolean, gutter: Dp, content: @Composable () -> Unit) {
-    val shape = HeroShape
+private fun DetailHero(blend: Blend, content: @Composable () -> Unit) {
+    val shape = GlowShapes.Card
     Column(
         Modifier
-            // Out to the screen's edges, past the list's gutter.
-            .layout { measurable, constraints ->
-                val extra = gutter.roundToPx() * 2
-                val w = constraints.maxWidth + extra
-                val placeable = measurable.measure(constraints.copy(minWidth = w, maxWidth = w))
-                layout(constraints.maxWidth, placeable.height) { placeable.place(-extra / 2, 0) }
-            }
+            .fillMaxWidth()
             // The card tapped grows into this surface (spec 3.5).
             .detailSurface(hero = true, shape)
             .clip(shape)
@@ -407,24 +401,10 @@ private fun DetailHero(blend: Blend, ring: Boolean, gutter: Dp, content: @Compos
                         Offset(size.width / 2, -size.height * HERO_GLOW_RISE), size.width * HERO_GLOW_RADIUS,
                     ),
                 )
-                // The hairline along the foot.
-                val up = 40.dp.toPx()
-                translate(top = -up) {
-                    drawOutline(
-                        shape.createOutline(Size(size.width, size.height + up), layoutDirection, this),
-                        Color.White.copy(alpha = 0.07f), style = Stroke(2.dp.toPx()),
-                    )
-                }
-                if (ring) drawOutline(
-                    shape.createOutline(size, layoutDirection, this),
-                    Brush.linearGradient(
-                        0f to blend.first, RING_MID_STOP to blend.second, RING_END_STOP to blend.second.copy(alpha = 0f),
-                        start = Offset(size.width, 0f), end = Offset(0f, size.height),
-                    ),
-                    style = Stroke(4.dp.toPx()),
-                )
             }
-            .padding(start = gutter, end = gutter, top = 4.dp, bottom = 22.dp),
+            .litEdge(shape, top = 0.35f, ring = 0.10f)
+            // The first row brings its own 22 dp from the top, so 38 in all: as much as the day strip's dots leave below.
+            .padding(start = HERO_INSET, end = HERO_INSET, top = 16.dp, bottom = 26.dp),
     ) { content() }
 }
 
@@ -435,7 +415,7 @@ private fun DetailHero(blend: Blend, ring: Boolean, gutter: Dp, content: @Compos
 @Composable
 private fun DetailNav(title: String, switchable: Boolean, onBack: () -> Unit, onInfo: () -> Unit, onSwitch: () -> Unit) {
     PageHeader(title, onBack, onTitle = if (switchable) onSwitch else null) {
-        InfoButton(stringResource(R.string.glow_metrics_about, title), onInfo)
+        HeaderButton(AppIcons.Info, stringResource(R.string.glow_metrics_about, title), onInfo)
     }
 }
 

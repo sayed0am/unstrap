@@ -40,7 +40,7 @@ class DesignTokenTest {
         // Glow × Glass (Numbers board): every grid card is 3 dp, so Second matches Edge.
         assertEquals(listOf(2.4f, 3f, 3f, 4.5f, 6f, 9f), DotSize.entries.map { it.dot.value })
         DotSize.entries.forEach { assertEquals(it.name, it.dot.value * 0.38f, it.gap.value, 1e-4f) }
-        assertEquals(28.dp, GlowLayout.CardCorner)
+        assertEquals(48.dp, GlowLayout.CardCorner)
         assertEquals(16.dp, GlowLayout.TileCorner)
         assertEquals(GlowLayout.CardCorner, GlowStyle(Color.White).radius)
         val p = GlowLayout.CardPadding

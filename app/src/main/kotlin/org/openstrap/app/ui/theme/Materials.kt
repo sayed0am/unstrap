@@ -2,6 +2,8 @@ package org.openstrap.app.ui.theme
 
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawBehind
@@ -152,6 +154,44 @@ val LocalTabLights = androidx.compose.runtime.staticCompositionLocalOf<TabLights
 /** Where a screen reports the light it draws ([GlowScreenList] calls it). Nothing listens outside a tab. */
 val LocalScreenLightReport = androidx.compose.runtime.staticCompositionLocalOf<(ScreenLight?) -> Unit> { {} }
 
+/**
+ * How far the list behind a screen's light has scrolled, in px, so the light can go with the hero (decision changed
+ * on the phone, 13 Nov: the light comes from behind the hero and fades as you scroll away from it). The list sets
+ * [scrolled]; the light reads it while drawing, so a scroll only redraws.
+ */
+class ScrollSource {
+    var scrolled: (() -> Float)? by androidx.compose.runtime.mutableStateOf<(() -> Float)?>(null)
+}
+
+val LocalScrollSource = androidx.compose.runtime.staticCompositionLocalOf<ScrollSource?> { null }
+
+/**
+ * [state]'s distance from the top in px, as a function to call while drawing. Items scrolled past count at the size
+ * they had when seen (or the average of those seen), so the distance keeps growing smoothly past the first item.
+ */
+@androidx.compose.runtime.Composable
+fun rememberScrolled(state: androidx.compose.foundation.lazy.LazyListState): () -> Float {
+    val sizes = androidx.compose.runtime.remember(state) { HashMap<Int, Int>() }
+    return androidx.compose.runtime.remember(state) {
+        {
+            val info = state.layoutInfo
+            val items = info.visibleItemsInfo
+            items.forEach { sizes[it.index] = it.size }
+            val first = items.firstOrNull()
+            if (first == null) 0f else {
+                val usual = if (sizes.isEmpty()) 0 else sizes.values.sum() / sizes.size
+                var before = 0f
+                for (i in 0 until first.index) before += (sizes[i] ?: usual) + info.mainAxisItemSpacing
+                (before - first.offset).coerceAtLeast(0f)
+            }
+        }
+    }
+}
+
+/** How much of the light is gone once the hero is [LIGHT_FADE_DISTANCE] behind, on top of it moving up. */
+private const val LIGHT_FADE = 0.6f
+private val LIGHT_FADE_DISTANCE = 600.dp
+
 /** The boards' blob opacity at full strength. */
 private const val LIGHT_OPACITY = 0.6f
 
@@ -161,18 +201,21 @@ private const val SECOND_BLOB_RX = 0.51f
 private const val SECOND_BLOB_STRENGTH = 0.9f
 
 /**
- * Draws [light] behind this (fixed to the screen, not scrolled), over [Ground]. With no light, just the ground: "no
- * light until there's a hero to light" (Matrix board, No data yet).
+ * Draws [light] behind this, over [Ground]. The light goes with the hero: [scrolled] (px from the top) moves it up as
+ * the list scrolls, and it fades as the hero goes. With no light, just the ground: "no light until there's a hero to
+ * light" (Matrix board, No data yet).
  */
-fun Modifier.screenLight(light: ScreenLight?): Modifier = clipToBounds().drawBehind {
+fun Modifier.screenLight(light: ScreenLight?, scrolled: () -> Float = { 0f }): Modifier = clipToBounds().drawBehind {
     drawRect(Ground)
     if (light == null) return@drawBehind
     val w = size.width
     val r = light.angle / 180f * PI.toFloat()
     val vx = cos(r); val vy = -sin(r)
-    val heroY = light.heroCenterY.dp.toPx()
+    val gone = scrolled()
+    val heroY = light.heroCenterY.dp.toPx() - gone
     val reachX = w * 0.32f; val reachY = 90.dp.toPx()
-    val a = light.strength * LIGHT_OPACITY
+    val fade = 1f - LIGHT_FADE * (gone / LIGHT_FADE_DISTANCE.toPx()).coerceIn(0f, 1f)
+    val a = light.strength * LIGHT_OPACITY * fade
     blob(
         Offset(w / 2 + vx * reachX, heroY + vy * reachY), w * FIRST_BLOB_RX + 120.dp.toPx(), 260.dp.toPx() + 120.dp.toPx(),
         light.blend.light, a,

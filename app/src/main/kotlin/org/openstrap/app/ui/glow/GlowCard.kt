@@ -1,5 +1,9 @@
 package org.openstrap.app.ui.glow
 
+import androidx.compose.ui.graphics.lerp
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.Animatable
 import android.provider.Settings
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -87,7 +91,11 @@ fun GlowCard(
     val mood = LocalGlowMood.current
     val shape = GlowShapes.Card
     val blend = remember(style.color) { Blends.forInk(style.color) ?: Blend(style.color, style.color) }
-    val level = glowLevel(style.lightLevel)
+    val level = glowLevel(style.lightLevel?.let { org.openstrap.app.ui.theme.CornerTuning.levelOverride ?: it })
+    // A new level eases there, rising or draining like a battery, instead of jumping. Read only while drawing, so the
+    // animation redraws the card and recomposes nothing. The first value shows at once.
+    val shownLevel = remember { Animatable(level ?: 0f) }
+    LaunchedEffect(level) { if (level != null) shownLevel.animateTo(level, tween(LEVEL_EASE_MS, easing = FastOutSlowInEasing)) }
     val angle = remember(style, mood) { cardAngle(style, mood.belowOnly) }
     val strength = if (level != null) 1f else style.glowStrength * mood.glow
 
@@ -125,7 +133,7 @@ fun GlowCard(
             .let {
                 when {
                     style.outline -> it.clearGlassRing(blend, shape)
-                    level != null -> it.levelLight(blend, level, swell, shape)
+                    level != null -> it.levelLight(blend, { shownLevel.value }, swell, shape)
                     style.second || style.dark -> it.darkGlow(blend, shape, strength)
                     else -> it.heroGlass(blend, angle, strength, shape)
                 }
@@ -199,10 +207,13 @@ private fun Modifier.clearGlassRing(blend: Blend, shape: androidx.compose.ui.gra
  * then a short fade to dark, with a dark pool behind the number so white reads on it at any level. Upward on a Small
  * or Tall, left to right where the card is wider than tall. A [swell] lifts the level toward its peak while drawing.
  */
-private fun Modifier.levelLight(blend: Blend, level: Float, swell: GlowSwell?, shape: androidx.compose.ui.graphics.Shape): Modifier =
+private fun Modifier.levelLight(
+    blend: Blend, levelNow: () -> Float, swell: GlowSwell?, shape: androidx.compose.ui.graphics.Shape,
+): Modifier =
     drawWithCache {
         val across = size.width > size.height * 1.2f
         onDrawBehind {
+            val level = levelNow()
             val lifted = swell?.let { s ->
                 val a = s.amount().coerceIn(0f, 1f)
                 if (a > 0f) level + (s.peak.coerceIn(level, 1f) - level) * a else level
@@ -211,20 +222,28 @@ private fun Modifier.levelLight(blend: Blend, level: Float, swell: GlowSwell?, s
         }
     }.litEdge(shape, top = 0.25f, ring = 0.05f)
 
+@Suppress("SpreadOperator") // a dozen stops, built once a frame only while a level animates
 private fun DrawScope.drawLevel(blend: Blend, level: Float, across: Boolean) {
-    val dark = DarkGlowFill
-    val edge = (level + 0.04f).coerceAtMost(1f)
-    val fill = if (across) {
-        Brush.horizontalGradient(
-            0f to blend.first, level to blend.second, edge to dark.copy(alpha = 0.85f), 1f to dark.copy(alpha = 0.85f),
-        )
-    } else {
-        val top = 1f - level
-        Brush.verticalGradient(
-            0f to dark.copy(alpha = 0.85f), (top - 0.04f).coerceAtLeast(0f) to dark.copy(alpha = 0.85f),
-            top to blend.second, 1f to blend.first,
-        )
-    }
+    val dark = DarkGlowFill.copy(alpha = 0.85f)
+    // No edge at all: the light blends into the dark over a long, eased stretch centred on the level, so the card reads
+    // as how full it is without a line to look at.
+    val half = LEVEL_BLEND / 2f
+    val stops = buildList {
+        add(0f to blend.first)
+        val from = (level - half).coerceAtLeast(0f)
+        if (from > 0f) add(from to blend.second)
+        // A smoothstep from the light to the dark across the blend.
+        for (i in 1..LEVEL_STEPS) {
+            val t = i / LEVEL_STEPS.toFloat()
+            val at = (level - half + LEVEL_BLEND * t).coerceIn(0f, 1f)
+            val k = t * t * (3f - 2f * t)
+            add(at to lerp(blend.second, dark, k))
+        }
+        add(1f to dark)
+    }.distinctBy { it.first }.sortedBy { it.first }.toTypedArray()
+    // Left to right across a wide card, upward from the bottom on the others.
+    val fill = if (across) Brush.linearGradient(*stops, start = Offset.Zero, end = Offset(size.width, 0f))
+    else Brush.linearGradient(*stops, start = Offset(0f, size.height), end = Offset.Zero)
     drawRect(fill)
     // The pool behind the number: 75% by 62% at 26% 40% across, 110% by 52% at 30% 22% up.
     val c = if (across) Offset(size.width * 0.26f, size.height * 0.40f) else Offset(size.width * 0.30f, size.height * 0.22f)
@@ -244,6 +263,12 @@ private fun Modifier.beatPulse(blend: Blend, beats: () -> Float): Modifier = dra
 }
 
 private const val BEAT_LIFT = 0.12f
+
+/** How much of the card the light takes to blend into the dark, centred on the level, and in how many steps. */
+private const val LEVEL_BLEND = 0.5f
+private const val LEVEL_STEPS = 8
+/** How long a new level takes to get there. */
+private const val LEVEL_EASE_MS = 600
 private const val BEAT_MIN = 0.01f
 private const val NANOS_PER_SECOND = 1e9f
 private const val SECONDS_PER_MINUTE = 60f

@@ -37,6 +37,13 @@ fun ScreenList(
     val toTop = LocalScrollToTop.current
     var handled by remember { mutableIntStateOf(toTop) }
     LaunchedEffect(toTop) { if (toTop != handled) { handled = toTop; state.animateScrollToItem(0) } }
+    // The screen's light behind this list goes up with it (a page host or a dashboard listens).
+    val source = org.openstrap.app.ui.theme.LocalScrollSource.current
+    val scrolled = org.openstrap.app.ui.theme.rememberScrolled(state)
+    if (source != null) androidx.compose.runtime.DisposableEffect(source, scrolled) {
+        source.scrolled = scrolled
+        onDispose { if (source.scrolled === scrolled) source.scrolled = null }
+    }
     // On a wide screen a page keeps to one centred column (spec 2.4 Unfolded); the whole width still scrolls it.
     val column = org.openstrap.app.ui.glow.LocalPageColumn.current
     BoxWithConstraints(Modifier.fillMaxSize()) {

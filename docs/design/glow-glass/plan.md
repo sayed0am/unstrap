@@ -8,7 +8,7 @@ Written 2026-11-13. The design is the Glow × Glass canvas, https://claude.ai/ar
 |---|---|---|
 | Colour | One ink per metric (`MetricColors` in `ui/theme/Theme.kt`) | A two-stop blend per metric, plus three place blends (Strap, You, Goals) |
 | Screen light | Card glows and edge light in the metric ink | The hero's blend, muted (60% saturation, 40% lightness), spilled behind the screen from where the hero's light comes from, at the mood's strength |
-| Corners | `RoundedCornerShape`, 91 uses in 24 files, card corner 28 dp | Squircles from `com.stoyanvuchev:squircle-shape` 5.4.0, smoothing 50 |
+| Corners | `RoundedCornerShape`, 91 uses in 24 files, card corner 28 dp | Squircles from `com.stoyanvuchev:squircle-shape` 5.4.0, smoothing 35 |
 | Materials | OLED black cards, glass only on the nav bar and popups | Four card materials (clear glass, tinted glass, solid light, dark glow) plus heavy glass for sheets |
 | Numbers | Dotted numbers drawn by `ui/glow/draw/DotSpec.kt` (own 5×7 font) | Doto 700, four sizes by dot, groups split by a gap, not a comma |
 | Type | Funnel Display and Funnel Sans | Same families. Titles in Display 600, body and labels in Sans 400 |
@@ -64,14 +64,14 @@ Smoothing is 50 everywhere. Radii are fixed dp (decided 2026-11-13), not percent
 
 | Surface | Radius |
 |---|---|
-| Cards, panels, strips | 28 dp |
-| Sheets (top corners) | 28 dp |
+| Cards, panels, strips | 48 dp |
+| Sheets (top corners) | 48 dp |
 | Tiles | 16 dp |
 | Buttons, chips, tags, the tab pill | pill: `SquircleShape(percent = 50, smoothing = 50)`. The boards draw every text button this way (44, 52 and 56 dp tall at half-height radius). `percent = 100`, as in the library's sample, gives the same shape because it clamps at 50 |
 | Square icon buttons, inputs | 14 dp |
 | Small inner parts (bars, swatches) | 4 dp, plain rounded |
 
-Shapes are `val`s, never built during composition. They also go into `MaterialTheme(shapes = …)` (small 14 dp, medium 16 dp, large 28 dp, extraLarge pill), so Material controls such as switches, menus and text fields pick them up too. Widgets (Glance) can't take a Compose shape, so they keep rounded corners from the launcher (section 4E).
+Shapes are `val`s, never built during composition. They also go into `MaterialTheme(shapes = …)` (small 14 dp, medium 16 dp, large 48 dp, extraLarge pill), so Material controls such as switches, menus and text fields pick them up too. Widgets (Glance) can't take a Compose shape, so they keep rounded corners from the launcher (section 4E).
 
 ### Materials (System and Elements boards)
 
@@ -184,9 +184,9 @@ The boards were updated to match on 2026-11-13 (canvas version 44). That pass tu
 The user asked for the waves to run through without them, picking the recommended option at each gate and reporting it.
 
 - **Gate 0, numbers:** our own dot font (`DotSpec`) stays instead of Doto. It already draws round 5 by 7 dots like Doto, the widgets share its geometry (Canvas, no font needed there), and it can't drift between app and widgets. It takes the Numbers board's rules: a gap of half a digit before each group of three from five digits up, four digits with no gap, and grid cards at 3 dp (the Second size moves from 3.6 to 3).
-- **Gate 0, corners:** 28 dp squircles at smoothing 50, as decided. Checked on the emulator rather than the phone.
+- **Gate 0, corners:** 28 dp squircles at smoothing 50 at first. On 13 Nov, tried with the debug Corners panel on the Fold, cards and sheets went to 48 dp and every squircle to smoothing 35, because 28 at 50 looked too square. Tiles stay 16 dp and icon buttons 14. Widgets keep the launcher's corner.
 - **Cards don't blur.** The boards' cards are a see-through fill with a lit edge over an already soft light, so only the nav bar, sheets and popups blur. That removes the blur-cost risk and makes Android 11 look the same.
-- **The screen's light is fixed to the screen**, not scrolled with the list, so lower cards stay lit.
+- **The screen's light goes with the hero** (changed on the phone, 13 Nov, from fixed to the screen): it comes from behind the hero, moves up as the list scrolls and fades by 60% over 600 dp of scroll. Pages whose list isn't a `ScreenList` keep it fixed.
 - **Gate 2** is the coordinator's emulator pass against every board, with the user's phone check left for the morning.
 
 ## 6. Risks

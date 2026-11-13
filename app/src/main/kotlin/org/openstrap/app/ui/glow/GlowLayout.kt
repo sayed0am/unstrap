@@ -44,13 +44,13 @@ object GlowLayout {
     val Gutter = 20.dp
 
     /** Every card's corner, on every tier: glow, edge, list, strip and page panels. */
-    val CardCorner = 28.dp
-    val CardShape: androidx.compose.ui.graphics.Shape = org.openstrap.app.ui.theme.GlowShapes.Card
+    val CardCorner: androidx.compose.ui.unit.Dp get() = org.openstrap.app.ui.theme.CornerTuning.cardRadius.dp
+    val CardShape: androidx.compose.ui.graphics.Shape get() = org.openstrap.app.ui.theme.GlowShapes.Card
     /** A sheet's top corners match the cards'. */
-    val SheetShape: androidx.compose.ui.graphics.Shape = org.openstrap.app.ui.theme.GlowShapes.Sheet
+    val SheetShape: androidx.compose.ui.graphics.Shape get() = org.openstrap.app.ui.theme.GlowShapes.Sheet
     /** Sport tiles, chart pills, text fields: rounded, but a step tighter than a card. */
     val TileCorner = 16.dp
-    val TileShape: androidx.compose.ui.graphics.Shape = org.openstrap.app.ui.theme.GlowShapes.Tile
+    val TileShape: androidx.compose.ui.graphics.Shape get() = org.openstrap.app.ui.theme.GlowShapes.Tile
 
     /** From a card's edge to its content, on every side and every tier. */
     val CardInset = 20.dp
@@ -216,13 +216,15 @@ fun GlowScreenList(
     state: LazyListState,
     focus: Boolean = false,
     onFocused: () -> Unit = {},
-    /** The screen's light (Matrix board): the hero's blend, drawn behind the list and fixed to the screen. */
+    /** The screen's light (Matrix board): the hero's blend, drawn behind the list, going up with the hero as it scrolls. */
     light: org.openstrap.app.ui.theme.ScreenLight? = null,
     content: GlowBlocks.() -> Unit,
 ) {
     val report = org.openstrap.app.ui.theme.LocalScreenLightReport.current
     androidx.compose.runtime.SideEffect { report(light) }
-    BoxWithConstraints(Modifier.fillMaxSize().then(if (light != null) Modifier.screenLight(light) else Modifier)) {
+    val scroll = androidx.compose.runtime.remember { org.openstrap.app.ui.theme.ScrollSource() }
+    val scrolled = org.openstrap.app.ui.theme.rememberScrolled(state)
+    BoxWithConstraints(Modifier.fillMaxSize().then(if (light != null) Modifier.screenLight(light, scrolled) else Modifier)) {
         val wide = maxWidth >= GlowLayout.TwoColumnWidth
         val gutter = GlowLayout.dashboardGutter(maxWidth)
         val built = GlowBlocks(smallsAcross = GlowLayout.smallsAcross(maxWidth)).apply(content)
@@ -233,7 +235,9 @@ fun GlowScreenList(
         androidx.compose.runtime.LaunchedEffect(focus, target) {
             if (focus && target != null) { state.animateScrollToItem(target); onFocused() }
         }
-        androidx.compose.runtime.CompositionLocalProvider(LocalPageColumn provides Dp.Unspecified) { ScreenList(contentPadding, state, gutter = gutter) {
+        androidx.compose.runtime.CompositionLocalProvider(
+            LocalPageColumn provides Dp.Unspecified, org.openstrap.app.ui.theme.LocalScrollSource provides scroll,
+        ) { ScreenList(contentPadding, state, gutter = gutter) {
             if (!wide) blocks.forEachIndexed { i, block -> item(keys[i]) { block.content() } }
             else sections(blocks.indices.toList()) { blocks[it].pane }.forEach { section ->
                 val left = section.filter { blocks[it].pane == Pane.Left }

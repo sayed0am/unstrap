@@ -22,7 +22,7 @@ All the waves ran overnight while you were away. The branch is `design/glow-glas
 
 1. **The dot font stays (`DotSpec`), not Doto.** It already draws round 5 by 7 dots, the widgets share its geometry, and it can't drift between app and widgets. It follows the Numbers board: grid cards at 3 dp, four digits with no gap, a half-digit gap from five digits up.
 2. **Cards don't blur.** The boards' cards are a see-through fill with a lit edge over an already soft light. Only the nav bar, sheets and popups blur. That removes the blur-cost risk, and Android 11 looks the same.
-3. **The screen light is fixed to the screen**, so lower cards stay lit as you scroll.
+3. **The screen light goes with the hero** (changed on 13 Nov, you overruled fixing it to the screen): it comes from behind the hero, moves up as the list scrolls and fades by 60% over 600 dp. Pages that don't scroll in a `ScreenList` keep it fixed.
 4. **Sheets use the sheet boards' values** (blur 40, saturation 150%, fill 78%), not System's 28 and 170%. Four boards draw them that way.
 5. **The workout detail page is lit by the family blend**, not the zone colours the old board shows (decision 14: zones never light a screen).
 6. **The Energy level fill keeps its hard edge** at the level, as TodayMidday draws it. Only Rewards Goals fades (decision 7).

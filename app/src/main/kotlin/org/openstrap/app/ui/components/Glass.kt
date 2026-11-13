@@ -109,15 +109,19 @@ class PageLightState {
 val LocalPageLight = staticCompositionLocalOf<PageLightState?> { null }
 
 /**
- * Draws the screen light of the page inside it, over [Ground] (the plain ground until a page sets one), fixed to the
- * screen. A detail or a page over a tab sets its light from inside with [PageLight]. Wrap each page once: the host
+ * Draws the screen light of the page inside it, over [Ground] (the plain ground until a page sets one), moving up
+ * and fading as the page's list scrolls. A detail or a page over a tab sets its light from inside with [PageLight].
+ * Wrap each page once: the host
  * belongs to one stack entry, so a page sliding in or out keeps its own light.
  */
 @Composable
 fun PageLightHost(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
     val state = remember { PageLightState() }
-    CompositionLocalProvider(LocalPageLight provides state, LocalScreenLight provides state.light) {
-        Box(modifier.fillMaxSize().screenLight(state.light)) { content() }
+    val scroll = remember { org.openstrap.app.ui.theme.ScrollSource() }
+    CompositionLocalProvider(
+        LocalPageLight provides state, LocalScreenLight provides state.light, org.openstrap.app.ui.theme.LocalScrollSource provides scroll,
+    ) {
+        Box(modifier.fillMaxSize().screenLight(state.light) { scroll.scrolled?.invoke() ?: 0f }) { content() }
     }
 }
 
