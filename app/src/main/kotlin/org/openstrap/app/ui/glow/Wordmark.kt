@@ -8,17 +8,20 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
-import org.openstrap.app.ui.theme.MetricColors
+import androidx.compose.ui.graphics.Shadow
+import org.openstrap.app.ui.theme.Blends
 
 /**
  * The app's name as its logo (docs/design/rebrand-unstrap.md): "un" in the heart red, "strap" in white, lowercase.
- * The logo's glow is left out at this size, as the logo sheet says for anything under about 24 px. Placed on dark
+ * A faint glow round the red, as the Share board draws it. Placed on dark
  * ground only, where the red reads. A brand, not a word to translate.
  */
 @Composable
 fun Wordmark(modifier: Modifier = Modifier, style: TextStyle = GlowType.storyBrand, strap: Color = Color.White) {
     val text = buildAnnotatedString {
-        withStyle(SpanStyle(color = MetricColors.heart)) { append("un") }
+        // The board's soft glow round the red, 0.25 em wide (Share board).
+        val glow = Shadow(Blends.Heart.first.copy(alpha = 0.35f), blurRadius = style.fontSize.value * 0.25f)
+        withStyle(SpanStyle(color = Blends.Heart.first, shadow = glow)) { append("un") }
         withStyle(SpanStyle(color = strap)) { append("strap") }
     }
     Text(text, style = style, maxLines = 1, modifier = modifier)

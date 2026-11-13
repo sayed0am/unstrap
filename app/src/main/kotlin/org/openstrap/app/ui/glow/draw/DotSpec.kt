@@ -24,7 +24,8 @@ object DotFont {
         '8' to listOf(".###.", "#...#", "#...#", ".###.", "#...#", "#...#", ".###."),
         '9' to listOf(".###.", "#...#", "#...#", ".####", "....#", "...#.", ".##.."),
         '.' to listOf(".", ".", ".", ".", ".", ".", "#"),
-        ',' to listOf(".", ".", ".", ".", ".", "#", "#"),
+        // A group mark draws as a gap of half a digit, not a comma (Numbers board). See [DotFont.grouped].
+        ',' to listOf("..", "..", "..", "..", "..", "..", ".."),
         ':' to listOf(".", ".", "#", ".", ".", "#", "."),
         '-' to listOf("...", "...", "...", "###", "...", "...", "..."),
         // The real minus sign of signed values (spec 2.3), drawn as the dash is.
@@ -44,12 +45,23 @@ object DotFont {
     /** The glyph for [c], a space when the font has none. */
     fun glyph(c: Char): List<String> = GLYPHS[c] ?: GLYPHS.getValue(' ')
 
+    /**
+     * [text] as the dots show it (Numbers board): four digits read without a gap ("8412"), five or more keep a gap of
+     * half a digit before each group of three ("12 480"). Grouping comes in as commas ([Units.DOT_LOCALE] is ROOT).
+     */
+    fun grouped(text: String): String = GROUPED.replace(text) { m ->
+        if (m.value.count { it.isDigit() } <= UNGROUPED_DIGITS) m.value.replace(",", "") else m.value
+    }
+
+    private const val UNGROUPED_DIGITS = 4
+    private val GROUPED = Regex("\\d{1,3}(,\\d{3})+")
+
     /** Whether [c] has a glyph of its own. */
     fun has(c: Char): Boolean = c in GLYPHS
 
     /** Dot columns [text] takes, with one empty column between glyphs. */
     fun columns(text: String): Int {
-        val glyphs = text.map(::glyph)
+        val glyphs = grouped(text).map(::glyph)
         return glyphs.sumOf { it[0].length } + (glyphs.size - 1).coerceAtLeast(0)
     }
 }
@@ -69,7 +81,7 @@ class DotLayout(val width: Float, val height: Float, val dot: Float, val centers
  */
 fun dotLayout(text: String, dot: Float, density: Float): DotLayout {
     val gap = dot * DotSize.DOT_GAP
-    val glyphs = text.map(DotFont::glyph)
+    val glyphs = DotFont.grouped(text).map(DotFont::glyph)
     val columns = glyphs.sumOf { it[0].length } + (glyphs.size - 1).coerceAtLeast(0)
     val pitch = dot + gap
     val d = dot * density
@@ -101,8 +113,8 @@ enum class DotSize(val dot: Dp) {
     /** Edge cards and Smalls. */
     Edge(3.dp),
 
-    /** Talls, the second glow, glow cards that aren't the hero. */
-    Second(3.6.dp),
+    /** Talls and every other card in the grid: the same 3 dp as a Small (Numbers board, four sizes by dot). */
+    Second(3.dp),
 
     /** The hero's number. */
     Hero(4.5.dp),

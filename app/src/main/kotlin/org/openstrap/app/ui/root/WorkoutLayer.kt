@@ -220,7 +220,10 @@ internal fun BoxScope.WorkoutLayer(
             container.workout, state, minimized, liveView, rootVm::setWorkoutLiveView, hooks, padding,
             capsule = { place ->
                 glance()?.let { g ->
-                    WorkoutCapsule(g, onClick = { container.workout.minimized.value = false }, onAction = onGlanceAction, modifier = place)
+                    WorkoutCapsule(
+                        g, onClick = { container.workout.minimized.value = false }, onAction = onGlanceAction, modifier = place,
+                        sportType = state.workout.sportType,
+                    )
                 }
             },
             capsuleHidden = capsuleHidden,

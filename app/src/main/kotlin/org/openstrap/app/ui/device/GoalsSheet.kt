@@ -211,7 +211,7 @@ private fun CalorieGoalField(value: Int, onChange: (Int) -> Unit, suggested: Int
                 size = 44.dp,
             )
         }
-        if (refused) PageNote(GoalCopy.outOfRange(Goals.CALORIES), MetricColors.warn)
+        if (refused) PageNote(GoalCopy.outOfRange(Goals.CALORIES), Color.White)
         if (suggested != null) {
             val count = Units.count(suggested.toLong())
             if (suggested == value) PageNote(stringResource(R.string.you_goals_suggested_matched, count))

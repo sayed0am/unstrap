@@ -1,5 +1,33 @@
+@file:Suppress("TooManyFunctions") // one cohesive file: each function is one section of the workout summary
+
 package org.openstrap.app.ui.glow
 
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.drawscope.scale
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
+import org.openstrap.app.ui.components.PinnedFade
+import org.openstrap.app.ui.components.pinnedFade
+import org.openstrap.app.ui.theme.Blend
+import org.openstrap.app.ui.theme.Blends
+import org.openstrap.app.ui.theme.litEdge
+import org.openstrap.app.ui.glow.draw.GlowStyle
+import org.openstrap.app.ui.glow.draw.chart
+import org.openstrap.app.presentation.Ranges
+import org.openstrap.app.ui.glow.draw.LightAngle
+import org.openstrap.app.ui.glow.draw.heroStyle
+import org.openstrap.app.ui.theme.Ground
 import org.openstrap.app.R
 import org.openstrap.app.presentation.Units
 import androidx.compose.ui.res.pluralStringResource
@@ -46,7 +74,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.text.font.FontWeight
 import org.openstrap.app.ui.workout.SplitRow
 import org.openstrap.app.ui.workout.ZoneSeconds
-import org.openstrap.app.data.WorkoutRecorder
 import org.openstrap.app.ui.workout.familyColor
 import org.openstrap.app.ui.workout.mainZoneColor
 import kotlinx.coroutines.delay
@@ -88,11 +115,20 @@ import org.openstrap.app.ui.dashboard.LocalHeartZones
 /** Where Done has got to: the summary, a personal best's card, the goal moment. */
 private enum class SummaryStep { Summary, Best, Moment }
 
+private const val BLOB_STOP_A = 0.35f
+private const val BLOB_STOP_B = 0.6f
+private const val BLOB_STOP_C = 0.8f
+private const val FIRST_BLOB_X = 0.4f
+private const val FIRST_BLOB_RX = 0.82f
+private const val SECOND_BLOB_X = 0.78f
+private const val SECOND_BLOB_RX = 0.51f
+private const val SECOND_BLOB_FADE = 0.9f
+
 /** How much higher the hero's light reaches at the top of a personal best's swell. */
-private const val SwellLevel = 0.25f
+private const val SWELL_LEVEL = 0.25f
 
 /** The drop line shows the last minute of the workout before the end. */
-private const val BeforeS = 60L
+private const val BEFORE_S = 60L
 
 /**
  * The summary right after [summary]'s workout ended. [calmDown] is the heart rate the strap sent since, for this
@@ -155,14 +191,27 @@ fun GlowWorkoutSummaryScreen(
         return
     }
     val trim = summary?.let { rememberWorkoutTrim(it, onTrim, onUndoTrim) }
+    // The summary is lit by its family's blend at a size by effort (Matrix board), so both are known before the page.
+    val family = remember(summary) {
+        summary?.let { FamilySummary.familyOf(it.analysis.workout.sportType, it.structure) } ?: Workouts.Family.Distance
+    }
+    val effort = remember(summary, workouts) {
+        if (summary == null) 0f else Workouts.effort(
+            summary.analysis.workout.trainingLoad,
+            Workouts.usualLoad(workouts.filter { it.workout.start != summary.analysis.workout.start }.map { it.workout.trainingLoad }),
+        )
+    }
+    // A personal best swells the light once.
+    val swell = remember { Animatable(0f) }
     // Share and Done stay on the bottom edge; Delete waits at the end of the page. Nothing to share until the workout
     // has loaded.
     WorkoutPage(
-        Color.Transparent, contentPadding,
+        null, contentPadding,
         pinned = {
             if (a != null && hero != null) SummaryButtons(onShare = { sharing = true }, onDone = done)
             else WorkoutButton(stringResource(R.string.glow_done), Color.White, Color.Black, onDone)
         },
+        effortLight = { effort + SWELL_LEVEL * swell.value } to familyBlend(family),
     ) {
         // The sport, then when, with Trim beside them.
         Row(Modifier.padding(start = 4.dp, top = 12.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -188,10 +237,9 @@ fun GlowWorkoutSummaryScreen(
         val others = remember(workouts, w.start) { workouts.filter { it.workout.start != w.start }.sortedByDescending { it.workout.start } }
         val usualLoad = remember(others) { Workouts.usualLoad(others.map { it.workout.trainingLoad }) }
         val earned = rewards?.earned.orEmpty()
-        // A personal best ticks once and swells the hero's glow once; with animations off, only the tick.
+        // A personal best ticks once and swells the light once; with animations off, only the tick.
         val haptics = rememberHaptics()
         val animationsOn = rememberAnimationsOn()
-        val swell = remember { Animatable(0f) }
         var swelled by rememberSaveable(w.start) { mutableStateOf(false) }
         val anyBest = earned.any { it.kind == EarnedLine.Kind.Best }
         LaunchedEffect(anyBest) {
@@ -203,13 +251,10 @@ fun GlowWorkoutSummaryScreen(
                 swell.animateTo(0f, tween(900))
             }
         }
-        val family = FamilySummary.familyOf(w.sportType, summary.structure)
-        val effort = Workouts.effort(w.trainingLoad, usualLoad)
-        val heartZones = LocalHeartZones.current
-        val zones = remember(a, heartZones) {
-            WorkoutRecorder.liveZoneSeconds(a.heartRate.filter { it.timestamp <= a.end }.map { it.timestamp to it.bpm }, a.maxHeartRate, heartZones).toList()
-        }
-        SummaryHeroCard(hero ?: summaryHero(family, summary, usualLoad), mainZoneColor(zones, familyColor(family)), effort) { swell.value }
+        SummaryHeroCard(
+            hero ?: summaryHero(family, summary, usualLoad), familyInk(family), effort,
+            title = a.sportName, range = Ranges.times(a.shownStart, a.end),
+        )
         // What was done to the times, under the hero that says them.
         TrimNote(summary, trim.undo, Modifier.padding(horizontal = 4.dp), onCard = false)
         val weekStarts = remember(workouts) { goalWeekStarts(workouts) }
@@ -232,20 +277,26 @@ fun GlowWorkoutSummaryScreen(
 
 /**
  * The summary's hero (workouts spec 2.8): a glow in the workout's [color] lit from below as high as its [effort], the
- * one number in dots, then a sentence or three figures in text. [swell] lifts the light for a personal best.
+ * one number in dots, then a sentence or three figures in text.
  */
 @Composable
-internal fun SummaryHeroCard(hero: SummaryHero, color: Color, effort: Float, swell: () -> Float = { 0f }) {
-    // The swell is drawn over the card's own light ([GlowSwell]), so the light at rest stays the cache key and a best's
-    // swell neither composes the hero again nor renders a new glow each frame.
-    val lift = remember(effort, swell) { GlowSwell((effort + SwellLevel).coerceAtMost(1f), swell) }
-    GlowCard(effortGlow(color, effort), Modifier.fillMaxWidth(), swell = lift) {
+internal fun SummaryHeroCard(
+    hero: SummaryHero, color: Color, effort: Float,
+    /** The family's title and the time range, on the card's title row (board SummaryRun); null on pages that head themselves. */
+    title: String? = null, range: String? = null,
+) {
+    // Tinted glass of the family's blend, its tint as strong as the effort (Matrix board: an easy hero is 20% where a hard one is
+    // 42%); the light behind the screen does the size ([effortLight]). The swell is drawn there, not here.
+    val style = remember(color, effort) { heroStyle(color, LightAngle.Below, rim = 0.5f + 0.5f * effort.coerceIn(0f, 1f)) }
+    GlowCard(style, Modifier.fillMaxWidth()) {
         Column {
-            HeroValue(hero.value, hero.unit)
-            hero.sentence?.let { HeroSentence(it) }
+            if (title != null) GlowHeader(title, trailing = range)
+            hero.sentence?.let { HeroSentence(it, Modifier) }
+            HeroValue(hero.value, hero.unit, Modifier.padding(top = if (hero.sentence != null || title != null) 14.dp else 0.dp))
             hero.line?.let { Text(it, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary, modifier = Modifier.padding(top = 6.dp)) }
             if (hero.figures.isNotEmpty()) {
-                DetailFigures(hero.figures, Modifier.padding(top = 18.dp), valueStyle = GlowType.rowValue, missing = null, gap = 0.dp)
+                Box(Modifier.padding(top = 14.dp).fillMaxWidth().height(1.dp).background(Color.White.copy(alpha = 0.14f)))
+                DetailFigures(hero.figures, Modifier.padding(top = 12.dp), valueStyle = GlowType.rowValue, missing = null, gap = 0.dp)
             }
         }
     }
@@ -273,7 +324,7 @@ private fun CalmDownHero(summary: PhoneSummary, live: CalmDown?, usualDrop: Int?
     val line: CalmDownLine = SummaryCopy.calmDown(readings, a.end, now, live != null && now <= live.until, a.maxHeartRate, usualDrop)
     val bpmNow = live?.readings?.lastOrNull()?.takeIf { now <= live.until && now - it.first <= 5 }?.second
     // A level glow is always at full: its light is the value (spec 2.1).
-    GlowCard(effortGlow(MetricColors.heart, effort + SwellLevel * swell), Modifier.fillMaxWidth()) {
+    GlowCard(GlowStyle.chart(MetricColors.heart).copy(dark = true), Modifier.fillMaxWidth()) {
         Column {
             GlowHeader(
                 stringResource(R.string.glow_summary_drop_title), trailing = stringResource(R.string.glow_summary_drop_since, clock(a.end)),
@@ -283,8 +334,13 @@ private fun CalmDownHero(summary: PhoneSummary, live: CalmDown?, usualDrop: Int?
             if (bpmNow != null) {
                 HeroValue(bpmNow.toString(), stringResource(R.string.glow_summary_unit_bpm_now), Modifier.padding(top = 16.dp))
             }
-            val shown = readings.filter { it.first in (a.end - BeforeS)..(a.end + WorkoutSession.CALM_S) }
+            val shown = readings.filter { it.first in (a.end - BEFORE_S)..(a.end + WorkoutSession.CALM_S) }
             if (shown.size >= 2) DropLine(shown, a.end, Modifier.padding(top = 16.dp))
+            // The effort as a thin bar in the heart blend (the light was a heavy red band).
+            val level = (effort + SWELL_LEVEL * swell).coerceIn(0f, 1f)
+            Box(Modifier.padding(top = 14.dp).fillMaxWidth().height(4.dp).clip(CircleShape).background(Color.White.copy(alpha = 0.10f))) {
+                Box(Modifier.fillMaxWidth(level).fillMaxHeight().clip(CircleShape).background(Blends.Heart.brush()))
+            }
         }
     }
 }
@@ -295,8 +351,8 @@ private fun CalmDownHero(summary: PhoneSummary, live: CalmDown?, usualDrop: Int?
  */
 @Composable
 private fun DropLine(readings: List<Pair<Long, Int>>, end: Long, modifier: Modifier = Modifier) {
-    val first = end - BeforeS
-    val span = (BeforeS + WorkoutSession.CALM_S).toFloat()
+    val first = end - BEFORE_S
+    val span = (BEFORE_S + WorkoutSession.CALM_S).toFloat()
     val lo = readings.minOf { it.second } - 5f
     val hi = readings.maxOf { it.second } + 5f
     Column(modifier) {
@@ -466,7 +522,7 @@ internal fun SplitsList(summary: PhoneSummary, liveRoute: List<Route.Point>, mar
 private fun SplitTimeBars(rows: List<SplitRow>, fastest: Int?) {
     val seconds = rows.map { it.seconds }
     val best = rows.indices.filter { rows[it].kind == SplitRow.Kind.Whole && seconds[it] > 0 }.minOfOrNull { seconds[it] }
-    val bar = familyColor(Workouts.Family.Distance).copy(alpha = 0.5f)
+    val bar = Blends.Distance.chart.copy(alpha = 0.5f)
     rows.forEachIndexed { i, r ->
         val lit = i == fastest
         val text = if (lit) Color.White else Color.White.copy(alpha = GlowType.SECONDARY_ALPHA)
@@ -494,3 +550,64 @@ internal fun SummaryButtons(onShare: () -> Unit, onDone: () -> Unit) {
 
 /** The small pill beside the summary's title, Trim. */
 private val TopPillText = GlowType.secondary.copy(fontWeight = FontWeight.SemiBold)
+
+
+/* ------------------------------------------- Family blend and the light ------------------------------------------ */
+
+/**
+ * The blend that lights a workout of [family] (Palette and Workouts boards, decision 14). Local to the summary files until
+ * the coordinator unifies it with WorkoutStyle: Distance is Steps', Mind and body the Evening's.
+ */
+internal fun familyBlend(family: Workouts.Family): Blend = when (family) {
+    Workouts.Family.Distance -> Blends.Distance
+    Workouts.Family.IndoorCardio -> Blends.IndoorCardio
+    Workouts.Family.Strength -> Blends.Strength
+    Workouts.Family.Intervals -> Blends.Intervals
+    Workouts.Family.MindBody -> Blends.MindAndBody
+    Workouts.Family.Games -> Blends.Games
+}
+
+/** [familyBlend]'s first stop, for the parts that still take one ink (they find the blend again from it). */
+internal fun familyInk(family: Workouts.Family): Color = familyBlend(family).first
+
+/** The share of a full light that a workout of no effort keeps (Matrix board, "Workout summary, easy"). */
+private const val LIGHT_EASY_SIZE = 0.45f
+private const val LIGHT_HARD_SIZE = 1.25f
+
+/**
+ * The summary's light by effort (Matrix board, Workout summary): the family's blend, both stops muted, over the ground.
+ * An easy walk keeps a small dim light and leaves most of the screen dark, a hard HIIT floods it. [effort] is read
+ * while drawing, so a personal best's swell never composes again.
+ */
+internal fun Modifier.effortLight(blend: Blend, effort: () -> Float): Modifier = drawBehind {
+    drawRect(Ground)
+    val e = effort().coerceIn(0f, 1f)
+    val size = LIGHT_EASY_SIZE + (LIGHT_HARD_SIZE - LIGHT_EASY_SIZE) * e
+    val w = this.size.width
+    val heroY = 170.dp.toPx()
+    fun blob(c: Offset, rx: Float, ry: Float, color: Color, alpha: Float) {
+        val brush = Brush.radialGradient(
+            0f to color.copy(alpha = alpha),
+            BLOB_STOP_A to color.copy(alpha = alpha * 0.9f),
+            BLOB_STOP_B to color.copy(alpha = alpha * 0.55f),
+            BLOB_STOP_C to color.copy(alpha = alpha * 0.2f),
+            1f to Color.Transparent,
+            center = c,
+            radius = rx,
+        )
+        scale(1f, ry / rx, pivot = c) { drawCircle(brush, rx, c) }
+    }
+    val first = 0.6f + 0.25f * e
+    blob(
+        Offset(w * FIRST_BLOB_X, heroY + 50.dp.toPx()), (w * FIRST_BLOB_RX + 120.dp.toPx()) * size, (260.dp.toPx() + 120.dp.toPx()) * size,
+        blend.light, first,
+    )
+    // The second stop only joins once the workout was hard enough to flood.
+    val second = ((e - 0.25f) / 0.5f).coerceIn(0f, 1f)
+    if (second > 0f) blob(
+        Offset(w * SECOND_BLOB_X, heroY + 420.dp.toPx()),
+        (w * SECOND_BLOB_RX + 120.dp.toPx()) * size, (190.dp.toPx() + 120.dp.toPx()) * size,
+        blend.lightSecond, first * SECOND_BLOB_FADE * second,
+    )
+}
+

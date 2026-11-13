@@ -19,7 +19,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -69,13 +68,16 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import org.openstrap.app.ui.components.GlassSheet
 import org.openstrap.app.ui.components.pressClickable
 import org.openstrap.app.ui.theme.MetricColors
 import org.openstrap.app.ui.theme.AppIcons
 import java.time.ZoneId
-import org.openstrap.app.ui.theme.ControlSurface
+import org.openstrap.app.ui.theme.GlowShapes
+import org.openstrap.app.ui.theme.clearGlass
+import org.openstrap.app.ui.theme.litEdge
 
 /*
  * The settings pages (the Strap page and what it opens, Profile, You) in the glow language's quiet tier: black, with
@@ -83,9 +85,14 @@ import org.openstrap.app.ui.theme.ControlSurface
  * app doesn't turn into another product at the strap's boundary.
  */
 
-private val PanelShape = GlowLayout.CardShape
-private val PanelSurface = ListSurface
-private val Hairline = Color.White.copy(alpha = 0.05f)
+private val PanelShape = GlowShapes.Card
+private val Hairline = RowHairline
+/** The side padding of a page's panel of rows. */
+private val PanelInset = ListInset
+/** What a page's buttons and chips are filled with: white 12% glass (Elements board, Controls). */
+private val ControlGlass = Color.White.copy(alpha = 0.12f)
+/** A row's circle behind its icon on a page (PageStrap): white 8%. */
+private val RowIconFill = Color.White.copy(alpha = 0.08f)
 /** A [PageRow] whose page is open beside the list. */
 private val SelectedTint = Color.White.copy(alpha = 0.08f)
 
@@ -102,15 +109,30 @@ val BackButtonSize = 44.dp
 val PageHeaderHeight = 64.dp
 
 /**
- * A page's way back (spec 3.4): a [BackButtonSize] round button on the [ControlSurface] with a 20 dp arrow, dimmed
+ * A page's way back (spec 3.4): a [BackButtonSize] round button on white 12% glass with a 20 dp arrow, dimmed
  * and still while not [enabled] (a firmware install running).
  */
 @Composable
 fun BackButton(onBack: () -> Unit, enabled: Boolean = true) =
     RoundIconButton(
-        AppIcons.ArrowLeft, stringResource(R.string.glow_back), onBack, size = BackButtonSize, surface = ControlSurface, iconSize = 20.dp,
+        AppIcons.ArrowLeft, stringResource(R.string.glow_back), onBack, size = BackButtonSize, surface = ControlGlass, iconSize = 20.dp,
         enabled = enabled,
     )
+
+/**
+ * A round button in a header (the detail's (i), You and All metrics on Today): the back button's size and glass, the
+ * same as the strap pill's, so every header button matches.
+ */
+@Composable
+fun HeaderButton(
+    icon: ImageVector,
+    label: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    clickLabel: String = label,
+    dot: Boolean = false,
+) =
+    RoundIconButton(icon, label, onClick, modifier, size = BackButtonSize, iconSize = 20.dp, clickLabel = clickLabel, dot = dot)
 
 /** How much of a [RoundIconButton] its icon takes by default. */
 private const val ROUND_ICON_SHARE = 0.47f
@@ -127,7 +149,7 @@ fun RoundIconButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     size: Dp = 38.dp,
-    surface: Color = Color.White.copy(alpha = 0.10f),
+    surface: Color = ControlGlass,
     iconSize: Dp = size * ROUND_ICON_SHARE,
     tint: Color = Color.White,
     clickLabel: String = label,
@@ -136,7 +158,8 @@ fun RoundIconButton(
 ) {
     Box(modifier.size(size)) {
         Box(
-            Modifier.matchParentSize().clip(CircleShape).background(surface).alpha(if (enabled) 1f else 0.4f)
+            Modifier.matchParentSize().clip(CircleShape).background(surface).litEdge(CircleShape, top = 0.2f, ring = 0f)
+                .alpha(if (enabled) 1f else 0.4f)
                 .clickable(enabled = enabled, onClickLabel = clickLabel, role = Role.Button, onClick = onClick),
             contentAlignment = Alignment.Center,
         ) { Icon(icon, label, Modifier.size(iconSize), tint = tint) }
@@ -165,7 +188,7 @@ fun PageHeader(
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
             Row(
-                Modifier.clip(RoundedCornerShape(8.dp))
+                Modifier.clip(GlowShapes.Small)
                     .let { if (onTitle != null) it.clickable(onClickLabel = switchLabel, role = Role.Button, onClick = onTitle) else it },
                 verticalAlignment = Alignment.CenterVertically,
             ) {
@@ -200,8 +223,7 @@ fun PagePanel(modifier: Modifier = Modifier, title: String? = null, note: String
 fun PageRows(modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
     Column(
         // Clipped, so a selected row's tint keeps to the panel's corners.
-        modifier.fillMaxWidth().clip(PanelShape).background(PanelSurface, PanelShape).border(1.dp, CardHairline, PanelShape)
-            .padding(GlowLayout.ListPadding),
+        modifier.fillMaxWidth().clearGlass(PanelShape).clip(PanelShape).padding(horizontal = PanelInset, vertical = 12.dp),
         content = content,
     )
 }
@@ -228,23 +250,27 @@ fun PageRow(
     icon: ImageVector? = null,
     selected: Boolean = false,
     dot: Boolean = false,
+    /** Tints the icon as the boards draw a metric's rows: its circle the blend's first stop at 18%, the glyph in the blend. */
+    tint: org.openstrap.app.ui.theme.Blend? = null,
+    iconSize: Dp = 32.dp,
     trailing: (@Composable () -> Unit)? = null,
 ) {
     Row(
         Modifier.fillMaxWidth()
             .let {
                 if (!selected) it else it.semantics { this.selected = true }.drawBehind {
-                    val inset = GlowLayout.CardInset.toPx()
+                    val inset = PanelInset.toPx()
                     drawRect(SelectedTint, Offset(-inset, 0f), Size(size.width + 2 * inset, size.height))
                 }
             }
             .let { if (onClick != null) it.clickable(enabled = enabled, onClick = onClick) else it }
             .topHairline(divider, Hairline)
             .alpha(if (enabled) 1f else 0.45f)
-            .padding(vertical = GlowLayout.RowPadding),
+            .heightIn(min = ListRowHeight)
+            .padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        if (icon != null) RowIcon(icon)
+        if (icon != null) RowIcon(icon, tint, iconSize)
         if (below) Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
             if (dot) Row(verticalAlignment = Alignment.CenterVertically) {
                 RowName(title, titleColor)
@@ -265,9 +291,10 @@ fun PageRow(
 
 /** A settings row's [icon], quiet on the left and centred on the row, with the gap to its title after it. */
 @Composable
-private fun RowIcon(icon: ImageVector) {
-    Box(Modifier.padding(end = 14.dp).width(20.dp), contentAlignment = Alignment.Center) {
-        Icon(icon, null, Modifier.size(20.dp), tint = Color.White.copy(alpha = 0.7f))
+private fun RowIcon(icon: ImageVector, tint: org.openstrap.app.ui.theme.Blend? = null, size: Dp = 32.dp) {
+    val fill = if (tint != null) tint.first.copy(alpha = 0.18f) else RowIconFill
+    Box(Modifier.padding(end = 12.dp).size(size).background(fill, CircleShape), contentAlignment = Alignment.Center) {
+        Icon(icon, null, Modifier.size(18.dp), tint = tint?.chart ?: Color.White.copy(alpha = 0.78f))
     }
 }
 
@@ -282,7 +309,7 @@ fun NoticeDot(modifier: Modifier = Modifier, ring: Color? = null) {
 }
 
 /** A row's value in Secondary, on the right or under the name. */
-private val RowValueColor = Color.White.copy(alpha = 0.6f)
+private val RowValueColor = Color.White.copy(alpha = 0.65f)
 
 /** A row's name in Body, on one line (spec 2.3): ellipsized only when it alone is wider than the row. */
 @Composable
@@ -369,7 +396,8 @@ fun <T> PageMenuRow(
                 Modifier.fillMaxWidth()
                     .clickable(enabled = enabled, onClickLabel = changeLabel, role = Role.DropdownList) { open = true }
                     .alpha(if (enabled) 1f else 0.45f)
-                    .padding(vertical = GlowLayout.RowPadding),
+                    .heightIn(min = ListRowHeight)
+                    .padding(vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 val value = selected?.let(label)
@@ -406,7 +434,7 @@ fun <T> PageMenuRow(
     }
 }
 
-private val MenuShape = RoundedCornerShape(18.dp)
+private val MenuShape = GlowShapes.Tile
 private val MenuSurface = Color(0xFF232326)
 
 /**
@@ -427,7 +455,8 @@ fun PageSwitchRow(
         Modifier.fillMaxWidth()
             .toggleable(checked, enabled = enabled, role = Role.Switch, onValueChange = onChange)
             .topHairline(divider, Hairline)
-            .padding(vertical = GlowLayout.RowPadding),
+            .heightIn(min = ListRowHeight)
+            .padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         if (icon != null) RowIcon(icon)
@@ -443,8 +472,8 @@ fun PageSwitchRow(
 
 /** How big a [PageButton] is: its height, side padding, icon and type. */
 enum class ButtonSize(val height: Dp, val padding: Dp, val icon: Dp) {
-    /** A page's own buttons. */
-    Page(52.dp, 18.dp, 20.dp),
+    /** A page's own buttons (PageStrap: 56 dp, 20 dp sides, an 18 dp icon). */
+    Page(56.dp, 20.dp, 18.dp),
 
     /** On a hero card, like Start or Try again. */
     Hero(48.dp, 18.dp, 16.dp),
@@ -454,8 +483,8 @@ enum class ButtonSize(val height: Dp, val padding: Dp, val icon: Dp) {
 }
 
 /**
- * A page's button, fully round (spec 2.4): white with black text when it's the page's main action ([primary]),
- * otherwise on the Control surface with white text, or on glass when it sits [onCard] and its colour shows through.
+ * A page's button, a pill: white with black text when it's the page's main action ([primary]),
+ * otherwise white 12% glass with white text, or 14% when it sits [onCard] and its colour shows through.
  * Body type (Secondary at [ButtonSize.Row]), an [icon] before the text when given.
  */
 @Composable
@@ -472,15 +501,16 @@ fun PageButton(
 ) {
     Row(
         // Dimmed before the pill is drawn, so a disabled button fades whole, pill and label (user, 2026-11-03).
-        modifier.height(size.height).alpha(if (enabled) 1f else 0.4f).clip(CircleShape)
+        modifier.height(size.height).alpha(if (enabled) 1f else 0.4f).clip(GlowShapes.Pill)
             .let {
                 when {
                     primary -> it.background(Color.White)
-                    onCard -> it.background(Color.White.copy(alpha = 0.08f)).border(1.dp, Color.White.copy(alpha = 0.12f), CircleShape)
-                    else -> it.background(ControlSurface)
+                    // Secondary: white 12% glass with a lit top edge, a little brighter on a card (14%).
+                    onCard -> it.background(Color.White.copy(alpha = 0.14f)).litEdge(GlowShapes.Pill, top = 0.2f, ring = 0f)
+                    else -> it.background(ControlGlass).litEdge(GlowShapes.Pill, top = 0.2f, ring = 0f)
                 }
             }
-            .let { if (enabled) it.pressClickable(onClick, CircleShape) else it }
+            .let { if (enabled) it.pressClickable(onClick, GlowShapes.Pill) else it }
             .semantics { role = Role.Button }
             .padding(horizontal = size.padding),
         horizontalArrangement = Arrangement.Center,
@@ -508,7 +538,7 @@ fun PageTextButton(
     color: Color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA),
 ) {
     Box(
-        modifier.heightIn(min = 44.dp).clip(CircleShape)
+        modifier.heightIn(min = 44.dp).clip(GlowShapes.Pill)
             .alpha(if (enabled) 1f else 0.4f)
             .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
             .padding(horizontal = 16.dp),
@@ -517,8 +547,8 @@ fun PageTextButton(
 }
 
 /**
- * A text field in the tile style (spec 2.4): the Control surface with 16 dp corners, the [label] over it in
- * Secondary, the text in Body, an optional [unit] after it. [error] draws an amber hairline round it.
+ * A text field in the input style: white 8% glass with 14 dp corners, the [label] over it in
+ * Secondary, the text in Body, an optional [unit] after it. [error] draws a white ring round it.
  */
 @Composable
 fun PageField(
@@ -537,8 +567,8 @@ fun PageField(
     Column(modifier.alpha(if (enabled) 1f else 0.45f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         if (label != null) Text(label, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary)
         Row(
-            Modifier.fillMaxWidth().heightIn(min = 52.dp).clip(GlowLayout.TileShape).background(ControlSurface)
-                .let { if (error) it.border(1.dp, MetricColors.warn, GlowLayout.TileShape) else it }
+            Modifier.fillMaxWidth().heightIn(min = 52.dp).clip(GlowShapes.Icon).background(Color.White.copy(alpha = 0.08f))
+                .let { if (error) it.border(1.5.dp, Color.White.copy(alpha = 0.9f), GlowShapes.Icon) else it }
                 .padding(start = 16.dp, end = if (trailing != null) 4.dp else 16.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -575,7 +605,7 @@ fun PageProgress(fraction: Float? = null, modifier: Modifier = Modifier.fillMaxW
         rememberInfiniteTransition(label = "page progress")
             .animateFloat(0f, 1f, infiniteRepeatable(tween(1200, easing = LinearEasing)), label = "page progress slide")
     } else null
-    Canvas(modifier.height(4.dp).clip(CircleShape)) {
+    Canvas(modifier.height(4.dp).clip(GlowShapes.Small)) {
         val r = CornerRadius(size.height / 2f)
         drawRoundRect(Color.White.copy(alpha = 0.1f), cornerRadius = r)
         if (fraction != null) {
@@ -630,14 +660,27 @@ fun PageConfirm(
     onDismiss: () -> Unit,
     dismiss: String = stringResource(R.string.glow_cancel),
     confirmEnabled: Boolean = true,
+    /** A 40 dp round icon before the title (the permission sheets), and glyphs in the two buttons. */
+    icon: ImageVector? = null,
+    confirmIcon: ImageVector? = null,
+    dismissIcon: ImageVector? = null,
     content: (@Composable ColumnScope.() -> Unit)? = null,
 ) {
-    PageSheet(onDismiss, title) {
+    PageSheet(onDismiss, if (icon == null) title else null) {
+        if (icon != null) Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Box(
+                Modifier.size(40.dp).background(org.openstrap.app.ui.theme.Blends.Strap.first.copy(alpha = 0.18f), CircleShape),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(icon, null, Modifier.size(20.dp), tint = Color.White)
+            }
+            Text(title, color = Color.White, style = GlowType.cardTitle, maxLines = 1)
+        }
         if (text != null) Text(text, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.body)
         content?.invoke(this)
         Row(Modifier.fillMaxWidth().padding(top = 4.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            PageButton(dismiss, onDismiss, Modifier.weight(1f))
-            PageButton(confirm, onConfirm, Modifier.weight(1f), enabled = confirmEnabled, primary = true)
+            PageButton(dismiss, onDismiss, Modifier.weight(1f).height(52.dp), icon = dismissIcon)
+            PageButton(confirm, onConfirm, Modifier.weight(1f).height(52.dp), enabled = confirmEnabled, primary = true, icon = confirmIcon)
         }
     }
 }
@@ -659,9 +702,9 @@ fun PageChip(
     description: String? = null,
 ) {
     Box(
-        modifier.heightIn(min = 36.dp).clip(CircleShape)
-            .background(if (selected) Color.White else if (filled) ControlSurface else Color.Transparent)
-            .let { if (selected || filled) it else it.border(1.dp, Color.White.copy(alpha = 0.16f), CircleShape) }
+        modifier.heightIn(min = 36.dp).clip(GlowShapes.Pill)
+            .background(if (selected) Color.White else if (filled) ControlGlass else Color.Transparent)
+            .let { if (selected || filled) it else it.border(1.dp, Color.White.copy(alpha = 0.16f), GlowShapes.Pill) }
             .alpha(if (enabled) 1f else 0.4f)
             .clickable(enabled = enabled, role = role, onClick = onClick)
             .semantics {
@@ -681,7 +724,7 @@ fun PageChip(
 
 /**
  * A pill that names a choice or does one thing: an [icon] in [tint] or a [dot], the [label] in [style] (Body), and a
- * [caret] when tapping opens a list. [height] tall on [surface] (the Control surface), with a [hairline] on a quiet
+ * [caret] when tapping opens a list. [height] tall on [surface] (white 12% glass), with a [hairline] on a quiet
  * card. Without [onClick] it's only a label, like the live screen's sport or a summary's earned best. A long label
  * ends in an ellipsis and leaves the caret its room. Small pills (Done over a summary, the earned chips) take
  * Secondary.
@@ -696,15 +739,15 @@ internal fun IconPill(
     dot: Color? = null,
     caret: Boolean = false,
     height: Dp = 44.dp,
-    surface: Color = ControlSurface,
+    surface: Color = ControlGlass,
     hairline: Boolean = false,
     description: String? = null,
     style: TextStyle = GlowType.body,
 ) {
     Row(
-        modifier.height(height).clip(CircleShape).background(surface)
-            .let { if (hairline) it.border(1.dp, RowHairline, CircleShape) else it }
-            .let { if (onClick != null) it.pressClickable(onClick, CircleShape) else it }
+        modifier.height(height).clip(GlowShapes.Pill).background(surface)
+            .let { if (hairline) it.border(1.dp, RowHairline, GlowShapes.Pill) else it }
+            .let { if (onClick != null) it.pressClickable(onClick, GlowShapes.Pill) else it }
             .semantics {
                 if (onClick != null) role = Role.Button
                 if (description != null) contentDescription = description
@@ -739,13 +782,13 @@ internal fun GlowSegments(
     modifier: Modifier = Modifier,
     role: Role = Role.RadioButton,
 ) {
-    Row(modifier.fillMaxWidth().clip(CircleShape).background(Color.White.copy(alpha = 0.06f)).padding(4.dp)) {
+    Row(modifier.fillMaxWidth().clip(GlowShapes.Pill).background(Color.White.copy(alpha = 0.08f)).padding(4.dp)) {
         options.forEachIndexed { i, label ->
             val on = i == selected
             Box(
-                Modifier.weight(1f).clip(CircleShape)
+                Modifier.weight(1f).clip(GlowShapes.Pill)
                     .background(if (on) Color.White.copy(alpha = 0.16f) else Color.Transparent)
-                    .pressClickable({ onSelect(i) }, CircleShape, scale = 0.97f)
+                    .pressClickable({ onSelect(i) }, GlowShapes.Pill, scale = 0.97f)
                     .semantics { this.role = role; this.selected = on }
                     .padding(vertical = 9.dp),
                 contentAlignment = Alignment.Center,
@@ -785,13 +828,13 @@ internal fun StatusDot(text: String, dot: Color, modifier: Modifier = Modifier, 
 }
 
 /**
- * A secondary choice: a tile on the Control surface (spec 2.4) with a [caption] in Secondary over the [label] in Body,
+ * A secondary choice: a tile on white 12% glass with a [caption] in Secondary over the [label] in Body,
  * and the tap caret at its end, so it reads as something that opens. As wide as it's given.
  */
 @Composable
 fun OptionButton(caption: String, label: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
     Row(
-        modifier.fillMaxWidth().clip(GlowLayout.TileShape).background(ControlSurface).pressClickable(onClick, GlowLayout.TileShape)
+        modifier.fillMaxWidth().clip(GlowShapes.Tile).background(ControlGlass).pressClickable(onClick, GlowShapes.Tile)
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {

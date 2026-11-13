@@ -42,7 +42,9 @@ internal fun ColumnScope.LivePaused(r: WorkoutState.Recording, liveHeartRate: In
             stringResource(R.string.workout_live_paused_for), color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA),
             style = GlowType.secondary,
         )
-        DotMatrixText(dotClock((now - at).coerceAtLeast(0)), dot = DotSize.Detail)
+        val paused = dotClock((now - at).coerceAtLeast(0))
+        // The live dots, shrunk only as far as an hour's worth of digits needs.
+        DotMatrixText(paused, dot = DotSize.Live, scale = org.openstrap.app.ui.glow.dotFitScale(paused, DotSize.Live, 320.dp))
         val before = Workouts.heartRateAt(recent, at) ?: recent.lastOrNull { it.first <= at }?.second
         val drop = if (before != null && liveHeartRate != null) before - liveHeartRate else null
         if (liveHeartRate != null) Text(
@@ -63,7 +65,6 @@ internal fun ColumnScope.LivePaused(r: WorkoutState.Recording, liveHeartRate: In
 internal fun LiveFigures(figures: List<Pair<String?, String>>, modifier: Modifier = Modifier) {
     Row(modifier.fillMaxWidth().height(IntrinsicSize.Min), verticalAlignment = Alignment.Bottom) {
         figures.forEachIndexed { i, (value, label) ->
-            if (i > 0) StatRule()
             LiveStat(label, Modifier.weight(1f)) { LiveValue(value) }
         }
     }

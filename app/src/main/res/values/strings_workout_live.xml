@@ -192,12 +192,14 @@
 
     <!-- ======================================== Heart rate ======================================== -->
 
-    <!-- The live heart card's title. One line. -->
-    <string name="workout_live_heart_title">Heart rate</string>
-    <!-- Beside the heart card's title: the heart rate as a share of your max. -->
-    <string name="workout_live_heart_of_max"><xliff:g id="percent" example="78">%1$d</xliff:g>%% of max</string>
-    <!-- Under the heart rate in dots, over a faint line of the last ten minutes behind it. One line. -->
-    <string name="workout_live_heart_behind">bpm, line shows last 10 min</string>
+    <!-- Under the heart rate in dots on the zone arc: the zone's heart rates. One line. -->
+    <string name="workout_live_heart_range">bpm, <xliff:g id="range" example="130 to 147">%1$s</xliff:g></string>
+    <!-- The zone strip card's title under the heart card. One line. -->
+    <string name="workout_live_time_in_zones">Time in zones</string>
+    <!-- Right of the zone strip's title: the zone goal, short. -->
+    <string name="workout_live_target_short_zone">Target zone <xliff:g id="zone" example="2">%1$d</xliff:g></string>
+    <!-- Right of the zone strip's title: a goal of a range of zones, short. -->
+    <string name="workout_live_target_short_zones">Target zone <xliff:g id="from" example="2">%1$d</xliff:g> to <xliff:g id="to" example="3">%2$d</xliff:g></string>
     <!-- At the foot of the heart card with a zone goal: the zone. One line. -->
     <string name="workout_live_target_zone">Target zone <xliff:g id="zone" example="2">%1$d</xliff:g>. The strap buzzes if you drift</string>
     <!-- At the foot of the heart card with a goal of a range of zones. One line. -->
@@ -304,8 +306,6 @@
         <item quantity="one"><xliff:g id="sets" example="5">%1$d</xliff:g> set done. Hold the square to end, or keep going.</item>
         <item quantity="other">All <xliff:g id="sets" example="5">%1$d</xliff:g> sets done. Hold the square to end, or keep going.</item>
     </plurals>
-    <!-- Under the set's clock in dots. About 12 characters. -->
-    <string name="workout_live_sets_in_this_set">in this set</string>
     <!-- A short card's title during rest: which set it follows, in lower case, "set 3" or "set 3 of 5". One line. -->
     <string name="workout_live_sets_rest_after">Rest after <xliff:g id="set" example="set 3 of 5">%1$s</xliff:g></string>
     <!-- The card's title before the first set. One line. -->
@@ -318,8 +318,6 @@
     <string name="workout_live_sets_rest_title">Rest</string>
     <!-- Beside the rest card's title: which set it follows, in lower case, "set 3" or "set 3 of 5". -->
     <string name="workout_live_sets_after">after <xliff:g id="set" example="set 3 of 5">%1$s</xliff:g></string>
-    <!-- Left of the line under the rest card that says what's next. -->
-    <string name="workout_live_sets_next">Next</string>
     <!-- Right of Next under the rest card: the set after the rest. -->
     <string name="workout_live_sets_next_set">Set <xliff:g id="set" example="4">%1$d</xliff:g></string>
     <!-- Right of Next under the rest card: the set after the rest and its exercise in lower case, with its last load ("bench press 10 × 60 kg"). -->

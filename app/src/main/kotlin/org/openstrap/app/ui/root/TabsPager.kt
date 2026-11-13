@@ -74,16 +74,16 @@ import org.openstrap.app.ui.glow.TodayStrap
 import org.openstrap.app.ui.glow.draw.GlowMood
 import org.openstrap.app.ui.glow.metricIndex
 import org.openstrap.app.ui.theme.AppIcons
-import org.openstrap.app.ui.theme.MetricColors
+import org.openstrap.app.ui.theme.Blends
 import org.openstrap.app.ui.workout.WorkoutsViewModel
 
 /** Each tab's place in the bar: its label, icons and the capsule's colour while it shows (spec 3.2). */
 fun tabItems(): List<NavItem> = Tab.entries.map { tab ->
     when (tab) {
         Tab.Today -> NavItem(tab.label, AppIcons.HouseSimple, AppIcons.HouseSimpleFill, Color.White)
-        Tab.Recovery -> NavItem(tab.label, AppIcons.Plant, AppIcons.PlantFill, MetricColors.readiness)
-        Tab.Sleep -> NavItem(tab.label, AppIcons.Moon, AppIcons.MoonFill, MetricColors.sleepDeep)
-        Tab.Activity -> NavItem(tab.label, AppIcons.SneakerMove, AppIcons.SneakerMoveFill, MetricColors.steps)
+        Tab.Recovery -> NavItem(tab.label, AppIcons.Plant, AppIcons.PlantFill, Blends.Recovery.first)
+        Tab.Sleep -> NavItem(tab.label, AppIcons.Moon, AppIcons.MoonFill, Blends.Sleep.first)
+        Tab.Activity -> NavItem(tab.label, AppIcons.SneakerMove, AppIcons.SneakerMoveFill, Blends.Steps.first)
     }
 }
 
@@ -202,8 +202,14 @@ internal fun TabsPager(
         userScrollEnabled = !subScreenOpen, key = { it }, beyondViewportPageCount = Tab.entries.size - 1,
     ) { page ->
         val back = if (page == tab) emptyArray() else arrayOf(LocalNavigationEventDispatcherOwner provides idleBack)
+        val tabLights = org.openstrap.app.ui.theme.LocalTabLights.current
         @Suppress("SpreadOperator") // at most one local, once per page
         CompositionLocalProvider(
+            org.openstrap.app.ui.theme.LocalScreenLightReport provides remember(tabLights, page) {
+                { l: org.openstrap.app.ui.theme.ScreenLight? ->
+                    if (tabLights != null && tabLights.lights[page] != l) tabLights.lights[page] = l
+                }
+            },
             // Remembered: a new lambda each time would be a new static local, recomposing the whole tab under it.
             LocalGlowPagePaused provides remember(pager, page, covered) { tabPaused(pager, page, covered) },
             LocalScrollToTop provides scroll.of(page),

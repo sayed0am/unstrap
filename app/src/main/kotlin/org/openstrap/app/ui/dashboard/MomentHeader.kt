@@ -18,10 +18,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import org.openstrap.app.ui.theme.ControlSurface
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.shape.CircleShape
+import org.openstrap.app.ui.theme.GlowShapes
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -47,7 +46,7 @@ import androidx.compose.ui.unit.dp
 import java.time.LocalDate
 import org.openstrap.app.ui.components.growClick
 import org.openstrap.app.ui.glow.GlowType
-import org.openstrap.app.ui.glow.RoundIconButton
+import org.openstrap.app.ui.glow.HeaderButton
 import org.openstrap.app.ui.theme.MetricColors
 import org.openstrap.app.ui.theme.AppIcons
 
@@ -86,11 +85,10 @@ fun MomentHeader(
             // You and the Strap page grow out of the button tapped (spec 3.5).
             start = {
                 growClick(onOpenYou).let { g ->
-                    RoundIconButton(
+                    HeaderButton(
                         AppIcons.User,
                         stringResource(if (updateWaiting) R.string.day_header_you_update else R.string.day_header_you),
-                        g.onClick, g.modifier,
-                        surface = Avatar, iconSize = 20.dp, clickLabel = stringResource(R.string.day_header_open_you), dot = updateWaiting,
+                        g.onClick, g.modifier, clickLabel = stringResource(R.string.day_header_open_you), dot = updateWaiting,
                     )
                 }
             },
@@ -98,9 +96,9 @@ fun MomentHeader(
             end = {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     if (onOpenAllMetrics != null) {
-                        RoundIconButton(
-                            AppIcons.ChartBar, stringResource(R.string.day_header_all_metrics), onOpenAllMetrics, surface = Avatar,
-                            iconSize = 20.dp, clickLabel = stringResource(R.string.day_header_open_all_metrics),
+                        HeaderButton(
+                            AppIcons.ChartBar, stringResource(R.string.day_header_all_metrics), onOpenAllMetrics,
+                            clickLabel = stringResource(R.string.day_header_open_all_metrics),
                         )
                         Spacer(Modifier.width(8.dp))
                     }
@@ -176,7 +174,7 @@ private fun DaySwitcher(
     ) {
         Peek(peekDay(date.minusDays(1)))
         Column(
-            Modifier.padding(horizontal = 16.dp).widthIn(max = 200.dp).clip(CircleShape)
+            Modifier.padding(horizontal = 16.dp).widthIn(max = 200.dp).clip(GlowShapes.Pill)
                 .clickable(onClickLabel = stringResource(R.string.day_header_pick_day), onClick = onPick)
                 .padding(horizontal = 10.dp, vertical = 4.dp)
                 .semantics { contentDescription = description },
@@ -201,6 +199,4 @@ private fun Peek(text: String) {
     Text(text, Modifier.width(PeekWidth), color = Color.White.copy(alpha = 0.22f), style = GlowType.body, maxLines = 1, softWrap = false)
 }
 
-// The Control surface (spec 2.2): the avatar is a control.
-private val Avatar = ControlSurface
 private val PeekWidth = 34.dp

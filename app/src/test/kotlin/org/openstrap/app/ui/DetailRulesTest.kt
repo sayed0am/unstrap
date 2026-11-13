@@ -56,7 +56,8 @@ class DetailRulesTest {
         val charts = sources.getValue("glow/GlowCharts.kt")
         listOf("fun ArcGauge(", "fun HorizonArc(").forEach { head ->
             val body = charts.substringAfter(head).substringBefore("\n}\n")
-            assertTrue("$head has round caps and no halo", "StrokeCap.Round" in body && "drawCircle" !in body && "Brush" !in body)
+            // Glow × Glass: the arc draws its blend along its length (Charts board), still round capped with no halo.
+            assertTrue("$head has round caps and no halo", "StrokeCap.Round" in body && "drawCircle" !in body)
             assertTrue("$head fills from the value shown", "rememberGaugeProgress(" in body)
         }
         val progress = charts.substringAfter("fun rememberGaugeProgress(").substringBefore("\n}\n")
@@ -66,9 +67,10 @@ class DetailRulesTest {
     }
 
     @Test fun `every detail's header ends in the (i)`() {
-        // Spec 2.5 and 6.1: the (i) at the right of every detail's header, nothing else there.
+        // Spec 2.5 and 6.1: the (i) at the right of every detail's header, nothing else there. It's a HeaderButton, the
+        // back button's size (13 Nov, on the phone).
         val nav = sources.getValue("glow/GlowMetricDetail.kt").substringAfter("private fun DetailNav(").substringBefore("\n}\n")
-        assertTrue("DetailNav's trailing is InfoButton", Regex("""PageHeader\([^{]*\)\s*\{\s*InfoButton\(""").containsMatchIn(nav))
+        assertTrue("DetailNav's trailing is the (i)", Regex("""PageHeader\([^{]*\)\s*\{\s*HeaderButton\(AppIcons\.Info""").containsMatchIn(nav))
         DETAILS.forEach { path ->
             val code = sources.getValue(path)
             assertTrue("$path builds its own header", !Regex("""\bPageHeader\(""").containsMatchIn(code) || path == "glow/GlowMetricDetail.kt")

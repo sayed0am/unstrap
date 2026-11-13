@@ -444,6 +444,12 @@ internal fun TopRowView(title: String, note: String?, top: TopRow, f: WidgetFram
         if (line != null) {
             top.words?.let {
                 Spacer(GlanceModifier.width(StatusButton.TITLE_GAP_DP.dp))
+                // Decision 6: an amber dot, the words in white, never amber text.
+                Image(
+                    ImageProvider(dotBitmap(MetricColors.warn, f.density)), contentDescription = null,
+                    modifier = GlanceModifier.size(StartLayout.DOT_DP.dp),
+                )
+                Spacer(GlanceModifier.width(4.dp))
                 Text(it, style = StatusWords, maxLines = 1)
                 Spacer(GlanceModifier.width(StatusButton.WORDS_GAP_DP.dp))
             }
@@ -454,8 +460,8 @@ internal fun TopRowView(title: String, note: String?, top: TopRow, f: WidgetFram
     }
 }
 
-/** The status words: Secondary in amber, the strap and sync colour (v2 spec: amber is for those only). */
-private val StatusWords = TextStyle(color = ColorProvider(MetricColors.warn), fontSize = StatusButton.WORDS_SP.sp)
+/** The status words: Secondary in white, after the amber status dot (decision 6). */
+private val StatusWords = TextStyle(color = ColorProvider(Color.White), fontSize = StatusButton.WORDS_SP.sp)
 
 /**
  * The status button (spec 5): a [StatusButton.SIZE_DP] circle in the Control surface Start's tiles wear, the state's

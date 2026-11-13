@@ -7,7 +7,6 @@ import org.junit.Test
 import org.openstrap.app.ui.alarms.AlarmsUiState
 import org.openstrap.app.ui.alarms.ROW_VALUE_MAX
 import org.openstrap.app.ui.alarms.healthAlertsSummary
-import org.openstrap.app.ui.device.StrapGlow
 import org.openstrap.protocol.services.SettingsCodec
 import org.openstrap.protocol.services.SettingsGroup
 import java.io.File
@@ -71,10 +70,6 @@ class PageRulesTest {
         assertTrue("Female and Male as segments", segments.containsMatchIn(profile))
     }
 
-    @Test fun `the strap hero is lit at full`() {
-        // The Strap page's hero is L4 (spec 2.1): its rim at full strength.
-        assertEquals(1f, StrapGlow.glowStrength, 1e-6f)
-    }
 
     /** [src] with comments and string contents blanked, line breaks kept. */
     private fun codeOnly(src: String): String {

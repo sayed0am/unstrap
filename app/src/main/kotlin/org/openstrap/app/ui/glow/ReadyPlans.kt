@@ -22,7 +22,7 @@ import org.openstrap.app.R
 import org.openstrap.app.data.Structure
 import org.openstrap.app.data.Workouts
 import org.openstrap.app.ui.theme.AppIcons
-import org.openstrap.app.ui.theme.MetricColors
+import org.openstrap.app.ui.theme.Blends
 import org.openstrap.app.ui.theme.SportIcons
 import org.openstrap.app.ui.workout.StartCopy
 
@@ -207,10 +207,14 @@ internal fun GamePlanCard(type: Int, periods: Structure.Periods?, onChange: (Str
 /** Ready's switch rows under the plan card, on a plain panel. */
 @Composable
 internal fun ReadyRows(content: @Composable ColumnScope.() -> Unit) {
-    Column(Modifier.fillMaxWidth().clip(GlowLayout.CardShape).background(ListSurface).padding(horizontal = 18.dp), content = content)
+    // Room above the first row and below the last, so the switches clear the 48 dp corners.
+    Column(
+        Modifier.fillMaxWidth().clip(GlowLayout.CardShape).background(ListSurface).padding(horizontal = 22.dp, vertical = 12.dp),
+        content = content,
+    )
 }
 
-/** Work and rest along the rounds, each as wide as its time: work in heart red, rest in sleep blue. */
+/** Work and rest along the rounds, each as wide as its time: work in flare pink, rest in deep teal. */
 @Composable
 private fun RoundsStrip(s: Structure.Timed) {
     val described = pluralStringResource(R.plurals.glow_ready_rounds_description, s.rounds, s.rounds, s.work, s.rest)
@@ -219,8 +223,10 @@ private fun RoundsStrip(s: Structure.Timed) {
         horizontalArrangement = Arrangement.spacedBy(2.dp),
     ) {
         repeat(s.rounds) { i ->
-            Box(Modifier.weight(s.work.toFloat()).height(10.dp).clip(CircleShape).background(MetricColors.heart))
-            if (i < s.rounds - 1 && s.rest > 0) Box(Modifier.weight(s.rest.toFloat()).height(10.dp).clip(CircleShape).background(MetricColors.sleepDeep))
+            Box(Modifier.weight(s.work.toFloat()).height(10.dp).clip(CircleShape).background(Blends.Intervals.chart))
+            if (i < s.rounds - 1 && s.rest > 0) {
+                Box(Modifier.weight(s.rest.toFloat()).height(10.dp).clip(CircleShape).background(Blends.Intervals.chartSecond))
+            }
         }
     }
 }

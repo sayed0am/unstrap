@@ -20,6 +20,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import org.openstrap.app.ui.theme.Blend
+import org.openstrap.app.ui.theme.Blends
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -1023,6 +1025,7 @@ internal fun WeekDetail(ctx: ActivityDetailContext) {
         contentPadding = ctx.contentPadding,
         headline = headline, strip = emptyList(), onDay = {}, ranges = listOf(Range.Week), range = Range.Week, onRange = {},
         scrubbed = { scrub },
+        blend = remember { Blend(Blends.Strap.first, Blends.Steps.first) },
     ) {
         val values = days.map { (it.steps ?: 0).toFloat() }
         if (values.any { it > 0f }) item {

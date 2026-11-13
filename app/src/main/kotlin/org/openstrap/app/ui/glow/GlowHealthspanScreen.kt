@@ -53,6 +53,13 @@ private fun updatedText(asOf: Long): String {
 fun GlowHealthspanScreen(state: Healthspan.Outcome?, contentPadding: PaddingValues, onBack: () -> Unit) {
     BackHandler(onBack = onBack)
     val r = state?.result
+    // Habit Age's blend from the top, as the metric details are (DetailHabitAge board).
+    org.openstrap.app.ui.components.PageLight(
+        org.openstrap.app.ui.theme.ScreenLight(
+            org.openstrap.app.ui.theme.Blends.HabitAge, org.openstrap.app.ui.glow.draw.LightAngle.Above,
+            org.openstrap.app.ui.theme.ScreenLight.DAY, heroCenterY = 150f,
+        ),
+    )
     ScreenList(contentPadding, gutter = GlowLayout.Gutter) {
         item { PageHeader(
                 stringResource(R.string.glow_healthspan_title), onBack,

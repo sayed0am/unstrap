@@ -12,6 +12,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Text
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.unit.sp
+import org.openstrap.app.ui.components.PageLight
+import org.openstrap.app.ui.glow.PageButton
+import org.openstrap.app.ui.theme.GlowShapes
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -70,19 +75,33 @@ fun UpdatesPage(
     val newer = Releases.newer(state.releases, installed)
     val newest = newer.firstOrNull()
     val busy = state.install is Install.Downloading || state.install is Install.Installing
+    PageLight(YouLight)
     ScreenList(contentPadding, gutter = GlowLayout.Gutter) {
         item { PageHeader(stringResource(R.string.you_updates_title), onBack) }
+        if (newest != null) item {
+            // The new version as the page's hero, with the one button that installs it.
+            PlaceHero(Modifier.youHero(), Modifier.height(136.dp)) {
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom) {
+                    Text(
+                        stringResource(R.string.you_updates_release, newest.versionName), Modifier.weight(1f), color = Color.White,
+                        style = GlowType.pageTitle, maxLines = 1,
+                    )
+                    newest.publishedAt?.let {
+                        Text(UpdateCopy.date(it), color = Color.White.copy(alpha = 0.75f), style = GlowType.secondary)
+                    }
+                }
+                PageButton(
+                    UpdateCopy.install(newest, state.install, recording), { onInstall(newest) },
+                    Modifier.align(Alignment.BottomStart).fillMaxWidth().height(52.dp),
+                    enabled = !busy && !(recording && newest.apk != null), primary = true, icon = AppIcons.DownloadSimple,
+                )
+            }
+        }
         item {
             PageRows {
-                if (newest != null) PageRow(
-                    stringResource(R.string.you_updates_release, newest.versionName), UpdateCopy.install(newest, state.install, recording),
-                    onClick = { onInstall(newest) }, below = true, divider = false, enabled = !busy && !(recording && newest.apk != null),
-                    icon = AppIcons.DownloadSimple,
-                )
                 PageRow(
                     stringResource(R.string.you_updates_check_now), UpdateCopy.checkStatus(state, now), onClick = onCheck, below = true,
-                    divider = newest != null,
-                    enabled = state.check != Check.Checking, icon = AppIcons.Refresh04,
+                    divider = false, enabled = state.check != Check.Checking, icon = AppIcons.Refresh04,
                 )
                 PageSwitchRow(
                     stringResource(R.string.you_updates_daily), stringResource(R.string.you_updates_daily_note), auto, onAuto,
@@ -106,9 +125,14 @@ fun UpdatesPage(
                     else -> R.string.you_updates_latest
                 },
             )
-            PagePanel(title = title) {
+            // Printed on paper, as the board draws it: near white with dark ink.
+            Column(
+                Modifier.fillMaxWidth().clip(GlowShapes.Card).background(Paper.Fill).padding(20.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Text(title, color = Paper.Ink, style = GlowType.cardTitle, maxLines = 1)
                 shown.forEachIndexed { i, release ->
-                    if (i > 0) Box(Modifier.fillMaxWidth().height(1.dp).background(Color.White.copy(alpha = 0.08f)))
+                    if (i > 0) Box(Modifier.fillMaxWidth().height(1.dp).background(Paper.Ink.copy(alpha = 0.1f)))
                     ReleaseNotesView(release)
                 }
             }
@@ -117,7 +141,7 @@ fun UpdatesPage(
             Text(
                 stringResource(R.string.you_updates_installed, installed),
                 Modifier.fillMaxWidth().padding(top = 4.dp),
-                color = Color.White.copy(alpha = 0.45f), style = GlowType.secondary, textAlign = TextAlign.Center,
+                color = Color.White.copy(alpha = 0.58f), style = GlowType.secondary, textAlign = TextAlign.Center,
             )
         }
     }
@@ -129,28 +153,28 @@ private fun ReleaseNotesView(release: Release) {
     val blocks = remember(release.notes) { ReleaseNotes.parse(release.notes) }
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Text(release.versionName, color = Color.White, style = GlowType.body.copy(fontWeight = FontWeight.Medium), modifier = Modifier.weight(1f))
+            Text(release.versionName, color = Paper.Ink, style = GlowType.body, modifier = Modifier.weight(1f))
             release.publishedAt?.let {
-                Text(UpdateCopy.date(it), color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary)
+                Text(UpdateCopy.date(it), color = Paper.Muted, style = GlowType.secondary)
             }
         }
         if (blocks.isEmpty()) {
             Text(
-                stringResource(R.string.you_updates_no_notes), color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA),
+                stringResource(R.string.you_updates_no_notes), color = Paper.Muted,
                 style = GlowType.secondary,
             )
         }
         blocks.forEachIndexed { i, block -> when (block) {
             is NoteBlock.Heading -> Text(
-                spans(block.spans), color = Color.White, style = GlowType.body.copy(fontWeight = FontWeight.Medium), modifier = Modifier.padding(top = 6.dp),
+                spans(block.spans), color = Paper.Ink, style = GlowType.body, modifier = Modifier.padding(top = 6.dp),
             )
             // The opening paragraph leads, larger; any later one reads like the bullets.
             is NoteBlock.Paragraph ->
-                if (i == 0) Text(spans(block.spans), color = Color.White.copy(alpha = 0.85f), style = GlowType.body)
-                else Text(spans(block.spans), color = Color.White.copy(alpha = 0.75f), style = GlowType.secondary)
+                if (i == 0) Text(spans(block.spans), color = Paper.Lead, style = GlowType.body)
+                else Text(spans(block.spans), color = Paper.Body, style = GlowType.secondary)
             is NoteBlock.Bullet -> Row {
-                Text("•", color = Color.White.copy(alpha = 0.5f), style = GlowType.body, modifier = Modifier.width(16.dp))
-                Text(spans(block.spans), color = Color.White.copy(alpha = 0.75f), style = GlowType.secondary, modifier = Modifier.padding(top = 1.dp))
+                Text("•", color = Paper.Bullet, style = GlowType.body, modifier = Modifier.width(16.dp))
+                Text(spans(block.spans), color = Paper.Body, style = GlowType.secondary, modifier = Modifier.padding(top = 1.dp))
             }
         } }
     }
@@ -159,6 +183,6 @@ private fun ReleaseNotesView(release: Release) {
 /** Bold runs in white at medium weight, the rest in the text's own colour. */
 private fun spans(spans: List<NoteSpan>): AnnotatedString = buildAnnotatedString {
     for (s in spans) {
-        if (s.bold) withStyle(SpanStyle(fontWeight = FontWeight.Medium, color = Color.White)) { append(s.text) } else append(s.text)
+        if (s.bold) withStyle(SpanStyle(fontWeight = FontWeight.SemiBold, color = Paper.Ink)) { append(s.text) } else append(s.text)
     }
 }

@@ -40,10 +40,16 @@ import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import org.openstrap.app.ui.theme.Blend
+import org.openstrap.app.ui.theme.Blends
+import org.openstrap.app.ui.theme.GlowShapes
+import org.openstrap.app.ui.theme.Ground
+import org.openstrap.app.ui.theme.ScreenLight
+import org.openstrap.app.ui.components.PageLight
+import org.openstrap.app.ui.glow.draw.LightAngle
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
@@ -64,6 +70,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.graphics.drawOutline
+import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -98,6 +106,8 @@ import org.openstrap.app.ui.dashboard.SleepCopy
 import org.openstrap.app.ui.dashboard.siblingsOf
 import java.time.LocalDate
 import org.openstrap.app.ui.glow.draw.DotSize
+import org.openstrap.app.ui.theme.AppIcons
+import org.openstrap.app.ui.theme.litEdge
 import org.openstrap.app.ui.glow.pictures.DayStrip
 import org.openstrap.app.ui.glow.pictures.PictureSize
 import org.openstrap.app.ui.theme.ControlSurface
@@ -166,23 +176,31 @@ internal fun DetailTemplate(
     heroPicture: (@Composable () -> Unit)? = null,
     scrubbed: () -> DetailHeadline? = { null },
     headlineDay: LocalDate? = strip.firstOrNull { it.selected }?.date,
+    /** The page's blend when [color] isn't one of a metric's (the week's neutral into Steps' lime). */
+    blend: Blend? = null,
     body: LazyListScope.() -> Unit,
 ) {
     BackHandler(onBack = onBack)
     val list = rememberLazyListState()
+    // The page's light (Matrix board): the metric's own blend from the top, dimmer for the sleep details.
+    val pageBlend = blend ?: remember(color) { Blends.forInk(color) ?: Blends.Strap }
+    val lightStrength = if (pageBlend == Blends.Sleep) SLEEP_DETAIL_STRENGTH else ScreenLight.DAY
+    PageLight(ScreenLight(pageBlend, LightAngle.Above, strength = lightStrength, heroCenterY = 190f))
     var switching by rememberSaveable { mutableStateOf(false) }
     val gutter = GlowLayout.WideGutter
     // Rows inside a detail open the next one with a crossfade, not by growing (spec 3.5).
     CompositionLocalProvider(LocalGlowPaused provides { list.isScrollInProgress }, LocalCardsGrow provides false) {
         ScreenList(contentPadding, list, gutter = gutter) {
             item {
-                DetailHero(color, gutter) {
+                DetailNav(title, siblings.size > 1, onBack, onInfo, onSwitch = { switching = true })
+            }
+            item {
+                DetailHero(pageBlend) {
                     // A scrub is read here, so only the hero follows the finger, not the whole detail (audit K4).
                     val scrub = scrubbed()
                     val shown = scrub ?: headline
                     // A scrubbed reading takes the gauge's place, as the value row.
                     val gauge = heroValue.takeIf { scrub == null }
-                    DetailNav(title, siblings.size > 1, onBack, onInfo, onSwitch = { switching = true })
                     // A score gauge, its label and status word make one block, centred in the header (spec 6.1).
                     if (gauge != null) Column(
                         Modifier.fillMaxWidth().padding(top = 22.dp), horizontalAlignment = Alignment.CenterHorizontally,
@@ -352,33 +370,41 @@ private class PlainNumber(val number: Float, decimals: Int, grouped: Boolean) {
     }
 }
 
-/** The hero's tint: the metric's colour at the top fading to black, rounded at the foot, as wide as the screen. */
+/** Sleep's details sit in a little less light than the others (DetailSleep board, 0.55 against 0.6). */
+private const val SLEEP_DETAIL_STRENGTH = 0.9f
+private const val HERO_GLOW_RISE = 0.12f
+/** The hero card's side inset: a little more than a card's, it holds the biggest number. */
+private val HERO_INSET = 24.dp
+private const val HERO_GLOW_RADIUS = 0.75f
+
+/** The corners of the hero's foot: 32 dp, only at the bottom, as a squircle. */
+/**
+ * The hero's surface (DetailRecovery and DetailMetric boards): the blend's first stop as a soft glow from the top
+ * centre over a deep tint of it fading toward the ground, as a card under the page header (moved below the header on
+ * the phone, 13 Nov, so the status bar and the header sit on the page's light). No coloured ring round it.
+ */
 @Composable
-private fun DetailHero(color: Color, gutter: Dp, content: @Composable () -> Unit) {
-    val shape = RoundedCornerShape(bottomStart = GlowLayout.CardCorner, bottomEnd = GlowLayout.CardCorner)
+private fun DetailHero(blend: Blend, content: @Composable () -> Unit) {
+    val shape = GlowShapes.Card
     Column(
         Modifier
-            // Out to the screen's edges, past the list's gutter.
-            .layout { measurable, constraints ->
-                val extra = gutter.roundToPx() * 2
-                val w = constraints.maxWidth + extra
-                val placeable = measurable.measure(constraints.copy(minWidth = w, maxWidth = w))
-                layout(constraints.maxWidth, placeable.height) { placeable.place(-extra / 2, 0) }
-            }
+            .fillMaxWidth()
             // The card tapped grows into this surface (spec 3.5).
             .detailSurface(hero = true, shape)
             .clip(shape)
             .drawBehind {
-                drawRect(Brush.verticalGradient(listOf(lerp(Color.Black, color, 0.2f), Color.Black)))
-                drawRect(Brush.radialGradient(listOf(color.copy(alpha = 0.4f), Color.Transparent), Offset(size.width / 2, -size.height * 0.1f), size.width * 0.7f))
-                // The hairline along the foot; its top is above the clip, so only the foot and its corners show.
-                val r = GlowLayout.CardCorner.toPx()
-                drawRoundRect(
-                    Color.White.copy(alpha = 0.07f), Offset(0.5f, -r), Size(size.width - 1f, size.height + r - 0.5f), CornerRadius(r),
-                    style = Stroke(1.dp.toPx()),
+                val tint = lerp(Color.Black, blend.first, 0.21f)
+                drawRect(Brush.verticalGradient(listOf(tint.copy(alpha = 0.9f), Ground.copy(alpha = 0.35f))))
+                drawRect(
+                    Brush.radialGradient(
+                        listOf(blend.first.copy(alpha = 0.45f), blend.second.copy(alpha = 0.12f), Color.Transparent),
+                        Offset(size.width / 2, -size.height * HERO_GLOW_RISE), size.width * HERO_GLOW_RADIUS,
+                    ),
                 )
             }
-            .padding(start = gutter, end = gutter, top = 4.dp, bottom = 22.dp),
+            .litEdge(shape, top = 0.35f, ring = 0.10f)
+            // The first row brings its own 22 dp from the top, so 38 in all: as much as the day strip's dots leave below.
+            .padding(start = HERO_INSET, end = HERO_INSET, top = 16.dp, bottom = 26.dp),
     ) { content() }
 }
 
@@ -389,7 +415,7 @@ private fun DetailHero(color: Color, gutter: Dp, content: @Composable () -> Unit
 @Composable
 private fun DetailNav(title: String, switchable: Boolean, onBack: () -> Unit, onInfo: () -> Unit, onSwitch: () -> Unit) {
     PageHeader(title, onBack, onTitle = if (switchable) onSwitch else null) {
-        InfoButton(stringResource(R.string.glow_metrics_about, title), onInfo)
+        HeaderButton(AppIcons.Info, stringResource(R.string.glow_metrics_about, title), onInfo)
     }
 }
 
@@ -416,7 +442,7 @@ private fun WeekStrip(days: List<DetailCopy.StripDay>, color: Color, onDay: (Loc
             val ink by animateColorAsState(if (d.selected) Color.White else Color.White.copy(alpha = 0.5f), quick, label = "day ink")
             val dot by animateColorAsState(if (d.hasData) color else Color.Transparent, quick, label = "day dot")
             Column(
-                Modifier.width(40.dp).clip(RoundedCornerShape(14.dp))
+                Modifier.width(40.dp).clip(GlowShapes.Icon)
                     .background(pill)
                     .clickable(onClickLabel = show, role = Role.Button) { onDay(d.date) }
                     .padding(vertical = 8.dp),

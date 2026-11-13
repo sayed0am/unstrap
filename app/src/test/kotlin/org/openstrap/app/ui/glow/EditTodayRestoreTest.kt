@@ -57,7 +57,8 @@ class EditTodayRestoreTest {
 
         compose.onAllNodesWithText("Pinned").assertCountEquals(2)
         // Done sits under the rows, scrolled to as a finger would.
-        compose.onNodeWithText("Done").performScrollTo().performClick()
+        // Done is pinned in the sheet's footer (SheetEditToday board), outside the list.
+        compose.onNodeWithText("Done").performClick()
         assertEquals(expected, saved)
     }
 

@@ -24,6 +24,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
+import org.openstrap.app.ui.theme.GlowShapes
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -132,10 +133,13 @@ internal fun HeroNumber(value: String?, lines: List<String>, modifier: Modifier 
             Spacer(Modifier.width(12.dp))
         }
         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            lines.forEach { Text(it, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary, maxLines = 1) }
+            lines.forEach { Text(it, color = Color.White.copy(alpha = HERO_LINE_ALPHA), style = GlowType.secondary, maxLines = 1) }
         }
     }
 }
+
+/** The words beside the hero number: white at 92% (Today boards). */
+private const val HERO_LINE_ALPHA = 0.92f
 
 /* ---------------------------------------------- Strips ---------------------------------------------- */
 
@@ -931,7 +935,7 @@ internal fun BodyList(
 internal fun EditTodayButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
     Box(modifier.fillMaxWidth().padding(vertical = 8.dp), contentAlignment = Alignment.Center) {
         Row(
-            Modifier.glass(CircleShape, onClick, scale = 0.97f).padding(horizontal = 16.dp, vertical = 10.dp),
+            Modifier.glass(GlowShapes.Pill, onClick, scale = 0.97f).padding(horizontal = 16.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Icon(AppIcons.SlidersHorizontal, null, tint = Color.White, modifier = Modifier.size(14.dp))

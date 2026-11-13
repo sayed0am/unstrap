@@ -15,10 +15,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import org.openstrap.app.ui.theme.MetricColors
 import androidx.compose.foundation.layout.Column
 import org.openstrap.app.presentation.WorkoutCopy
 import org.openstrap.app.ui.theme.AppIcons
@@ -46,6 +44,8 @@ import org.openstrap.app.ui.glow.*
 import org.openstrap.app.ui.dashboard.LocalHeartZones
 import androidx.compose.ui.res.stringResource
 import org.openstrap.app.R
+import org.openstrap.app.ui.theme.Blends
+import org.openstrap.app.ui.theme.GlowShapes
 
 /**
  * A distance workout's map page (board Map view): the map from the top of the screen, with minimize, the heart rate
@@ -99,7 +99,7 @@ internal fun LiveMapScreen(
                 Spacer(Modifier.weight(1f))
                 val acc = route.lastOrNull()?.accuracy
                 Row(
-                    Modifier.height(32.dp).clip(RoundedCornerShape(50)).background(OverMap).padding(horizontal = 12.dp),
+                    Modifier.height(32.dp).clip(GlowShapes.Pill).background(OverMap).padding(horizontal = 12.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Box(Modifier.size(6.dp).clip(CircleShape).background(if (acc != null && acc <= Route.MAX_ACCURACY_M) TrendGood else TrendBad))
@@ -124,7 +124,7 @@ internal fun LiveMapScreen(
         Column(
             Modifier.align(Alignment.BottomCenter).fillMaxWidth()
                 .onSizeChanged { panel = with(density) { it.height.toDp() } }
-                .clip(org.openstrap.app.ui.glow.GlowLayout.SheetShape).background(Color.Black)
+                .clip(org.openstrap.app.ui.glow.GlowLayout.SheetShape).background(org.openstrap.app.ui.theme.Ground)
                 .padding(start = 16.dp, end = 16.dp, top = 18.dp, bottom = contentPadding.calculateBottomPadding()),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
@@ -147,7 +147,7 @@ internal fun LiveMapScreen(
 private val PANEL_OVERLAP = 28.dp
 
 /** Buttons and pills drawn over the map: near black, a little see-through. */
-private val OverMap = Color(0xD9141416)
+private val OverMap = Color.Black.copy(alpha = 0.85f)
 
 /** A round button over the map, white while what it does is on ([lit]). */
 @Composable
@@ -161,10 +161,10 @@ private fun LastSplit(route: List<Route.Point>, readings: List<Pair<Long, Int>>,
     val now = nowTicking()
     val (line, ago) = WorkoutCopy.lastSplit(splits, readings, route.firstOrNull()?.t, now) ?: return
     Row(
-        Modifier.fillMaxWidth().height(44.dp).clip(RoundedCornerShape(14.dp)).background(Raised).padding(horizontal = 14.dp),
+        Modifier.fillMaxWidth().height(44.dp).clip(GlowShapes.Icon).background(Raised).padding(horizontal = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Box(Modifier.size(8.dp).clip(CircleShape).background(MetricColors.steps))
+        Box(Modifier.size(8.dp).clip(CircleShape).background(Blends.Distance.first))
         Spacer(Modifier.width(10.dp))
         Text(line, color = Color.White, style = GlowType.body.copy(fontFeatureSettings = "tnum"), maxLines = 1, modifier = Modifier.weight(1f))
         Text(ago, color = Color.White.copy(alpha = 0.6f), style = GlowType.secondary, maxLines = 1)

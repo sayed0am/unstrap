@@ -31,7 +31,7 @@ class LiveTopBarTest {
         val r = WorkoutState.Recording(appWorkout(start = now - 600, end = null), maxHeartRate = 190)
         rules.compose.setContent {
             LiveFrame(
-                r, Color.Green, connected = false, PaddingValues(), LiveControls({}, {}, {}, {}, {}, {}),
+                r, org.openstrap.app.ui.theme.Blends.Distance, connected = false, PaddingValues(), LiveControls({}, {}, {}, {}, {}, {}),
                 title = "Outdoor cycling, intervals", status = listOf("GPS good" to Color.Green),
             ) {}
         }

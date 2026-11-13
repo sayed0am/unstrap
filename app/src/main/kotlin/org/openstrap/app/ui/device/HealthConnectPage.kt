@@ -8,7 +8,10 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.runtime.Composable
+import org.openstrap.app.ui.components.PageLight
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -43,7 +46,7 @@ import org.openstrap.app.ui.theme.AppIcons
  * rows' toasts can't hold one.
  */
 // A whole page, placed by the page host like the Strap page's others, so there's nothing for a caller to modify.
-@Suppress("ModifierMissing")
+@Suppress("ModifierMissing", "ComposeModifierMissing")
 @Composable
 fun HealthConnectPage(
     auto: HealthConnectAuto,
@@ -59,34 +62,34 @@ fun HealthConnectPage(
     onOfferCalories: () -> Unit = {},
 ) {
     BackHandler(onBack = onBack)
+    PageLight(YouLight)
     ScreenList(contentPadding, gutter = GlowLayout.Gutter) {
         item { PageHeader(stringResource(R.string.you_hc_title), onBack) }
         if (availability == HcAvailability.INSTALLABLE) item { InstallPanel(onInstall) }
         item {
-            PageRows {
-                val now = System.currentTimeMillis() / 1000
-                val line = healthConnectLine(auto, now, java.time.ZoneId.systemDefault(), availability = availability)
-                PageSwitchRow(stringResource(R.string.you_hc_auto), line, auto.on, onAuto, divider = false, icon = AppIcons.Refresh04)
+            val now = System.currentTimeMillis() / 1000
+            val line = healthConnectLine(auto, now, java.time.ZoneId.systemDefault(), availability = availability)
+            SwitchHero(AppIcons.Refresh04, stringResource(R.string.you_hc_auto), line, auto.on, onAuto, Modifier.heightIn(min = 136.dp))
+        }
+        item { SectionLabel(stringResource(R.string.you_hc_any_time), Modifier.padding(top = 4.dp)) }
+        item {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                PlaceTile(
+                    AppIcons.Heartbeat, stringResource(R.string.you_hc_copy_now), stringResource(R.string.you_hc_copy_now_note),
+                    onCopyNow, Modifier.weight(1f), caret = false,
+                )
+                PlaceTile(
+                    AppIcons.ArrowCounterClockwise, stringResource(R.string.you_action_restore),
+                    stringResource(R.string.you_hc_restore_note),
+                    onRestore, Modifier.weight(1f), caret = false,
+                )
             }
         }
-        item { SectionLabel(stringResource(R.string.you_hc_any_time), Modifier.padding(top = 4.dp), PanelLabelInset) }
         item {
-            PageRows {
-                PageRow(
-                    stringResource(R.string.you_hc_copy_now), stringResource(R.string.you_hc_copy_now_note), onClick = onCopyNow,
-                    below = true,
-                    divider = false, icon = AppIcons.Heartbeat,
-                )
-                PageRow(
-                    stringResource(R.string.you_action_restore), stringResource(R.string.you_hc_restore_note), onClick = onRestore,
-                    below = true,
-                    icon = AppIcons.ArrowCounterClockwise,
-                )
-                PageRow(
-                    stringResource(R.string.you_hc_open), stringResource(R.string.you_hc_open_note), onClick = onOpen, below = true,
-                    icon = AppIcons.SlidersHorizontal,
-                )
-            }
+            OutlineRow(
+                AppIcons.SlidersHorizontal, stringResource(R.string.you_hc_open), onOpen,
+                note = stringResource(R.string.you_hc_open_note),
+            )
         }
         if (caloriesMissing) item { CaloriesOffer(onOfferCalories) }
     }

@@ -1,10 +1,13 @@
 package org.openstrap.app.ui.workout
 
 import androidx.compose.ui.graphics.Color
+import org.openstrap.app.data.Workouts
 import org.openstrap.app.presentation.WorkoutColors
+import org.openstrap.app.ui.theme.Blend
+import org.openstrap.app.ui.theme.Blends
 import org.openstrap.app.presentation.WorkoutWords
 
-/** Zone 1 (easy) to 5 (max), cool to hot ([WorkoutColors.ZONES]); during a workout the app takes on the current one. */
+/** Zone 1 (easy) to 5 (max), cool to hot ([WorkoutColors.ZONES]); drawn small (a dot, a bar, a chip), never as a screen's light. */
 internal val ZONE_COLORS: List<Color> = WorkoutColors.ZONES.map(::Color)
 /**
  * A workout's top card colour: the zone it spent most time in, so the card agrees with its sentence ("mostly in zone
@@ -17,14 +20,21 @@ internal fun mainZoneColor(zones: List<Int>, fallback: Color): Color =
 internal val ZONE_NAMES: List<String> get() = WorkoutWords.ZONE_NAMES
 
 /**
- * Each kind of workout's colour on Choose and Ready (workouts spec 2.1): lime for distance, strength's orange, heart red
- * for intervals, a calm blue for indoor cardio, the evening's violet for mind and body, and a clear blue for games.
+ * Each kind of workout's blend (Workouts board, Palette): the light on Choose, Ready, the live screens and the summary.
+ * Distance takes Steps' lime, Indoor cardio violet into indigo, Strength bronze into iron, Intervals flare pink into
+ * deep teal, Games turf into pitch, and Mind and body the evening's violet. Zones never light a screen.
  */
-internal fun familyColor(family: org.openstrap.app.data.Workouts.Family): Color = when (family) {
-    org.openstrap.app.data.Workouts.Family.Distance -> org.openstrap.app.ui.theme.MetricColors.steps
-    org.openstrap.app.data.Workouts.Family.IndoorCardio -> ZONE_COLORS[0]
-    org.openstrap.app.data.Workouts.Family.Strength -> ZONE_COLORS[3]
-    org.openstrap.app.data.Workouts.Family.Intervals -> org.openstrap.app.ui.theme.MetricColors.heart
-    org.openstrap.app.data.Workouts.Family.MindBody -> org.openstrap.app.ui.theme.MetricColors.evening
-    org.openstrap.app.data.Workouts.Family.Games -> org.openstrap.app.ui.theme.MetricColors.spo2
+internal fun familyBlend(family: Workouts.Family): Blend = when (family) {
+    Workouts.Family.Distance -> Blends.Distance
+    Workouts.Family.IndoorCardio -> Blends.IndoorCardio
+    Workouts.Family.Strength -> Blends.Strength
+    Workouts.Family.Intervals -> Blends.Intervals
+    Workouts.Family.MindBody -> Blends.MindAndBody
+    Workouts.Family.Games -> Blends.Games
 }
+
+/** The blend of a sport's family, where a sport is all there is to go on (a tile, a pill). */
+internal fun sportBlend(sportType: Int): Blend = familyBlend(Workouts.family(sportType))
+
+/** A family's first stop, for the small marks that take one colour (a dot, an icon). */
+internal fun familyColor(family: Workouts.Family): Color = familyBlend(family).first

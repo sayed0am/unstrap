@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -23,7 +24,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
+import org.openstrap.app.ui.theme.Blends
+import org.openstrap.app.ui.theme.ScreenLight
+import org.openstrap.app.ui.glow.draw.LightAngle
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -182,7 +186,10 @@ fun GlowActivityScreen(
     if (partialInfo && wear != null) PartialDaySheet(wear, isToday, onDismiss = { partialInfo = false })
     androidx.compose.foundation.layout.Box(modifier) {
     CompositionLocalProvider(LocalGlowPaused provides { list.isScrollInProgress }) {
-        GlowScreenList(contentPadding, list) {
+        // Steps' blend from the upper right (Matrix board, Activity tab), day strength.
+        GlowScreenList(
+            contentPadding, list, light = ScreenLight(Blends.Steps, LightAngle.UpperRight, ScreenLight.DAY, heroCenterY = 240f),
+        ) {
             add(Pane.Full, GlowBlocks.HEADER) { header() }
             tabCards(slots) { card, m ->
                 when (card) {
@@ -200,19 +207,13 @@ fun GlowActivityScreen(
                             },
                         )
                     }
-                    ActivityCard.HeartPoints -> {
-                        val week = remember(stored, state.date, state.pai) { heartPointsWeek(state.date, stored, state.pai?.daily) }
-                        // The last 7 days as bars, today's in full ink. The aim is the week's total, so no line per day.
-                        PictureSmall(
-                            MetricColors.heart, stringResource(R.string.glow_activity_heart_points),
-                            heartPoints?.roundToInt()?.toString(), null,
-                            heartPoints?.let { TabCopy.heartPoints(it.roundToInt(), HEART_POINTS_TARGET) } ?: AFTER_NEXT_SYNC,
-                            onClick = { open(Score.HeartPoints) }, modifier = m,
-                            picture = week.takeIf { days -> days.any { it != null } }?.let { days ->
-                                { pm -> DayBars(days, MetricColors.heart, PictureSize.Small, pm) }
-                            },
-                        )
-                    }
+                    ActivityCard.HeartPoints -> BarSmall(
+                        MetricColors.heart, Blends.Heart, stringResource(R.string.glow_activity_heart_points),
+                        heartPoints?.roundToInt()?.toString(), null,
+                        heartPoints?.let { TabCopy.heartPoints(it.roundToInt(), HEART_POINTS_TARGET) } ?: AFTER_NEXT_SYNC,
+                        share = heartPoints?.let { it / HEART_POINTS_TARGET },
+                        onClick = { open(Score.HeartPoints) }, modifier = m,
+                    )
                     ActivityCard.Load -> DayLoadCard(r) { open(Score.Load) }
                     ActivityCard.HeartRate -> HeartRateCard(
                         state, live, restingRange,
@@ -253,18 +254,23 @@ private fun StartCard(sports: List<Int>, onStart: (Int) -> Unit, onAllSports: ()
                 horizontalArrangement = Arrangement.spacedBy(StartTileGap),
             ) {
                 sports.take(columns - 1).forEach { type ->
-                    SportTile(SportIcons.of(type), Workouts.sportName(type), Modifier.weight(1f), outdoor = type in Workouts.OUTDOOR) {
-                        onStart(type)
-                    }
+                    SportTile(
+                        SportIcons.of(type), Workouts.sportName(type), Modifier.weight(1f), outdoor = type in Workouts.OUTDOOR,
+                        blend = org.openstrap.app.ui.workout.sportBlend(type),
+                    ) { onStart(type) }
                 }
                 SportTile(
                     AppIcons.MoreHorizontalCircle01, stringResource(R.string.glow_activity_all_sports), Modifier.weight(1f),
-                    outdoor = false, onClick = onAllSports,
+                    outdoor = false, blend = AllSportsBlend,
+                    onClick = onAllSports,
                 )
             }
         }
     }
 }
+
+/** All sports' dot: white into a dimmer white, the board's neutral. */
+private val AllSportsBlend = org.openstrap.app.ui.theme.Blend(Color.White, Color.White.copy(alpha = 0.6f))
 
 /** A tile's column on a phone: four tiles and their gaps in 344 dp. */
 private val StartTileColumn = 80.dp
@@ -293,29 +299,31 @@ private fun StepsGlow(state: DayUiState, usual: List<Float>?, history: ActivityH
     val now = java.time.LocalTime.now()
     val pace = ActivityCopy.paceOf(state.steps, usual, isToday, now.hour, now.minute)
     var hour by remember(state.date, state.hourlySteps) { mutableStateOf<Int?>(null) }
-    GlowCard(limeHero(MetricColors.steps), Modifier.fillMaxWidth().gridSize(CardSize.Wide), onClick = onClick) {
+    // The tab's hero (board TabActivity): tinted glass in Steps' blend, the title and goal, the sentence, the dotted
+    // number, then the hour bars running to the card's edges along its foot.
+    GlowCard(
+        limeHero(MetricColors.steps), Modifier.fillMaxWidth().gridSize(CardSize.Wide), onClick = onClick,
+        contentPadding = PaddingValues(0.dp),
+    ) {
         Column {
-            GlowHeader(
-                stringResource(R.string.glow_activity_steps), trailing = stringResource(R.string.glow_activity_goal, Units.count(goal)),
-                tag = tag,
-            )
-            Spacer(Modifier.height(GlowLayout.TitleGap))
-            HourPills(state.hourlySteps, hour) { hour = it }
-            Spacer(Modifier.height(16.dp))
-            // A picked hour takes the number's place; one dotted number either way (spec 2.3). Its number stays the
-            // second glow's size, so the hour pills above it keep their room.
-            val h = hour
-            val picked = h?.let { state.hourlySteps.getOrNull(it) }
-            // The tag is the day's, so a picked hour leaves it out.
-            val (count, label) = if (h != null && picked != null) Math.round(picked) to ActivityCopy.hourLabel(h)
-            else state.steps to ActivityCopy.activityLine(state.steps, goal, pace, isToday)
-            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                TaggedNumber(Units.count(count, Units.DOT_LOCALE), null, goalTag.takeIf { h == null || picked == null }, dot = DotSize.Second)
-                Text(
-                    label,
-                    color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary, maxLines = 2,
+            Column(Modifier.padding(start = GlowLayout.CardInset, end = GlowLayout.CardInset, top = GlowLayout.CardInset)) {
+                GlowHeader(
+                    stringResource(R.string.glow_activity_steps), trailing = stringResource(R.string.glow_activity_goal, Units.count(goal)),
+                    tag = tag,
                 )
+                Spacer(Modifier.height(GlowLayout.TitleGap))
+                // A picked hour takes the number's place; one dotted number either way (spec 2.3).
+                val h = hour
+                val picked = h?.let { state.hourlySteps.getOrNull(it) }
+                // The tag is the day's, so a picked hour leaves it out.
+                val (count, label) = if (h != null && picked != null) Math.round(picked) to ActivityCopy.hourLabel(h)
+                else state.steps to ActivityCopy.activityLine(state.steps, goal, pace, isToday)
+                Text(label, color = Color.White, style = GlowType.sentence, maxLines = 3)
+                Spacer(Modifier.height(14.dp))
+                TaggedNumber(Units.count(count, Units.DOT_LOCALE), null, goalTag.takeIf { h == null || picked == null }, dot = DotSize.Hero)
             }
+            Spacer(Modifier.height(14.dp))
+            HourPills(state.hourlySteps, hour, labels = false) { hour = it }
         }
     }
 }
@@ -327,10 +335,10 @@ private fun StepsGlow(state: DayUiState, usual: List<Float>?, history: ActivityH
  * latest; tapping it again lets it go. The hours under it in Caption.
  */
 @Composable
-private fun HourPills(hourly: List<Float>, picked: Int?, onPick: (Int?) -> Unit) {
-    Column {
+private fun HourPills(hourly: List<Float>, picked: Int?, labels: Boolean = true, onPick: (Int?) -> Unit) {
+    Column(Modifier.padding(horizontal = if (labels) 0.dp else GlowLayout.CardInset)) {
         Canvas(
-            Modifier.fillMaxWidth().height(HourPillsHeight).pointerInput(hourly, picked) {
+            Modifier.fillMaxWidth().height(if (labels) HourPillsHeight else 70.dp).pointerInput(hourly, picked) {
                 detectTapGestures { o ->
                     if (hourly.isEmpty()) return@detectTapGestures
                     val h = (o.x / (size.width.toFloat() / hourly.size)).toInt().coerceIn(0, hourly.lastIndex)
@@ -342,7 +350,7 @@ private fun HourPills(hourly: List<Float>, picked: Int?, onPick: (Int?) -> Unit)
             // The shared pill bars ([hourPills]), as a widget's chart draws them.
             hourPills(hourly, picked, size.width, size.height, density)?.let { drawHourPills(it) }
         }
-        Row(Modifier.fillMaxWidth().padding(top = 4.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+        if (labels) Row(Modifier.fillMaxWidth().padding(top = 4.dp), horizontalArrangement = Arrangement.SpaceBetween) {
             listOf("00", "06", "12", "18", "24").forEach {
                 Text(it, color = Color.White.copy(alpha = GlowType.CAPTION_ALPHA), style = GlowType.caption)
             }
@@ -462,6 +470,33 @@ private fun PictureSmall(
         }
         TaggedNumber(value, unit, null, Modifier.padding(top = 8.dp))
         StatusLine(status)
+    }
+}
+
+/**
+ * A Small in dark glass with a bar along its foot (board TabActivity, Calories and Heart points): the title, the number
+ * in dots with its [unit], the [status], and under them a 10 dp bar running edge to edge in [blend], filled to [share]
+ * of the way (the rest at 30%). Without a [share] the bar is left out.
+ */
+@Composable
+private fun BarSmall(
+    ink: Color, blend: org.openstrap.app.ui.theme.Blend, title: String, value: String?, unit: String?, status: String,
+    share: Float?, onClick: () -> Unit, modifier: Modifier = Modifier,
+) {
+    PictureCard(ink, modifier, onClick = onClick, contentPadding = PaddingValues(0.dp)) {
+        Column(Modifier.weight(1f).padding(start = 16.dp, end = 16.dp, top = 14.dp)) {
+            CardTitle(title)
+            Spacer(Modifier.height(12.dp))
+            TaggedNumber(value, unit, null)
+            StatusLine(status)
+        }
+        if (share != null) {
+            val f = share.coerceIn(0f, 1f)
+            Row(Modifier.fillMaxWidth().height(10.dp)) {
+                if (f > 0f) Box(Modifier.weight(f).fillMaxHeight().background(Brush.horizontalGradient(listOf(blend.first, blend.second))))
+                if (f < 1f) Box(Modifier.weight(1f - f).fillMaxHeight().background(blend.first.copy(alpha = 0.3f)))
+            }
+        }
     }
 }
 
@@ -628,19 +663,18 @@ internal fun WorkoutDayHeader(text: String) {
     )
 }
 
-/** The effort light's tile, as the mock draws it: 38 dp, 12 dp corners, a shade above the panel. */
-private val EffortTile = 38.dp
-private val EffortShape = RoundedCornerShape(12.dp)
-private val EffortSurface = Color(0xFF151517)
+/** The effort light's tile, as the boards draw a row icon: a 36 dp circle on a faint white fill. */
+private val EffortTile = 36.dp
+private val EffortShape = CircleShape
 private val EffortGap = 12.dp
 
 /**
- * A workout as a list row: its sport's toned white icon on the effort light (a heart-red glow as strong as the
- * workout's Load against your [usual], [Workouts.effort]), the sport with "Auto-detected" when the strap logged
- * it by itself, the sport's one fact and the start time ([TabCopy.workoutFact]), and the duration in dots. A thin zone
- * bar under it, lined up with the name. [divider] draws the hairline above.
+ * A workout as a list row: its family's dot on a faint circle of its blend ([SportDot]; [usual] no longer lights it), the sport
+ * with "Auto-detected" when the strap logged it by itself, the sport's one fact and the start time ([TabCopy.workoutFact]), and the
+ * duration in dots. A thin zone bar under it, lined up with the name. [divider] draws the hairline above.
  */
 @Composable
+@Suppress("UNUSED_PARAMETER")
 internal fun WorkoutRow(a: WorkoutAnalysis, usual: Float?, divider: Boolean, onClick: () -> Unit) {
     val fact = TabCopy.workoutFact(
         TabCopy.sportFact(a.workout.sportType), a.distanceMeters, a.distanceFromSteps,
@@ -654,7 +688,7 @@ internal fun WorkoutRow(a: WorkoutAnalysis, usual: Float?, divider: Boolean, onC
             .topHairline(divider, RowHairline),
     ) {
         Row(Modifier.fillMaxWidth().padding(vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-            EffortLight(SportIcons.of(a.workout.sportType), Workouts.effort(a.workout.trainingLoad, usual))
+            SportDot(org.openstrap.app.ui.workout.sportBlend(a.workout.sportType))
             Spacer(Modifier.width(EffortGap))
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -683,30 +717,14 @@ internal fun WorkoutRow(a: WorkoutAnalysis, usual: Float?, divider: Boolean, onC
     }
 }
 
-/**
- * The effort light: the sport's icon on a small dark tile, a soft heart-red glow behind it, centred a little low as
- * light from below would be. [effort] (0..1) sets the glow's strength.
- */
+/** A sport's mark in a list row (board TabActivity): a 36 dp circle in its family's first stop at 16%, the dot in the blend. */
 @Composable
-private fun EffortLight(icon: androidx.compose.ui.graphics.vector.ImageVector, effort: Float) {
+private fun SportDot(blend: org.openstrap.app.ui.theme.Blend) {
     Box(
-        Modifier
-            .size(EffortTile)
-            .clip(EffortShape)
-            .background(EffortSurface)
-            .drawBehind {
-                val centre = Offset(size.width / 2, size.height * 0.6f)
-                drawRect(
-                    Brush.radialGradient(
-                        0f to MetricColors.heart.copy(alpha = 0.7f * effort.coerceIn(0f, 1f)), 1f to Color.Transparent,
-                        center = centre, radius = size.minDimension * 0.56f,
-                    ),
-                )
-            }
-            .border(1.dp, Color.White.copy(alpha = 0.06f), EffortShape),
+        Modifier.size(EffortTile).clip(EffortShape).background(blend.first.copy(alpha = 0.16f)),
         contentAlignment = Alignment.Center,
     ) {
-        Icon(icon, null, tint = Color.White.copy(alpha = 0.85f), modifier = Modifier.size(RowIcon))
+        Box(Modifier.size(10.dp).clip(CircleShape).background(Brush.linearGradient(listOf(blend.first, blend.second))))
     }
 }
 

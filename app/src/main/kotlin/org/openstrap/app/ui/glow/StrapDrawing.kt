@@ -108,5 +108,5 @@ private val Lugs = listOf(43f to 36f, 77f to 36f, 43f to 110f, 77f to 110f)
 /** The resting turn when the strap isn't syncing. */
 private val NoTurn: State<Float> = mutableFloatStateOf(0f)
 
-/** The strap's own light, a soft green, as it glows when connected. */
-internal val StrapLight = Color(0xFF7DE0C0)
+/** The strap's own light, the Strap blend's chart tone (graphite lightened to read on glass), not a status colour. */
+internal val StrapLight = org.openstrap.app.ui.theme.Blends.Strap.chart

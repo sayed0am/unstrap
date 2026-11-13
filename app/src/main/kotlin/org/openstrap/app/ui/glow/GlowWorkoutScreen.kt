@@ -48,6 +48,12 @@ import org.openstrap.app.ui.dashboard.Score
 import org.openstrap.app.ui.dashboard.ScreenList
 import org.openstrap.app.ui.theme.AppIcons
 import org.openstrap.app.ui.theme.MetricColors
+import org.openstrap.app.ui.theme.Blends
+import org.openstrap.app.ui.theme.GlowShapes
+import org.openstrap.app.ui.theme.ScreenLight
+import org.openstrap.app.ui.components.PageLight
+import androidx.compose.ui.graphics.drawOutline
+import androidx.compose.ui.graphics.drawscope.translate
 import org.openstrap.app.ui.workout.EffectFigures
 import org.openstrap.app.ui.workout.PhoneSummary
 import org.openstrap.app.ui.workout.ZoneSeconds
@@ -70,6 +76,11 @@ import org.openstrap.app.ui.dashboard.LocalHeartZones
 
 /** The heart rate line is drawn in ten-second steps: readable on a phone, and the card still says the time. */
 private const val HeartStep = 10L
+private const val LIGHT_BASE_STRENGTH = 0.6f
+private const val LIGHT_EFFORT_STRENGTH = 0.25f
+
+/** The page light's strength for a workout of [effort] (0 to 1): a base glow plus a share by how hard it was. */
+private fun workoutLightStrength(effort: Float): Float = LIGHT_BASE_STRENGTH + LIGHT_EFFORT_STRENGTH * effort
 
 /**
  * The workout [a]. A phone workout shows from its [summary] (route, laps, sets and the whole recording, for trimming),
@@ -108,6 +119,17 @@ fun GlowWorkoutDetailScreen(
     var info by rememberSaveable { mutableStateOf(false) }
     val usual = remember(workouts) { Workouts.usualLoad(workouts.map { it.workout.trainingLoad }) }
     val zones = shown?.zoneSeconds.orEmpty()
+    // Lit by the kind's blend at a strength by effort (Matrix board), as its summary was; the zones stay small.
+    PageLight(
+        shown?.let {
+            ScreenLight(
+                familyBlend(Workouts.family(it.workout.sportType)),
+                angle = 225f,
+                strength = workoutLightStrength(Workouts.effort(it.workout.trainingLoad, usual)),
+                heroCenterY = 170f,
+            )
+        },
+    )
     CompositionLocalProvider(LocalGlowPaused provides { list.isScrollInProgress }) {
         ScreenList(contentPadding, list, gutter = GlowLayout.Gutter) {
             item {
@@ -129,7 +151,7 @@ fun GlowWorkoutDetailScreen(
                 // The summary's hero with the length in dots: a strap workout has no kind of its own to show.
                 val sentence = WorkoutDetailCopy.sentence(w.sportType, shown.activeSeconds, w.trainingLoad, usual, zones)
                 val hero = SummaryHero(dotClock(shown.activeSeconds), "", sentence = sentence)
-                SummaryHeroCard(hero, mainZoneColor(zones, MetricColors.heart), Workouts.effort(w.trainingLoad, usual))
+                SummaryHeroCard(hero, familyInk(Workouts.family(w.sportType)), Workouts.effort(w.trainingLoad, usual))
             }
             if (shown.heartRate.isNotEmpty() || w.averageHeartRate != null) item { HeartRateCard(shown) }
             val activeKcal = Workouts.activeKcal(shown, bmrPerMinute)
@@ -186,6 +208,8 @@ private fun PastSummary(
     val family = org.openstrap.app.ui.workout.FamilySummary.familyOf(w.sportType, summary.structure)
     val weekStarts = remember(workouts) { goalWeekStarts(workouts) }
     val trim = rememberWorkoutTrim(summary, onTrim, onUndoTrim)
+    val effort = Workouts.effort(w.trainingLoad, usual)
+    PageLight(ScreenLight(familyBlend(family), angle = 225f, strength = workoutLightStrength(effort), heroCenterY = 170f))
     CompositionLocalProvider(LocalGlowPaused provides { list.isScrollInProgress }) {
         ScreenList(contentPadding, list, gutter = GlowLayout.Gutter) {
             item {
@@ -209,7 +233,7 @@ private fun PastSummary(
                         if (h.sentence != null) h
                         else SummaryHero(h.value, h.unit, h.figures, WorkoutDetailCopy.sentence(w.sportType, a.activeSeconds, w.trainingLoad, usual, zones.toList()), h.line)
                     }
-                    SummaryHeroCard(hero, mainZoneColor(zones, familyColor(family)), Workouts.effort(w.trainingLoad, usual))
+                    SummaryHeroCard(hero, familyInk(family), effort)
                     FamilySection(family, summary, emptyList(), others, weekStarts, heartLine = false)
                     // Always there, even before any heart rate, since it holds Trim.
                     HeartRateCard(a, trim)
@@ -418,6 +442,8 @@ fun GlowWorkoutsScreen(workouts: List<WorkoutAnalysis>, contentPadding: PaddingV
     val usual = remember(workouts) { Workouts.usualLoad(workouts.map { it.workout.trainingLoad }) }
     val days = remember(workouts) { workouts.groupBy { Instant.ofEpochSecond(it.workout.start).atZone(zone).toLocalDate() }.toList() }
     val today = LocalDate.now()
+    // Heart's blend from the upper right, quiet: nothing here is a single workout to light (board DetailAllWorkouts).
+    PageLight(ScreenLight(Blends.Heart, angle = 45f, strength = 0.7f, heroCenterY = 120f))
     ScreenList(contentPadding, gutter = GlowLayout.Gutter) {
         item {
             PageHeader(
@@ -468,11 +494,12 @@ private fun ListSegment(first: Boolean, last: Boolean, content: @Composable Colu
                 val top = if (first) 0f else -r
                 val end = if (last) bottom else bottom + r
                 clipRect(top = 0f, bottom = bottom) {
-                    drawRoundRect(ListSurface, Offset(0f, top), Size(size.width, end - top), CornerRadius(r))
-                    drawRoundRect(
-                        RowHairline, Offset(stroke / 2, top + stroke / 2), Size(size.width - stroke, end - top - stroke),
-                        CornerRadius(r - stroke / 2), style = Stroke(stroke),
-                    )
+                    // The card's squircle, drawn past the ends that join another stretch.
+                    val outline = GlowShapes.Card.createOutline(Size(size.width, end - top), layoutDirection, this)
+                    translate(top = top) {
+                        drawOutline(outline, ListSurface)
+                        drawOutline(outline, RowHairline, style = Stroke(stroke))
+                    }
                 }
             }
             .padding(horizontal = GlowLayout.CardInset)

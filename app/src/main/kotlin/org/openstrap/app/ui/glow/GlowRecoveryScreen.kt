@@ -7,7 +7,11 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
+import org.openstrap.app.ui.theme.Blend
+import org.openstrap.app.ui.theme.Blends
+import org.openstrap.app.ui.theme.GlowShapes
+import org.openstrap.app.ui.theme.ScreenLight
+import org.openstrap.app.ui.glow.draw.LightAngle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.text.style.TextOverflow
 import kotlin.math.roundToInt
@@ -130,7 +134,11 @@ fun GlowRecoveryScreen(
     val partial = partialTag.takeIf { wear?.partial == true }
     val isToday = state.date == java.time.LocalDate.now()
     CompositionLocalProvider(LocalGlowPaused provides { list.isScrollInProgress }) {
-        GlowScreenList(contentPadding, list, focus = showCharge, onFocused = onChargeShown) {
+        // Light all round the number (Matrix board): the Recovery blend, day strength, centred on the hero.
+        GlowScreenList(
+            contentPadding, list, focus = showCharge, onFocused = onChargeShown,
+            light = ScreenLight(Blends.Recovery, LightAngle.Above, ScreenLight.DAY, heroCenterY = 190f),
+        ) {
             add(Pane.Full, GlowBlocks.HEADER) { header() }
             tabCards(slots, focus = RecoveryCard.Charge) { card, m ->
                 when (card) {
@@ -289,7 +297,7 @@ private fun DriversList(ready: Recovery.Readiness?, onAll: () -> Unit) {
         top.forEachIndexed { i, c ->
             DriverRow(
                 TabCopy.factorName(c.factor), TabCopy.contributorWord(c.score), c.score / 100f,
-                offTag(OffWords.Usual, contributorOffStatus(c.score)), divider = i > 0, onClick = onAll,
+                offTag(OffWords.Usual, contributorOffStatus(c.score)), divider = i > 0, blend = factorBlend(c.factor), onClick = onAll,
             )
         }
     }
@@ -302,35 +310,52 @@ internal fun contributorOffStatus(score: Int): OffStatus = when {
     else -> OffStatus.Below
 }
 
+/** The blend a Recovery contributor is drawn in: its metric's own (DetailRecovery board). */
+internal fun factorBlend(f: Recovery.Factor): Blend = when (f) {
+    Recovery.Factor.HrvBalance -> Blends.Hrv
+    Recovery.Factor.RestingHr -> Blends.Heart
+    Recovery.Factor.Sleep, Recovery.Factor.SleepBalance -> Blends.Sleep
+    Recovery.Factor.Temperature -> Blends.Temperature
+    Recovery.Factor.Breathing -> Blends.Breathing
+    Recovery.Factor.PreviousDayLoad -> Blends.Load
+    Recovery.Factor.BloodOxygen -> Blends.Spo2
+    Recovery.Factor.RecoveryIndex -> Blends.Recovery
+}
+
 /**
- * A contributor bar (chart kit): the [name] on its own line, then a white bar filled to [fraction] (0..1) with the
- * [word] after it, or the off [tag] in the word's place. [onClick] opens the Recovery detail, with the row's caret.
+ * A contributor row (DetailRecovery board): the [name] with its [word] or off [tag] and caret at the right, then an 8 dp
+ * bar filled to [fraction] (0..1) in the metric's [blend] along its length, then the [detail] line when there is one.
+ * [onClick] opens the Recovery detail, with the row's caret.
  */
 @Composable
-private fun DriverRow(name: String, word: String, fraction: Float, tag: NewsTag?, divider: Boolean, onClick: () -> Unit) {
-    val opening = org.openstrap.app.ui.components.cardOpening(onClick)
-    androidx.compose.foundation.layout.Row(
+internal fun DriverRow(
+    name: String, word: String, fraction: Float, tag: NewsTag?, divider: Boolean, blend: Blend, detail: String? = null,
+    onClick: (() -> Unit)? = null,
+) {
+    val opening = onClick?.let { org.openstrap.app.ui.components.cardOpening(it) }
+    Column(
         Modifier.fillMaxWidth()
             .then(opening?.modifier ?: Modifier)
-            .clickable(onClick = opening?.onClick ?: onClick)
+            .let { if (onClick != null) it.clickable(onClick = opening?.onClick ?: onClick) else it }
             .topHairline(divider, RowHairline)
             .padding(vertical = GlowLayout.RowPadding),
-        verticalAlignment = Alignment.CenterVertically,
+        verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp),
     ) {
-        Column(Modifier.weight(1f)) {
-            Text(name, color = Color.White, style = GlowType.body, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            androidx.compose.foundation.layout.Row(Modifier.fillMaxWidth().padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                val shape = RoundedCornerShape(3.dp)
-                Box(Modifier.weight(1f).height(6.dp).background(Color.White.copy(alpha = 0.07f), shape)) {
-                    Box(Modifier.fillMaxWidth(fraction.coerceIn(0f, 1f)).height(6.dp).background(Color.White.copy(alpha = 0.7f), shape))
-                }
-                Spacer(Modifier.width(12.dp))
-                if (tag != null) NewsPill(tag)
-                else Text(word, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary, maxLines = 1)
+        androidx.compose.foundation.layout.Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Text(name, Modifier.weight(1f), color = Color.White, style = GlowType.body, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Spacer(Modifier.width(12.dp))
+            if (tag != null) NewsPill(tag)
+            else Text(word, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary, maxLines = 1)
+            if (onClick != null) {
+                Spacer(Modifier.width(6.dp))
+                TapCaret(ROW_CARET_ALPHA)
             }
         }
-        Spacer(Modifier.width(RowCaretGap))
-        TapCaret(ROW_CARET_ALPHA)
+        val shape = GlowShapes.Small
+        Box(Modifier.fillMaxWidth().height(8.dp).background(Color.White.copy(alpha = 0.08f), shape)) {
+            Box(Modifier.fillMaxWidth(fraction.coerceIn(0f, 1f)).height(8.dp).background(blend.chartBrush(), shape))
+        }
+        if (detail != null) Text(detail, color = Color.White.copy(alpha = 0.7f), style = GlowType.secondary, maxLines = 2)
     }
 }
 
@@ -347,10 +372,12 @@ private fun ChargeTall(
     // Before the first night the number would only be the simulation's starting guess: a dash until then.
     val now = c?.takeIf { it.anchored }?.latest?.let(::chargeShown)
     val atWake = c?.atWake?.toInt()
-    GlowCard(GlowStyle.Ember.copy(lightLevel = (now ?: 0) / 100f, second = true), modifier, onClick = onOpen) {
+    GlowCard(GlowStyle.Ember.copy(lightLevel = (now ?: 0) / 100f), modifier, onClick = onOpen) {
         Column(Modifier.fillMaxHeight()) {
             GlowHeader(stringResource(R.string.glow_recovery_energy), tag = tag)
-            Spacer(Modifier.weight(1f))
+            // The number sits under the title, inside the dark pool at the top (board TabRecovery), not at the foot,
+            // where a tall card runs under the tab bar.
+            Spacer(Modifier.height(12.dp))
             HeroFigure(
                 now?.toString(),
                 when {

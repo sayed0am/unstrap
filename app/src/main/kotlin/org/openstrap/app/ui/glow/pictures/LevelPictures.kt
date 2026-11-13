@@ -7,8 +7,16 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.RoundRect
 import androidx.compose.ui.geometry.Size
+import androidx.compose.runtime.remember
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.graphics.drawscope.rotate
+import org.openstrap.app.ui.glow.draw.ChartInk
+import org.openstrap.app.ui.glow.draw.chartBlend
+import org.openstrap.app.ui.theme.Blend
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -22,8 +30,9 @@ import kotlin.math.min
 /*
  * The level and count pictures (spec 2.7): a week of dots through your band, a level fill over your usual band, a
  * countdown ring, blocks, day bars, a range fill, a split bar, week rings and the age scale. Each draws in its metric's
- * ink and fills its modifier, about 136 by 60 dp on a Small and 324 by 70 on a Wide. Solid only: no dashes, and no dots
- * but the week's own.
+ * blend (Charts board: the first colour at the start or base, the second on the answer, in the blend's chart tones;
+ * the v2 `ink` overloads find it with [chartBlend]) and fills its modifier, about 136 by 60 dp on a Small and 324 by 70
+ * on a Wide. Solid only: no dashes, and no dots but the week's own.
  *
  * The geometry is in plain functions below each picture, so it can be tested without drawing. Fractions run 0 to 1
  * across the picture, y from the top. The rim functions turn those into fractions of the card ([Rim]), assuming the
@@ -32,10 +41,10 @@ import kotlin.math.min
 
 // ---- Shared ----------------------------------------------------------------------------------------------------
 
-/** Your normal: a band of the ink at 12% (spec 2.7). */
-internal const val BAND_ALPHA = 0.12f
+/** Your normal behind a week of dots: the first colour at 8% (Charts board). */
+internal const val BAND_ALPHA = ChartInk.DOTS_BAND_ALPHA
 
-/** A part inside your normal, or not the latest: the ink dimmed. */
+/** A part that isn't the latest: the blend dimmed. */
 internal const val DIM_ALPHA = 0.55f
 
 /** A track under a fill: white at 8%. */
@@ -75,15 +84,33 @@ internal fun share(v: Float, from: Float, to: Float): Float =
 
 private fun ClosedFloatingPointRange<Float>.holds(v: Float) = v in this
 
+private const val MIN_SWEEP_SHARE = 0.001f
+
 /** A bar [h] high centred at [cy] from [x0] to [x1], each end rounded fully or to [inner] when [roundStart]/[roundEnd] say not. */
-private fun DrawScope.bar(color: Color, x0: Float, x1: Float, cy: Float, h: Float, roundStart: Boolean = true, roundEnd: Boolean = true, inner: Float = 0f) {
+private fun DrawScope.bar(color: Color, x0: Float, x1: Float, cy: Float, h: Float, roundStart: Boolean = true, roundEnd: Boolean = true, inner: Float = 0f) =
+    bar(SolidColor(color), x0, x1, cy, h, roundStart, roundEnd, inner)
+
+@Suppress("LongParameterList") // a private draw helper: the bar's span, height, round ends and inner radius
+private fun DrawScope.bar(
+    brush: Brush, x0: Float, x1: Float, cy: Float, h: Float,
+    roundStart: Boolean = true, roundEnd: Boolean = true, inner: Float = 0f, alpha: Float = 1f,
+) {
     if (x1 - x0 <= 0f) return
     val r = min(h / 2, (x1 - x0) / 2)
     val s = CornerRadius(if (roundStart) r else min(inner, r))
     val e = CornerRadius(if (roundEnd) r else min(inner, r))
     val path = Path().apply { addRoundRect(RoundRect(x0, cy - h / 2, x1, cy + h / 2, s, e, e, s)) }
-    drawPath(path, color)
+    drawPath(path, brush, alpha)
 }
+
+/** The blend's chart tones across [x0] to [x1]: first at the start, second on the answer. */
+private fun Blend.across(x0: Float, x1: Float): Brush =
+    Brush.horizontalGradient(listOf(chart, chartSecond), startX = x0, endX = if (x1 > x0) x1 else x0 + 1f)
+
+/** A sweep from the first colour at the top of a ring (drawn after a -90 degree turn) to the second at [share] of the way round. */
+private fun Blend.sweep(share: Float, center: Offset): Brush = Brush.sweepGradient(
+    0f to chart, share.coerceIn(MIN_SWEEP_SHARE, 1f) to chartSecond, 1f to chartSecond, center = center,
+)
 
 // ---- 1. Week of dots through your band ---------------------------------------------------------------------------
 
@@ -147,7 +174,17 @@ private fun aspectOf(size: PictureSize) = if (size == PictureSize.Small) 136f / 
 // The lists arrive whole with each update and never change in place.
 @Suppress("UnstableCollections", "ComposeUnstableCollections")
 @Composable
-fun WeekOfDots(values: List<Float?>, usual: ClosedFloatingPointRange<Float>?, ink: Color, size: PictureSize, modifier: Modifier = Modifier) {
+fun WeekOfDots(values: List<Float?>, usual: ClosedFloatingPointRange<Float>?, ink: Color, size: PictureSize, modifier: Modifier = Modifier) =
+    WeekOfDots(values, usual, remember(ink) { chartBlend(ink) }, size, modifier)
+
+/**
+ * [WeekOfDots] in [blend]: dots inside your usual dim in the first colour, outside it full in the second, and today's,
+ * the answer, larger and in the second.
+ */
+// The lists arrive whole with each update and never change in place.
+@Suppress("UnstableCollections", "ComposeUnstableCollections")
+@Composable
+fun WeekOfDots(values: List<Float?>, usual: ClosedFloatingPointRange<Float>?, blend: Blend, size: PictureSize, modifier: Modifier = Modifier) {
     Canvas(modifier) {
         val g = weekDotsGeometry(values, usual, this.size.width / this.size.height.coerceAtLeast(1f))
         val h = this.size.height
@@ -155,15 +192,17 @@ fun WeekOfDots(values: List<Float?>, usual: ClosedFloatingPointRange<Float>?, in
         if (g.bandTop != null && g.bandBottom != null) {
             val top = g.bandTop * h
             val bottom = max(g.bandBottom * h, top + 2.dp.toPx())
-            drawRoundRect(ink.copy(alpha = BAND_ALPHA), Offset(0f, top), Size(w, bottom - top), CornerRadius(4.dp.toPx()))
+            drawRoundRect(blend.chart.copy(alpha = BAND_ALPHA), Offset(0f, top), Size(w, bottom - top), CornerRadius(4.dp.toPx()))
         }
         val last = values.lastIndex
         values.forEachIndexed { i, v ->
             val y = g.ys[i] ?: return@forEachIndexed
             val inBand = usual == null || usual.holds(v!!)
-            val alpha = if (i == last || !inBand) 1f else DIM_ALPHA
+            val answer = i == last || !inBand
             val r = (if (i == last) TODAY_R else DOT_R) * h
-            drawCircle(ink.copy(alpha = alpha), r, Offset(g.xs[i] * w, y * h))
+            drawCircle(
+                if (answer) blend.chartSecond else blend.chart.copy(alpha = ChartInk.INSIDE_ALPHA), r, Offset(g.xs[i] * w, y * h),
+            )
         }
     }
 }
@@ -195,7 +234,12 @@ fun levelFillRim(value: Float, usual: ClosedFloatingPointRange<Float>?, size: Pi
  * it the fill is full ink.
  */
 @Composable
-fun LevelFill(value: Float, usual: ClosedFloatingPointRange<Float>?, ink: Color, size: PictureSize, modifier: Modifier = Modifier) {
+fun LevelFill(value: Float, usual: ClosedFloatingPointRange<Float>?, ink: Color, size: PictureSize, modifier: Modifier = Modifier) =
+    LevelFill(value, usual, remember(ink) { chartBlend(ink) }, size, modifier)
+
+/** [LevelFill] in [blend]: your usual band flat in the first colour at 22%, the fill's leading edge and its dot in the second. */
+@Composable
+fun LevelFill(value: Float, usual: ClosedFloatingPointRange<Float>?, blend: Blend, size: PictureSize, modifier: Modifier = Modifier) {
     Canvas(modifier) {
         val g = levelFillGeometry(value, usual)
         val dotR = 5.dp.toPx()
@@ -206,11 +250,15 @@ fun LevelFill(value: Float, usual: ClosedFloatingPointRange<Float>?, ink: Color,
         bar(Track, x(0f), x(1f), cy, barH)
         if (g.bandStart != null && g.bandEnd != null) {
             val bandH = 16.dp.toPx()
-            drawRoundRect(ink.copy(alpha = BAND_ALPHA), Offset(x(g.bandStart), cy - bandH / 2), Size(x(g.bandEnd) - x(g.bandStart), bandH), CornerRadius(5.dp.toPx()))
+            drawRoundRect(
+                blend.chart.copy(alpha = ChartInk.LEVEL_BAND_ALPHA), Offset(x(g.bandStart), cy - bandH / 2),
+                Size(x(g.bandEnd) - x(g.bandStart), bandH), CornerRadius(5.dp.toPx()),
+            )
         }
-        val off = isOff(value, usual)
-        bar(ink.copy(alpha = if (off) 1f else 0.5f), x(0f), max(x(g.value), x(0f) + barH), cy, barH)
-        drawCircle(ink, dotR, Offset(x(g.value), cy))
+        val end = max(x(g.value), x(0f) + barH)
+        bar(blend.across(x(0f), end), x(0f), end, cy, barH)
+        drawCircle(blend.chartSecond.copy(alpha = ChartInk.END_HALO_ALPHA), dotR + 3.dp.toPx(), Offset(x(g.value), cy))
+        drawCircle(blend.chartSecond, dotR, Offset(x(g.value), cy))
     }
 }
 
@@ -225,18 +273,25 @@ internal fun countdownSweep(share: Float): Float = 360f * share.coerceIn(0f, 1f)
  * page). Never off, so no rim.
  */
 @Composable
-fun CountdownRing(share: Float, ink: Color, modifier: Modifier = Modifier, centred: Boolean = false) {
+fun CountdownRing(share: Float, ink: Color, modifier: Modifier = Modifier, centred: Boolean = false) =
+    CountdownRing(share, remember(ink) { chartBlend(ink) }, modifier, centred)
+
+/** [CountdownRing] in [blend]: along the stroke from the first colour at the top to the second at the end of the value. */
+@Composable
+fun CountdownRing(share: Float, blend: Blend, modifier: Modifier = Modifier, centred: Boolean = false) {
     Canvas(modifier) {
-        val stroke = 5.dp.toPx()
+        val stroke = 8.dp.toPx()
         val r = (min(this.size.height, this.size.width) - stroke) / 2 * 0.85f
         val cx = if (centred) size.width / 2 else r + stroke / 2
         val c = Offset(cx, this.size.height / 2)
         drawCircle(RingTrack, r, c, style = Stroke(stroke))
         val sweep = countdownSweep(share)
-        if (sweep > 0f) drawArc(
-            ink.copy(alpha = if (sweep >= 360f) 1f else 0.75f), -90f, sweep, false,
-            Offset(c.x - r, c.y - r), Size(2 * r, 2 * r), style = Stroke(stroke, cap = StrokeCap.Round),
-        )
+        if (sweep > 0f) rotate(-90f, c) {
+            drawArc(
+                blend.sweep(sweep / 360f, c), 0f, sweep, false,
+                Offset(c.x - r, c.y - r), Size(2 * r, 2 * r), style = Stroke(stroke, cap = StrokeCap.Round),
+            )
+        }
     }
 }
 
@@ -261,7 +316,12 @@ internal fun blockRows(count: Int, size: PictureSize): Int {
  * Never off, so no rim.
  */
 @Composable
-fun Blocks(minutes: Int, ink: Color, size: PictureSize, modifier: Modifier = Modifier, target: Int = 150, perBlock: Int = 5) {
+fun Blocks(minutes: Int, ink: Color, size: PictureSize, modifier: Modifier = Modifier, target: Int = 150, perBlock: Int = 5) =
+    Blocks(minutes, remember(ink) { chartBlend(ink) }, size, modifier, target, perBlock)
+
+/** [Blocks] in [blend]: the filled blocks run from the first colour to the second, which lands on the latest block. */
+@Composable
+fun Blocks(minutes: Int, blend: Blend, size: PictureSize, modifier: Modifier = Modifier, target: Int = 150, perBlock: Int = 5) {
     Canvas(modifier) {
         val count = blockCount(target, perBlock)
         if (count == 0) return@Canvas
@@ -276,7 +336,7 @@ fun Blocks(minutes: Int, ink: Color, size: PictureSize, modifier: Modifier = Mod
             val col = i % cols
             val row = i / cols
             drawRoundRect(
-                if (i < filled) ink else Track,
+                if (i < filled) lerp(blend.chart, blend.chartSecond, if (filled <= 1) 1f else i / (filled - 1f)) else Track,
                 Offset(col * (bw + gap), top + row * (bh + gap)), Size(bw, bh), CornerRadius(2.dp.toPx()),
             )
         }
@@ -301,7 +361,14 @@ internal fun dayBarsGeometry(values: List<Float?>, target: Float?): DayBarsGeome
 // The lists arrive whole with each update and never change in place.
 @Suppress("UnstableCollections", "ComposeUnstableCollections")
 @Composable
-fun DayBars(values: List<Float?>, ink: Color, size: PictureSize, modifier: Modifier = Modifier, target: Float? = null) {
+fun DayBars(values: List<Float?>, ink: Color, size: PictureSize, modifier: Modifier = Modifier, target: Float? = null) =
+    DayBars(values, remember(ink) { chartBlend(ink) }, size, modifier, target)
+
+/** [DayBars] in [blend]: the first colour at each bar's base, the second at its top, today's in full and the others dimmer. */
+// The lists arrive whole with each update and never change in place.
+@Suppress("UnstableCollections", "ComposeUnstableCollections")
+@Composable
+fun DayBars(values: List<Float?>, blend: Blend, size: PictureSize, modifier: Modifier = Modifier, target: Float? = null) {
     Canvas(modifier) {
         if (values.isEmpty()) return@Canvas
         val g = dayBarsGeometry(values, target)
@@ -314,8 +381,9 @@ fun DayBars(values: List<Float?>, ink: Color, size: PictureSize, modifier: Modif
             if (values[i] == null) return@forEachIndexed
             val bh = max(f * h, minH)
             drawRoundRect(
-                ink.copy(alpha = if (i == n - 1) 1f else DIM_ALPHA),
-                Offset(i * (bw + gap), h - bh), Size(bw, bh), CornerRadius(min(bw / 2, 4.dp.toPx())),
+                brush = Brush.verticalGradient(listOf(blend.chart, blend.chartSecond), startY = h, endY = h - bh),
+                topLeft = Offset(i * (bw + gap), h - bh), size = Size(bw, bh), cornerRadius = CornerRadius(min(bw / 2, 4.dp.toPx())),
+                alpha = if (i == n - 1) 1f else DIM_ALPHA,
             )
         }
         g.target?.let { t ->
@@ -340,7 +408,12 @@ internal fun rangeFillGeometry(start: Float, end: Float): RangeFillGeometry = Ra
  * Energy history is stored, so it has no usual. The numbers ("34 to 72") are the card's status line, not drawn here.
  */
 @Composable
-fun RangeFill(start: Float, end: Float, ink: Color, size: PictureSize, modifier: Modifier = Modifier) {
+fun RangeFill(start: Float, end: Float, ink: Color, size: PictureSize, modifier: Modifier = Modifier) =
+    RangeFill(start, end, remember(ink) { chartBlend(ink) }, size, modifier)
+
+/** [RangeFill] in [blend]: the gain runs from the first colour to the second at where the night ended. */
+@Composable
+fun RangeFill(start: Float, end: Float, blend: Blend, size: PictureSize, modifier: Modifier = Modifier) {
     Canvas(modifier) {
         val g = rangeFillGeometry(start, end)
         val w = this.size.width
@@ -348,7 +421,7 @@ fun RangeFill(start: Float, end: Float, ink: Color, size: PictureSize, modifier:
         val h = 10.dp.toPx()
         bar(Track, 0f, w, cy, h)
         bar(Color.White.copy(alpha = 0.2f), 0f, min(g.start, g.end) * w, cy, h)
-        if (g.gain) bar(ink, max(0f, g.start * w - h / 2), g.end * w, cy, h)
+        if (g.gain) bar(blend.across(max(0f, g.start * w - h / 2), g.end * w), max(0f, g.start * w - h / 2), g.end * w, cy, h)
     }
 }
 
@@ -389,13 +462,23 @@ internal fun splitBarParts(parts: List<Float>, width: Float, gap: Float): List<S
 // The lists arrive whole with each update and never change in place.
 @Suppress("UnstableCollections", "ComposeUnstableCollections")
 @Composable
-fun SplitBar(parts: List<Float>, ink: Color, size: PictureSize, modifier: Modifier = Modifier) {
+fun SplitBar(parts: List<Float>, ink: Color, size: PictureSize, modifier: Modifier = Modifier) =
+    SplitBar(parts, remember(ink) { chartBlend(ink) }, size, modifier)
+
+/** [SplitBar] in [blend]: the blend runs along the whole bar, each part at its rank's strength. */
+// The lists arrive whole with each update and never change in place.
+@Suppress("UnstableCollections", "ComposeUnstableCollections")
+@Composable
+fun SplitBar(parts: List<Float>, blend: Blend, size: PictureSize, modifier: Modifier = Modifier) {
     Canvas(modifier) {
         val h = 12.dp.toPx()
         val cy = this.size.height / 2
         val laid = splitBarParts(parts, this.size.width, 2.dp.toPx())
         laid.forEachIndexed { k, p ->
-            bar(ink.copy(alpha = splitAlpha(p.rank)), p.start, p.end, cy, h, roundStart = k == 0, roundEnd = k == laid.lastIndex, inner = 3.dp.toPx())
+            bar(
+                blend.across(0f, this.size.width), p.start, p.end, cy, h, alpha = splitAlpha(p.rank),
+                roundStart = k == 0, roundEnd = k == laid.lastIndex, inner = 3.dp.toPx(),
+            )
         }
     }
 }
@@ -420,7 +503,14 @@ internal fun weekRingsGeometry(width: Float, height: Float, stroke: Float, count
 // The lists arrive whole with each update and never change in place.
 @Suppress("UnstableCollections", "ComposeUnstableCollections")
 @Composable
-fun WeekRings(shares: List<Float?>, ink: Color, size: PictureSize, modifier: Modifier = Modifier) {
+fun WeekRings(shares: List<Float?>, ink: Color, size: PictureSize, modifier: Modifier = Modifier) =
+    WeekRings(shares, remember(ink) { chartBlend(ink) }, size, modifier)
+
+/** [WeekRings] in [blend]: each ring runs from the first colour at the top to the second at the end of its share. */
+// The lists arrive whole with each update and never change in place.
+@Suppress("UnstableCollections", "ComposeUnstableCollections")
+@Composable
+fun WeekRings(shares: List<Float?>, blend: Blend, size: PictureSize, modifier: Modifier = Modifier) {
     Canvas(modifier) {
         val stroke = (if (size == PictureSize.Small) 3.dp else 4.dp).toPx()
         val g = weekRingsGeometry(this.size.width, this.size.height, stroke, shares.size)
@@ -430,10 +520,12 @@ fun WeekRings(shares: List<Float?>, ink: Color, size: PictureSize, modifier: Mod
             val c = Offset(g.centres[i], cy)
             drawCircle(RingTrack, r, c, style = Stroke(stroke))
             val sweep = countdownSweep(s ?: 0f)
-            if (s != null && sweep > 0f) drawArc(
-                ink.copy(alpha = if (sweep >= 360f) 1f else DIM_ALPHA), -90f, max(sweep, 4f), false,
-                Offset(c.x - r, c.y - r), Size(2 * r, 2 * r), style = Stroke(stroke, cap = StrokeCap.Round),
-            )
+            if (s != null && sweep > 0f) rotate(-90f, c) {
+                drawArc(
+                    blend.sweep(max(sweep, 4f) / 360f, c), 0f, max(sweep, 4f), false,
+                    Offset(c.x - r, c.y - r), Size(2 * r, 2 * r), style = Stroke(stroke, cap = StrokeCap.Round),
+                )
+            }
         }
     }
 }
@@ -468,14 +560,19 @@ fun ageScaleRim(low: Float, high: Float, age: Float, size: PictureSize = Picture
  * white dot at the [estimate], a hairline at your own [age]. No labels: the card draws them, placed by [ageScaleX].
  */
 @Composable
-fun AgeScalePicture(low: Float, high: Float, estimate: Float, age: Float, ink: Color, size: PictureSize, modifier: Modifier = Modifier) {
+fun AgeScalePicture(low: Float, high: Float, estimate: Float, age: Float, ink: Color, size: PictureSize, modifier: Modifier = Modifier) =
+    AgeScalePicture(low, high, estimate, age, remember(ink) { chartBlend(ink) }, size, modifier)
+
+/** [AgeScalePicture] in [blend]: the range's band runs from the first colour at its young end to the second at its old end. */
+@Composable
+fun AgeScalePicture(low: Float, high: Float, estimate: Float, age: Float, blend: Blend, size: PictureSize, modifier: Modifier = Modifier) {
     Canvas(modifier) {
         val dotR = 6.dp.toPx()
         val w = this.size.width - 2 * dotR
         fun x(a: Float) = dotR + ageScaleX(a, low, high, age) * w
         val cy = this.size.height / 2
         bar(Track, dotR, dotR + w, cy, 3.dp.toPx())
-        bar(ink.copy(alpha = 0.8f), x(low) - 4.dp.toPx(), x(high) + 4.dp.toPx(), cy, 8.dp.toPx())
+        bar(blend.across(x(low) - 4.dp.toPx(), x(high) + 4.dp.toPx()), x(low) - 4.dp.toPx(), x(high) + 4.dp.toPx(), cy, 8.dp.toPx())
         val lineH = min(this.size.height, 28.dp.toPx())
         drawLine(AgeLine, Offset(x(age), cy - lineH / 2), Offset(x(age), cy + lineH / 2), 1.5.dp.toPx())
         drawCircle(Color.White, dotR, Offset(x(estimate), cy))

@@ -24,7 +24,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -78,10 +77,12 @@ import org.openstrap.app.data.db.SavedWorkout
 import org.openstrap.app.device.ConnectionState
 import org.openstrap.app.ui.components.pressClickable
 import org.openstrap.app.ui.theme.AppIcons
-import org.openstrap.app.ui.theme.MetricColors
 import org.openstrap.app.ui.workout.StartCopy
 import org.openstrap.app.presentation.WorkoutCopy
 import org.openstrap.app.ui.workout.ZONE_COLORS
+import org.openstrap.app.ui.theme.Blends
+import org.openstrap.app.ui.theme.GlowShapes
+import org.openstrap.app.ui.theme.tintedGlass
 import java.time.LocalTime
 import org.openstrap.app.ui.workout.readyHero
 
@@ -91,29 +92,19 @@ import org.openstrap.app.ui.workout.readyHero
  */
 
 /** Where Ready's heart light sits, in card heights from the top, and its size in card widths and heights. */
-private const val HEART_LIGHT_BELOW = 1.25f
-private const val HEART_LIGHT_WIDTH = 1.2f
-private const val HEART_LIGHT_HEIGHT = 1.1f
-
-/** Ready's heart light at full strength: 70% in the middle, 18% halfway out. */
-private val HeartLight = listOf(0f to 0.7f, 0.5f to 0.18f)
-
 /**
- * Ready's heart: the live bpm in dots on a card lit from below in [color] (heart red, or the family's colour), as
- * Today's hero, "bpm, live from your strap" beside it. While the strap is away, what's wrong and that you can start
- * anyway, on a dimmer light.
+ * Ready's heart (boards WorkoutReadyRun, WorkoutReadyStrength): the live bpm in dots on heart-red tinted glass,
+ * "bpm, live from your strap" beside it, the same on every family. While the strap is away, what's wrong and that you can
+ * start anyway, on a dimmer tint.
  */
 @Composable
-internal fun ReadyHeartCard(connection: ConnectionState, liveHeartRate: Int?, color: Color = MetricColors.heart) {
+internal fun ReadyHeartCard(connection: ConnectionState, liveHeartRate: Int?) {
     org.openstrap.app.ui.components.HoldLiveHeartRate()
     val hero = WorkoutCopy.readyHero(connection, liveHeartRate)
     val bpm = liveHeartRate.takeIf { hero.live }
-    val light = if (bpm != null) 1f else 0.4f
-    // An ellipse 1.2 widths across and 1.1 heights tall, centred a quarter of the height below the card.
-    LitPanel(
-        color, HeartLight.map { (at, alpha) -> at to alpha * light },
-        lightCenter = { Offset(it.width / 2, it.height * HEART_LIGHT_BELOW) },
-        reach = { Size(it.width * HEART_LIGHT_WIDTH, it.height * HEART_LIGHT_HEIGHT) },
+    Column(
+        Modifier.fillMaxWidth().clip(GlowShapes.Card).tintedGlass(Blends.Heart, GlowShapes.Card, strength = if (bpm != null) 1f else 0.4f)
+            .padding(horizontal = 20.dp, vertical = 18.dp),
     ) {
         if (bpm != null) HeroValue(bpm.toString(), stringResource(R.string.glow_ready_bpm_live), gap = 14.dp)
         else Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -122,6 +113,9 @@ internal fun ReadyHeartCard(connection: ConnectionState, liveHeartRate: Int?, co
         }
     }
 }
+
+/** The family's blend while Ready shows: its dots, switches' tint, the typed number's caret. Set by [GlowReadyScreen]. */
+internal val LocalReadyBlend = androidx.compose.runtime.compositionLocalOf { Blends.Distance }
 
 /**
  * Where you are and the switch rows, on one quiet panel. For a sport with an indoor side ([sides]), its title is the
@@ -148,7 +142,7 @@ internal fun ReadyWhere(
         var rows = 0
         if (sides != null) {
             PlaceRow(
-                placeIcon(sides, indoor), if (indoor) IndoorTint else TrendGood, StartCopy.place(sides, indoor),
+                placeIcon(sides, indoor), LocalReadyBlend.current.chart, StartCopy.place(sides, indoor),
                 when {
                     indoor -> StartCopy.indoorNote(type)
                     !locationOn -> WorkoutCopy.LOCATION_OFF
@@ -173,9 +167,6 @@ internal fun ReadyWhere(
 
 private val SportIconsLocation: ImageVector get() = org.openstrap.app.ui.theme.SportIcons.Location
 
-/** Amber, for an indoor side: zone 3's yellow, as the board has it. */
-private val IndoorTint = ZONE_COLORS[2]
-
 /** Each side's icon: the pin outdoors, then the treadmill, the pool or a house. */
 private fun placeIcon(sides: Workouts.Sides, indoor: Boolean): ImageVector = when {
     !indoor -> SportIconsLocation
@@ -188,7 +179,7 @@ private fun placeIcon(sides: Workouts.Sides, indoor: Boolean): ImageVector = whe
 @Composable
 private fun PlaceRow(icon: ImageVector, tint: Color, title: String, note: String, trailing: (@Composable () -> Unit)?) {
     Row(Modifier.fillMaxWidth().padding(vertical = GlowLayout.RowPadding), verticalAlignment = Alignment.CenterVertically) {
-        Box(Modifier.size(44.dp).clip(RoundedCornerShape(14.dp)).background(tint.copy(alpha = 0.15f)), contentAlignment = Alignment.Center) {
+        Box(Modifier.size(44.dp).clip(GlowShapes.Icon).background(tint.copy(alpha = 0.15f)), contentAlignment = Alignment.Center) {
             Icon(icon, null, tint = tint, modifier = Modifier.size(24.dp))
         }
         Spacer(Modifier.width(14.dp))
@@ -307,7 +298,8 @@ private fun ReadyPlanCard(
         var choosing by rememberSaveable { mutableStateOf(false) }
         Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
             IconPill(
-                shown.name, { onTyping(false); choosing = true }, icon = shown.icon, tint = TypingLime, caret = true, height = 40.dp,
+                shown.name, { onTyping(false); choosing = true }, icon = shown.icon, tint = LocalReadyBlend.current.chart,
+                caret = true, height = 40.dp,
                 description = stringResource(R.string.glow_ready_plan_description, shown.name, StartCopy.planHint(family)),
             )
         }
@@ -353,6 +345,7 @@ private fun kindNote(k: GoalKind, hasDistance: Boolean): String = when (k) {
 /** A plan's choice in the sheet (board ReadyKindSheet): its icon on a tile, its name, what the strap does, a tick when chosen. */
 @Composable
 private fun KindRow(icon: ImageVector, label: String, note: String, on: Boolean, divider: Boolean, onClick: () -> Unit) {
+    val ink = LocalReadyBlend.current.chart
     Row(
         Modifier.fillMaxWidth()
             .topHairline(divider, RowHairline)
@@ -361,14 +354,14 @@ private fun KindRow(icon: ImageVector, label: String, note: String, on: Boolean,
         horizontalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         Box(
-            Modifier.size(40.dp).clip(RoundedCornerShape(12.dp)).background(if (on) TypingLime.copy(alpha = 0.14f) else Raised),
+            Modifier.size(40.dp).clip(GlowShapes.Icon).background(if (on) ink.copy(alpha = 0.14f) else Raised),
             contentAlignment = Alignment.Center,
-        ) { Icon(icon, null, tint = if (on) TypingLime else Color.White, modifier = Modifier.size(20.dp)) }
+        ) { Icon(icon, null, tint = if (on) ink else Color.White, modifier = Modifier.size(20.dp)) }
         Column(Modifier.weight(1f)) {
             Text(label, color = Color.White, style = GlowType.body)
             Text(note, color = Color.White.copy(alpha = 0.6f), style = GlowType.secondary, modifier = Modifier.padding(top = 2.dp))
         }
-        if (on) Icon(AppIcons.CheckCircle, null, tint = TypingLime, modifier = Modifier.size(20.dp))
+        if (on) Icon(AppIcons.CheckCircle, null, tint = ink, modifier = Modifier.size(20.dp))
     }
 }
 
@@ -401,7 +394,7 @@ private fun ValueStepper(less: String, more: String, onLess: () -> Unit, onMore:
 @Composable
 private fun TapValue(parts: List<Pair<String, String>>, hint: String?, onClick: () -> Unit) {
     Column(
-        Modifier.clip(RoundedCornerShape(12.dp)).clickable(onClickLabel = StartCopy.TAP_TO_TYPE, onClick = onClick).padding(horizontal = 8.dp),
+        Modifier.clip(GlowShapes.Icon).clickable(onClickLabel = StartCopy.TAP_TO_TYPE, onClick = onClick).padding(horizontal = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Row {
@@ -433,15 +426,16 @@ private fun TypedNumber(
     style: TextStyle = GlowType.goalValue,
     modifier: Modifier = Modifier,
 ) {
+    val ink = LocalReadyBlend.current.chart
     Row(
         modifier.drawBehind {
             val y = size.height - 1.dp.toPx()
-            drawLine(if (focused) TypingLime else Color.White.copy(alpha = 0.2f), Offset(0f, y), Offset(size.width, y), 2.dp.toPx())
+            drawLine(if (focused) ink else Color.White.copy(alpha = 0.2f), Offset(0f, y), Offset(size.width, y), 2.dp.toPx())
         }.padding(start = 6.dp, end = 6.dp, bottom = 6.dp),
     ) {
         BasicTextField(
             value, onValue, field.width(IntrinsicSize.Min).widthIn(min = 18.dp).alignByBaseline(),
-            textStyle = style.copy(color = Color.White), cursorBrush = SolidColor(TypingLime), singleLine = true,
+            textStyle = style.copy(color = Color.White), cursorBrush = SolidColor(ink), singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = keyboard, imeAction = ime),
             keyboardActions = KeyboardActions(onDone = { onIme() }, onNext = { onIme() }),
         )
@@ -457,9 +451,6 @@ private val TextFieldValuesSaver = androidx.compose.runtime.saveable.listSaver<L
     save = { l -> l.flatMap { listOf(it.text, it.selection.start, it.selection.end) } },
     restore = { v -> v.chunked(3) { (t, a, b) -> TextFieldValue(t as String, TextRange(a as Int, b as Int)) } },
 )
-
-/** The caret and underline of a number being typed. */
-private val TypingLime = MetricColors.steps
 
 /** [text] with all of it selected, so the first key typed replaces it. */
 private fun selected(text: String) = TextFieldValue(text, TextRange(0, text.length))
@@ -590,9 +581,9 @@ private fun ZoneGoal(goal: WorkoutTarget.Zones, onGoal: (WorkoutTarget.Zones) ->
             val on = z in goal.low..goal.high
             val color = ZONE_COLORS[z]
             Column(
-                Modifier.weight(1f).height(56.dp).clip(RoundedCornerShape(14.dp)).background(if (on) color else ZoneOff)
+                Modifier.weight(1f).height(56.dp).clip(GlowShapes.Icon).background(if (on) color else ZoneOff)
                     .drawBehind { if (!on) drawRect(color, Offset(0f, size.height - 3.dp.toPx()), androidx.compose.ui.geometry.Size(size.width, 3.dp.toPx())) }
-                    .pressClickable({ onGoal(WorkoutSetup.pickZone(goal, z)) }, RoundedCornerShape(14.dp))
+                    .pressClickable({ onGoal(WorkoutSetup.pickZone(goal, z)) }, GlowShapes.Icon)
                     .semantics { selected = on; role = Role.Button },
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center,
@@ -610,7 +601,7 @@ private fun ZoneGoal(goal: WorkoutTarget.Zones, onGoal: (WorkoutTarget.Zones) ->
 }
 
 /** A zone button not chosen: dark, with its colour along the bottom. */
-private val ZoneOff = Color(0xFF1A1A1D)
+private val ZoneOff = Color.White.copy(alpha = 0.08f)
 
 /**
  * Intervals: "6 × 400 m" over "with 90 s rest between". Any number taps to type, then on to the next: how many, each
@@ -783,7 +774,7 @@ private const val SAVED = 1
 /** One number of the intervals to tap and type, with its [unit] after it, on the shared baseline. */
 @Composable
 internal fun RowScope.TapNumber(n: String, unit: String?, style: TextStyle, onClick: () -> Unit) {
-    Row(Modifier.alignByBaseline().clip(RoundedCornerShape(10.dp)).clickable(onClickLabel = StartCopy.TAP_TO_TYPE, onClick = onClick).padding(horizontal = 4.dp)) {
+    Row(Modifier.alignByBaseline().clip(GlowShapes.Small).clickable(onClickLabel = StartCopy.TAP_TO_TYPE, onClick = onClick).padding(horizontal = 4.dp)) {
         Text(n, color = Color.White, style = style, modifier = Modifier.alignByBaseline())
         if (unit != null) {
             Spacer(Modifier.width(4.dp))

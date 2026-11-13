@@ -1,7 +1,35 @@
 package org.openstrap.app.ui.glow
 
 import androidx.annotation.StringRes
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
+import org.openstrap.app.ui.components.GlassSheet
+import org.openstrap.app.ui.theme.AppIcons
+import org.openstrap.app.ui.theme.Blends
+import org.openstrap.app.ui.theme.GlowShapes
+import org.openstrap.app.ui.theme.clearGlass
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -244,9 +272,13 @@ private fun signalGroups(state: DayUiState, now: Long, strings: Strings): List<I
 )
 
 /**
- * The index as a sheet over the tab (spec 3.2), from the grid button in the header: one grouped list per section.
- * [onOpen] gets the tapped row's target; the caller closes the sheet and goes there.
+ * The index as a sheet over the tab (spec 3.2), from the grid button in the header: one clear glass panel, a small
+ * title for each section and its rows under it (SheetAllMetrics board). A row has its metric's icon in the first stop
+ * of its blend, the name and status, the day's value and a caret. [onOpen] gets the tapped row's target; the caller
+ * closes the sheet and goes there.
  */
+// A sheet draws into the glass host, so it takes no modifier.
+@Suppress("ModifierMissing", "ComposeModifierMissing")
 @Composable
 fun AllMetricsSheet(
     groups: List<IndexGroup>,
@@ -254,13 +286,54 @@ fun AllMetricsSheet(
     onDismiss: () -> Unit,
     onOpen: (IndexTarget) -> Unit,
 ) {
-    PageSheet(onDismiss, stringResource(R.string.glow_metrics_all_metrics), dayName(date), side = 16.dp) {
-        groups.forEach { group ->
-            ListPanel(title = group.title) {
-                group.rows.forEachIndexed { i, r ->
-                    ListRow(r.name, r.color, r.value, r.status, onClick = { onOpen(r.target) }, divider = i > 0, icon = r.target.rowIcon())
+    val maxHeight = (LocalConfiguration.current.screenHeightDp * 0.88f).dp
+    GlassSheet(onDismiss) {
+        Column(
+            Modifier.fillMaxWidth().heightIn(max = maxHeight).verticalScroll(rememberScrollState())
+                .padding(horizontal = 16.dp).navigationBarsPadding().padding(top = 4.dp, bottom = 20.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            Column(Modifier.padding(horizontal = 4.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(stringResource(R.string.glow_metrics_all_metrics), color = Color.White, style = GlowType.cardTitle, maxLines = 1)
+                Text(dayName(date), color = Color.White.copy(alpha = 0.62f), style = GlowType.secondary)
+            }
+            Column(Modifier.fillMaxWidth().clearGlass(GlowShapes.Card).padding(horizontal = 18.dp, vertical = 4.dp)) {
+                groups.forEachIndexed { gi, group ->
+                    Text(
+                        group.title, color = Color.White.copy(alpha = 0.6f),
+                        style = GlowType.secondary.copy(fontWeight = FontWeight.Medium),
+                        modifier = Modifier.fillMaxWidth().then(if (gi > 0) Modifier.hairline(alpha = 0.10f) else Modifier)
+                            .padding(top = if (gi == 0) 6.dp else 18.dp, bottom = 2.dp),
+                    )
+                    group.rows.forEachIndexed { i, r -> MetricRow(r, divider = i > 0) { onOpen(r.target) } }
                 }
             }
         }
+    }
+}
+
+/** A hairline along the top edge: white at [alpha], the boards' `inset 0 1px 0`. */
+private fun Modifier.hairline(alpha: Float): Modifier =
+    drawBehind { drawLine(Color.White.copy(alpha = alpha), Offset(0f, 0f), Offset(size.width, 0f), 1.dp.toPx()) }
+
+/** One row of the sheet, 60 dp tall: icon in a 36 dp disc, name over status, the value, a caret. */
+@Composable
+private fun MetricRow(r: IndexRow, divider: Boolean, onClick: () -> Unit) {
+    // Every row's icon is its blend's first stop (a row not on a blend keeps its own colour).
+    val tint = (Blends.forInk(r.color)?.first ?: r.color).let { if (r.value == null) it.copy(alpha = 0.4f) else it }
+    Row(
+        Modifier.fillMaxWidth().heightIn(min = 60.dp).then(if (divider) Modifier.hairline(alpha = 0.07f) else Modifier)
+            .clickable(onClick = onClick),
+        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp),
+    ) {
+        Box(Modifier.size(36.dp).background(tint.copy(alpha = tint.alpha * 0.16f), CircleShape), contentAlignment = Alignment.Center) {
+            r.target.rowIcon()?.let { Icon(it, null, Modifier.size(20.dp), tint = tint) }
+        }
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(r.name, color = Color.White, style = GlowType.body)
+            Text(r.status, color = Color.White.copy(alpha = 0.6f), style = GlowType.label)
+        }
+        if (r.value != null) Text(r.value, color = Color.White, style = GlowType.rowValue, maxLines = 1) else WaitingDash()
+        Icon(AppIcons.CaretRight, null, Modifier.size(16.dp), tint = Color.White.copy(alpha = 0.48f))
     }
 }

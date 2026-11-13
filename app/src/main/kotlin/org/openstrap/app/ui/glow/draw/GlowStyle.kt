@@ -140,6 +140,11 @@ data class GlowStyle(
      * (pattern D1). Nothing is rendered for it but the edge.
      */
     val outline: Boolean = false,
+    /**
+     * Dark glow (Glow x Glass): the blend rising from the bottom edge of a near-black card, for a strip or a moment
+     * that comes up from below. [second] draws it too.
+     */
+    val dark: Boolean = false,
     /** Set by [GlowCard] from [LocalGlowMood]; leave it to the screen. */
     val mood: GlowMood = GlowMood.Day,
 ) {

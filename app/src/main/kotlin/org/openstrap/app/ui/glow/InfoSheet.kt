@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -37,9 +36,14 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import org.openstrap.app.R
 import org.openstrap.app.ui.dashboard.Info
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.ui.graphics.Brush
 import org.openstrap.app.ui.theme.AppIcons
+import org.openstrap.app.ui.theme.Blends
+import org.openstrap.app.ui.theme.GlowShapes
 
 /*
  * The info sheet (spec 6.2): what a number means, the scale it's read on with where you are, and how it's worked out,
@@ -61,7 +65,7 @@ fun InfoSheet(
     PageSheet(onDismiss) {
         // One block, so the sheet's gap between blocks leaves this one's own spacing alone.
         Column {
-            Text(info.name, color = Color.White.copy(alpha = 0.5f), style = GlowType.secondary)
+            Text(info.name, color = Color.White.copy(alpha = 0.6f), style = GlowType.secondary)
             Text(
                 info.meaning, color = Color.White, modifier = Modifier.padding(top = 6.dp),
                 style = GlowType.sentence,
@@ -73,7 +77,7 @@ fun InfoSheet(
                 modifier = Modifier.padding(top = if (info.scale.isEmpty()) 16.dp else 10.dp),
             )
             Column(
-                Modifier.padding(top = 24.dp).fillMaxWidth().background(Color(0xFF141416), GlowLayout.CardShape).padding(horizontal = 18.dp),
+                Modifier.padding(top = 24.dp).fillMaxWidth().background(Color(0xFF141416), GlowShapes.Card).padding(horizontal = 18.dp),
             ) {
                 val folds = rows ?: listOf(
                     stringResource(R.string.glow_info_how) to info.how,
@@ -95,6 +99,10 @@ fun InfoSheet(
 private fun Scale(labels: List<String>, color: Color, here: Int?, modifier: Modifier = Modifier) {
     val gap = 6.dp
     val measurer = rememberTextMeasurer()
+    // The lit bar runs the metric's blend, first stop to its 4.5:1 tone; the others are the first stop dimmed.
+    val blend = Blends.forInk(color)
+    val first = blend?.first ?: color
+    val lit = Brush.horizontalGradient(listOf(first, blend?.chartSecond ?: color))
     BoxWithConstraints(modifier.fillMaxWidth()) {
         val cell = ((constraints.maxWidth - with(LocalDensity.current) { gap.roundToPx() } * (labels.size - 1)) / labels.size)
         val style = remember(labels, cell) { fitWords(labels, listOf(GlowType.secondary, GlowType.caption), cell, measurer) }
@@ -104,8 +112,11 @@ private fun Scale(labels: List<String>, color: Color, here: Int?, modifier: Modi
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Box(
                         Modifier.fillMaxWidth().height(10.dp)
-                            .let { if (on) it.shadow(10.dp, CircleShape, ambientColor = color, spotColor = color) else it }
-                            .background(if (on) color else color.copy(alpha = 0.18f + 0.12f * i / (labels.size - 1).coerceAtLeast(1)), CircleShape),
+                            .let { if (on) it.shadow(10.dp, GlowShapes.Pill, ambientColor = first, spotColor = first) else it }
+                            .let {
+                                if (on) it.background(lit, GlowShapes.Pill)
+                                else it.background(first.copy(alpha = 0.24f + 0.06f * (i - 1).coerceAtLeast(0)), GlowShapes.Pill)
+                            },
                     )
                     Text(
                         label, color = if (on) Color.White else Color.White.copy(alpha = GlowType.SECONDARY_ALPHA),
@@ -136,10 +147,10 @@ private fun Fold(title: String, text: String, divider: Boolean = true) {
     val clickLabel = stringResource(if (open) R.string.glow_info_fold else R.string.glow_info_open)
     Column(
         Modifier.fillMaxWidth()
-            .topHairline(divider, RowHairline),
+            .topHairline(divider, Color.White.copy(alpha = 0.07f)),
     ) {
         Row(
-            Modifier.fillMaxWidth().clickable(onClickLabel = clickLabel) { open = !open }.padding(vertical = 16.dp),
+            Modifier.fillMaxWidth().heightIn(min = 52.dp).clickable(onClickLabel = clickLabel) { open = !open },
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(title, color = Color.White, style = GlowType.body, modifier = Modifier.weight(1f))
@@ -147,7 +158,10 @@ private fun Fold(title: String, text: String, divider: Boolean = true) {
             Icon(AppIcons.CaretDown, null, tint = Color.White.copy(alpha = 0.6f), modifier = Modifier.size(16.dp).rotate(turn))
         }
         AnimatedVisibility(open) {
-            Text(text, color = Color.White.copy(alpha = 0.8f), style = GlowType.secondary, modifier = Modifier.padding(bottom = 16.dp))
+            Text(
+                text, color = Color.White.copy(alpha = 0.8f), style = GlowType.secondary.copy(lineHeight = 18.85.sp),
+                modifier = Modifier.padding(bottom = 16.dp),
+            )
         }
     }
 }

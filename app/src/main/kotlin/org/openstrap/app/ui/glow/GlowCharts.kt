@@ -54,12 +54,26 @@ import org.openstrap.app.ui.theme.FunnelSans
 import org.openstrap.app.ui.glow.draw.BAR_MAX_WIDTH_DP
 import org.openstrap.app.ui.glow.draw.ChartInk
 import org.openstrap.app.ui.glow.draw.chartHairline
-import org.openstrap.app.ui.glow.draw.drawGhostLine
+import org.openstrap.app.ui.glow.draw.chartBlend
+import org.openstrap.app.ui.glow.draw.chartBrushAcross
+import org.openstrap.app.ui.glow.draw.chartBrushUp
+import org.openstrap.app.ui.glow.draw.composePath
+import org.openstrap.app.ui.glow.draw.LineChartLook
+import org.openstrap.app.ui.glow.draw.GhostLineLook
+import org.openstrap.app.ui.glow.draw.mark
+import org.openstrap.app.ui.theme.Blend
+import org.openstrap.app.ui.theme.Blends
+import org.openstrap.app.ui.theme.GlowShapes
+import org.openstrap.app.ui.theme.MetricColors
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.ClipOp
+import androidx.compose.ui.graphics.drawscope.clipRect
+import androidx.compose.ui.graphics.drawscope.rotate
 import org.openstrap.app.ui.glow.draw.drawHypnogramBands
-import org.openstrap.app.ui.glow.draw.drawLineChartBody
-import org.openstrap.app.ui.glow.draw.drawLineChartEnd
 import org.openstrap.app.ui.glow.draw.drawPillBar
 import org.openstrap.app.ui.glow.draw.ghostLinePaths
+import org.openstrap.app.ui.glow.draw.smoothOps
+import org.openstrap.app.ui.glow.draw.polylineOps
 import org.openstrap.app.ui.glow.draw.lineChartPaths
 import org.openstrap.app.ui.glow.draw.ghostLineGeometry
 import org.openstrap.app.ui.glow.draw.hypnogramGeometry
@@ -72,12 +86,16 @@ import org.openstrap.app.presentation.StageSpan
 import org.openstrap.app.presentation.DetailCopy
 
 /*
- * Charts for glow cards. The card's colour carries the mood, so the marks are white: lines get a soft halo, and grids,
- * guides and bars are solid (spec 2.7). Only the digits are made of dots.
+ * Charts for Glow x Glass cards (Charts board). On clear glass a chart draws in its metric's [Blend] (first colour at
+ * the start or base, the second on the answer: now, the top, the value), in the blend's chart tones so marks reach
+ * 4.5:1. On a hero or a solid fill the card is the colour and the marks are white: pass white (or [Blend] built from
+ * it) and nothing is tinted. Callers that still pass a v2 ink get its blend through [chartBlend]. Grids, guides and
+ * bars are solid. Only the digits are made of dots.
  */
 
 private val Ink = Color.White
-private val Muted = Color.White.copy(alpha = 0.55f)
+/** Axis labels: white at 68%, the board's 50% raised so they reach 4.5:1 on glass. */
+private val Muted = Color.White.copy(alpha = ChartInk.AXIS_ALPHA)
 /** Grid rows and stage guides: solid, white at 8%, 1 dp. */
 private val Grid = ChartInk.Grid
 /** A target, goal or average across a chart: solid, white at 40%, 1 dp. */
@@ -99,6 +117,15 @@ internal val BarMaxWidth = BAR_MAX_WIDTH_DP.dp
  */
 internal fun DrawScope.pillBar(color: Color, x: Float, pitch: Float, bottom: Float, height: Float) =
     drawPillBar(pillBar(x, pitch, bottom, height, BarMaxWidth.toPx()), color)
+
+/** [pillBar] drawn in [blend]'s tones, first colour at its base and the second at its top. */
+internal fun DrawScope.pillBarBlend(blend: Blend, x: Float, pitch: Float, bottom: Float, height: Float, alpha: Float = 1f) {
+    val b = pillBar(x, pitch, bottom, height, BarMaxWidth.toPx())
+    drawRoundRect(
+        brush = blend.chartBrushUp(b.topLeft.y + b.size.height, b.topLeft.y), topLeft = b.topLeft, size = b.size,
+        cornerRadius = CornerRadius(b.corner), alpha = alpha,
+    )
+}
 
 /*
  * Chart text is measured in each chart's drawWithCache block, once per size and data, and only drawn on each frame:
@@ -153,8 +180,10 @@ private fun CacheDrawScope.nothing() = onDrawBehind {}
 /* ------------------------------------------------------------------------------------------------ */
 
 /**
- * A day of readings as one smooth white line with a faint halo, a soft fill, three hairline grid rows, a solid
- * average line and a glowing dot on the latest value. [values] are evenly spaced; nulls break the line.
+ * A day of readings as one smooth line in the metric's blend (the first colour at the start, the second at now), a soft
+ * fill, three hairline grid rows, a solid average line and a dot with a halo on the latest value. Inside [band] the line
+ * dims; outside it is full. [values] are evenly spaced; nulls break the line. [color] is a v2 ink ([chartBlend]) or white
+ * for a hero; use the [Blend] overload for a metric's blend directly.
  */
 @Composable
 fun GlowLineChart(
@@ -163,15 +192,34 @@ fun GlowLineChart(
     height: Dp = 120.dp,
     labels: List<String> = emptyList(),
     showAverage: Boolean = true,
-    /** The line's colour; white suits glow cards, a metric colour can suit a black panel. */
+    /** The line's ink: white suits a hero card, a metric ink gets its blend. */
     color: Color = Ink,
     /** A fixed value axis (e.g. 0..100 for scores); null fits the data. */
     yRange: ClosedFloatingPointRange<Float>? = null,
-    /** A usual range drawn as a band of the colour at 12%, no edge lines (e.g. your normal). */
+    /** A usual range drawn as a band of the first colour at 12%, no edge lines (e.g. your normal). */
     band: ClosedFloatingPointRange<Float>? = null,
     /** The readings, by index, to shade lightly behind the line (e.g. the hours asleep); null for none. */
     shade: IntRange? = null,
     /** How the average label prints a value. */
+    format: (Float) -> String = { it.roundToInt().toString() },
+    onScrub: ((Int?) -> Unit)? = null,
+    describe: ((index: Int, value: Float) -> String)? = null,
+) = GlowLineChart(
+    values, remember(color) { chartBlend(color) }, modifier, height, labels, showAverage, yRange, band, shade, format, onScrub, describe,
+)
+
+/** [GlowLineChart] in [blend] (a metric's blend from [Blends], or `Blend(Color.White, Color.White)` on a hero). */
+@Composable
+fun GlowLineChart(
+    values: List<Float?>,
+    blend: Blend,
+    modifier: Modifier = Modifier,
+    height: Dp = 120.dp,
+    labels: List<String> = emptyList(),
+    showAverage: Boolean = true,
+    yRange: ClosedFloatingPointRange<Float>? = null,
+    band: ClosedFloatingPointRange<Float>? = null,
+    shade: IntRange? = null,
     format: (Float) -> String = { it.roundToInt().toString() },
     /**
      * Scrubbing that moves the card's headline instead of a readout (spec 2.7): the reading under the finger, or null
@@ -205,7 +253,12 @@ fun GlowLineChart(
                 val g = lineChartGeometry(
                     values, size.width, size.height, density, inset, axis = labels.isNotEmpty(), yRange = yRange, band = band,
                 ) ?: return@drawWithCache nothing()
-                val paths = lineChartPaths(g, color, density)
+                val paths = lineChartPaths(g, blend.chartSecond, density)
+                // The blend runs along time and lands on now; the fill under it is the second colour fading out.
+                val lineBrush = blend.chartBrushAcross(0f, g.last.x)
+                val fillBrush = Brush.verticalGradient(
+                    listOf(blend.chartSecond.copy(alpha = FILL_ALPHA), Color.Transparent), startY = g.top, endY = g.plotBottom,
+                )
                 val average = if (showAverage) {
                     m.measure(resources.getString(R.string.glow_metrics_chart_average, format(g.average)), averageText)
                 } else {
@@ -219,7 +272,23 @@ fun GlowLineChart(
                         val box = Size(g.xOf(shade.last) - x0, g.plotBottom - g.top)
                         drawRect(Color.White.copy(alpha = SHADE_ALPHA), Offset(x0, g.top), box)
                     }
-                    drawLineChartBody(g, paths, color)
+                    g.grid.forEach { gridLine(it) }
+                    val bandTop = g.bandTopLeft
+                    val bandSize = g.bandSize
+                    if (bandTop != null && bandSize != null) drawRect(blend.chart.copy(alpha = NormalBandAlpha), bandTop, bandSize)
+                    g.dots.forEach { drawCircle(blend.chart, LineChartLook.LONE_DOT_DP * density, it) }
+                    paths.lines.forEachIndexed { i, line ->
+                        drawPath(paths.fills[i], fillBrush)
+                        if (bandTop != null && bandSize != null) {
+                            // Inside your normal the line dims; outside it is full.
+                            drawPath(line, lineBrush, alpha = ChartInk.INSIDE_ALPHA, style = paths.stroke)
+                            clipRect(0f, bandTop.y, size.width, bandTop.y + bandSize.height, ClipOp.Difference) {
+                                drawPath(line, lineBrush, style = paths.stroke)
+                            }
+                        } else {
+                            drawPath(line, lineBrush, style = paths.stroke)
+                        }
+                    }
 
                     if (average != null) {
                         val y = g.averageY
@@ -227,7 +296,8 @@ fun GlowLineChart(
                         text(average, size.width, y - 16.dp.toPx(), align = 1f)
                     }
 
-                    drawLineChartEnd(g, color)
+                    drawCircle(blend.chartSecond.copy(alpha = ChartInk.END_HALO_ALPHA), LineChartLook.END_HALO_DP * density, g.last)
+                    drawCircle(blend.chartSecond, LineChartLook.END_DOT_DP * density, g.last)
 
                     axis(axisLabels, h + 4.dp.toPx())
 
@@ -240,7 +310,7 @@ fun GlowLineChart(
                             val p = Offset(g.xOf(i), g.yOf(values[i]!!))
                             guide(p.x, h)
                             drawCircle(Color.Black.copy(alpha = 0.6f), 6.dp.toPx(), p)
-                            drawCircle(color, 4.dp.toPx(), p)
+                            drawCircle(blend.chartSecond, 4.dp.toPx(), p)
                             if (describe != null) readout(m, describe(i, values[i]!!), p.x, p.y)
                         }
                     }
@@ -248,6 +318,9 @@ fun GlowLineChart(
             },
     )
 }
+
+/** The soft fill under a line chart: the second colour at 22% fading out (Charts board). */
+private const val FILL_ALPHA = 0.22f
 
 /** The hours shaded behind a line chart, in white. */
 private const val SHADE_ALPHA = 0.07f
@@ -266,8 +339,10 @@ internal fun nearestReading(values: List<Float?>, x: Float, width: Float, inset:
 /* ------------------------------------------------------------------------------------------------ */
 
 /**
- * Solid rounded bars (e.g. steps per hour, active minutes a day), each as tall as its value, on a hairline baseline.
- * An empty column isn't drawn. The [highlight] column (default: the last one with data) is drawn in [accent].
+ * Pill bars (e.g. steps per hour, active minutes a day), each as tall as its value, standing on a hairline baseline,
+ * the first colour at the base and the second at the top (Charts board). An empty column isn't drawn. The [highlight]
+ * column (default: the last one with data) is the one drawn in full. [accent] is a v2 ink ([chartBlend]); white on a hero
+ * draws the others at 60%. Use the [Blend] overload for a metric's blend directly.
  */
 @Composable
 fun GlowBars(
@@ -281,6 +356,24 @@ fun GlowBars(
     describe: ((index: Int, value: Float) -> String)? = null,
     /** Scrubbing that moves the headline instead of a readout (spec 2.7): the column under the finger, or null on release. */
     onScrub: ((Int?) -> Unit)? = null,
+) = GlowBars(
+    values, remember(accent) { chartBlend(accent) }, modifier, height, labels, highlight, describe, onScrub,
+    othersAlpha = if (accent == Ink) 0.6f else 1f,
+)
+
+/** [GlowBars] in [blend]. [othersAlpha] dims the columns that aren't the [highlight] (1 draws every bar in full, as the board does). */
+@Suppress("UnstableCollections", "ComposeUnstableCollections")
+@Composable
+fun GlowBars(
+    values: List<Float>,
+    blend: Blend,
+    modifier: Modifier = Modifier,
+    height: Dp = 96.dp,
+    labels: List<String> = emptyList(),
+    highlight: Int = values.indexOfLast { it > 0f },
+    describe: ((index: Int, value: Float) -> String)? = null,
+    onScrub: ((Int?) -> Unit)? = null,
+    othersAlpha: Float = 1f,
 ) {
     val m = rememberTextMeasurer()
     var touchX by remember { mutableStateOf<Float?>(null) }
@@ -311,8 +404,8 @@ fun GlowBars(
                     if (v <= 0f) return@forEachIndexed
                     // While scrubbing, the other columns dim so the picked one stands out.
                     val dim = if (picked == null || picked == i) 1f else 0.35f
-                    val color = if (i == highlight || i == picked) accent else Ink.copy(alpha = 0.6f)
-                    pillBar(color.copy(alpha = color.alpha * dim), pitchX * i, pitchX, h, (h - top) * v / max)
+                    val own = if (i == highlight || i == picked) 1f else othersAlpha
+                    pillBarBlend(blend, pitchX * i, pitchX, h, (h - top) * v / max, own * dim)
                 }
                 axis(axisLabels, h + 4.dp.toPx())
                 if (picked != null && describe != null) readout(m, describe(picked, values[picked]), pitchX * picked + pitchX / 2, 0f)
@@ -327,12 +420,25 @@ fun GlowBars(
 data class GlowDay(val label: String, val value: Float?)
 
 /**
- * A week as solid stems rising to each day's value, the value printed above. Today (the last day) gets a glowing
- * ring. A day with no value is left empty. [average] draws a solid line across.
+ * A week as stems rising to each day's value (the first colour at the base, the second at the top), the value printed
+ * above in white. Today (the last day) gets a haloed dot. A day with no value is left empty. [average] draws a solid
+ * line across. [color] is a v2 ink ([chartBlend]); white on a hero.
  */
 @Composable
 fun GlowTrend(
     days: List<GlowDay>,
+    modifier: Modifier = Modifier,
+    height: Dp = 130.dp,
+    average: Float? = null,
+    color: Color = Ink,
+) = GlowTrend(days, remember(color) { chartBlend(color) }, modifier, height, average)
+
+/** [GlowTrend] in [blend]. */
+@Suppress("UnstableCollections", "ComposeUnstableCollections")
+@Composable
+fun GlowTrend(
+    days: List<GlowDay>,
+    blend: Blend,
     modifier: Modifier = Modifier,
     height: Dp = 130.dp,
     average: Float? = null,
@@ -362,14 +468,14 @@ fun GlowTrend(
                     val v = d.value ?: return@forEachIndexed
                     val y = yOf(v)
                     drawLine(
-                        Ink.copy(alpha = if (today) 0.9f else 0.45f), Offset(cx, h - 3.dp.toPx()), Offset(cx, y),
-                        strokeWidth = 2.dp.toPx(), cap = StrokeCap.Round,
+                        blend.chartBrushUp(h - 3.dp.toPx(), y), Offset(cx, h - 3.dp.toPx()), Offset(cx, y),
+                        strokeWidth = 2.dp.toPx(), cap = StrokeCap.Round, alpha = if (today) 1f else 0.6f,
                     )
                     if (today) {
-                        drawCircle(Ink.copy(alpha = 0.18f), 11.dp.toPx(), Offset(cx, y))
-                        drawCircle(Ink, 6.dp.toPx(), Offset(cx, y))
+                        drawCircle(blend.chartSecond.copy(alpha = ChartInk.END_HALO_ALPHA), 11.dp.toPx(), Offset(cx, y))
+                        drawCircle(blend.chartSecond, 6.dp.toPx(), Offset(cx, y))
                     } else {
-                        drawCircle(Ink, 4.dp.toPx(), Offset(cx, y))
+                        drawCircle(blend.chartSecond.copy(alpha = 0.8f), 4.dp.toPx(), Offset(cx, y))
                     }
                     figures[i]?.let { text(it, cx, y - 20.dp.toPx(), align = 0.5f) }
                 }
@@ -383,7 +489,7 @@ fun GlowTrend(
 /**
  * The arc gauge (chart kit, spec 2.7), on the Recovery detail's header: a half circle open at the foot, round caps. A
  * track of white at [ARC_TRACK_ALPHA] the whole way over and, from the left foot clockwise to [progress] (0..1), the
- * value in a light tint of the metric's [color]. [content], the score in dots, sits centred inside with its foot a
+ * value in the metric's blend, the second colour at the end of the value. [content], the score in dots, sits centred inside with its foot a
  * little above the arc's ends. A change of [progress] fills from the value shown to the new one, never from zero;
  * a new [key] (another day) draws the new value where it lands.
  */
@@ -394,9 +500,18 @@ fun ArcGauge(
     key: Any?,
     modifier: Modifier = Modifier,
     content: @Composable BoxScope.() -> Unit = {},
+) = ArcGauge(progress, remember(color) { chartBlend(color) }, key, modifier, content)
+
+/** [ArcGauge] in [blend]: the first colour at the left foot, the second at the end of the value. */
+@Composable
+fun ArcGauge(
+    progress: Float,
+    blend: Blend,
+    key: Any?,
+    modifier: Modifier = Modifier,
+    content: @Composable BoxScope.() -> Unit = {},
 ) {
     val shown = rememberGaugeProgress(progress, key)
-    val tint = lerp(Ink, color, ARC_TINT)
     BoxWithConstraints(modifier) {
         // Scaled down only when the header is narrower than the gauge.
         val k = (maxWidth / (ArcRadius * 2 + ArcStroke)).coerceAtMost(1f)
@@ -412,8 +527,16 @@ fun ArcGauge(
                 val box = Size(rad * 2, rad * 2)
                 drawArc(Ink.copy(alpha = ARC_TRACK_ALPHA), 180f, 180f, false, topLeft, box, style = Stroke(w, cap = StrokeCap.Round))
                 // Read here, so the fill animates by redrawing only.
-                val sweep = 180f * shown().coerceIn(0f, 1f)
-                if (sweep > 0f) drawArc(tint, 180f, sweep, false, topLeft, box, style = Stroke(w, cap = StrokeCap.Round))
+                val f = shown().coerceIn(0f, 1f)
+                val sweep = 180f * f
+                if (sweep > 0f) {
+                    // The sweep gradient starts at 3 o'clock, so the arc's 180 to 360 is the stops' 0.5 to 1.
+                    val brush = Brush.sweepGradient(
+                        0.5f to blend.chart, (0.5f + 0.5f * f).coerceAtLeast(0.501f) to blend.chartSecond, 1f to blend.chartSecond,
+                        center = Offset(size.width / 2, centreY.toPx()),
+                    )
+                    drawArc(brush, 180f, sweep, false, topLeft, box, style = Stroke(w, cap = StrokeCap.Round))
+                }
             }
             Box(Modifier.fillMaxWidth().height(centreY - r * ARC_NUMBER_LIFT), contentAlignment = Alignment.BottomCenter, content = content)
         }
@@ -423,9 +546,8 @@ fun ArcGauge(
 /** The arc's radius to the middle of its stroke, and the stroke: about a tenth of the radius, as in the design. */
 internal val ArcRadius = 124.dp
 internal val ArcStroke = 13.dp
-/** The track's white, and how far the value's colour is from white: a near white with the metric's hue. */
+/** The track's white. */
 internal const val ARC_TRACK_ALPHA = 0.11f
-internal const val ARC_TINT = 0.16f
 /** How far above the arc's ends the number's foot sits, as a share of the radius. */
 private const val ARC_NUMBER_LIFT = 0.11f
 
@@ -433,7 +555,7 @@ private const val ARC_NUMBER_LIFT = 0.11f
  * The horizon arc (chart kit, spec 2.7), on the Sleep score detail's header: a night sky rising from the horizon. A
  * wide, shallow hill (half a sine wave, [HorizonRise] high over [HorizonWidth]) with round caps, its ends low at both
  * sides. Under it a flatter track over the same ends in white at [HORIZON_TRACK_ALPHA], and over that the value from
- * the left end to [progress] (0..1) of the hill's length in a light tint of [color]. [content], the score in dots,
+ * the left end to [progress] (0..1) of the hill's length in the metric's blend. [content], the score in dots,
  * sits centred under the crest. Fills as [ArcGauge] does, never from zero.
  */
 @Composable
@@ -443,9 +565,18 @@ fun HorizonArc(
     key: Any?,
     modifier: Modifier = Modifier,
     content: @Composable BoxScope.() -> Unit = {},
+) = HorizonArc(progress, remember(color) { chartBlend(color) }, key, modifier, content)
+
+/** [HorizonArc] in [blend]: the first colour at the left end, the second where the value ends. */
+@Composable
+fun HorizonArc(
+    progress: Float,
+    blend: Blend,
+    key: Any?,
+    modifier: Modifier = Modifier,
+    content: @Composable BoxScope.() -> Unit = {},
 ) {
     val shown = rememberGaugeProgress(progress, key)
-    val tint = lerp(Ink, color, HORIZON_TINT)
     BoxWithConstraints(modifier) {
         val k = (maxWidth / (HorizonWidth + HorizonStroke)).coerceAtMost(1f)
         val span = HorizonWidth * k
@@ -476,10 +607,10 @@ fun HorizonArc(
                         drawPath(track, Ink.copy(alpha = HORIZON_TRACK_ALPHA), style = trackStroke)
                         // Read here, so the fill animates by redrawing only. At rest on a full hill it reuses the path.
                         val f = shown().coerceIn(0f, 1f)
-                        if (f >= 1f) drawPath(full, tint, style = valueStroke)
+                        if (f >= 1f) drawPath(full, blend.chartBrushAcross(x0, x0 + width), style = valueStroke)
                         else {
                             val upTo = upToLength(value, f)
-                            if (upTo.size > 1) drawPath(path(upTo), tint, style = valueStroke)
+                            if (upTo.size > 1) drawPath(path(upTo), blend.chartBrushAcross(x0, upTo.last().x), style = valueStroke)
                         }
                     }
                 },
@@ -500,8 +631,6 @@ internal val HorizonStroke = 12.dp
 internal const val HORIZON_TRACK_ALPHA = 0.12f
 private const val HORIZON_TRACK_STROKE = 0.85f
 private const val HORIZON_TRACK_RISE = 0.81f
-/** How far the value's colour is from white: a light lavender with the sleep ink. */
-internal const val HORIZON_TINT = 0.32f
 /** How far above the ends the number's foot sits, as a share of the width. */
 private const val HORIZON_NUMBER_LIFT = 0.035f
 private const val HORIZON_STEPS = 96
@@ -546,6 +675,7 @@ data class GlowStage(val from: Float, val to: Float, val row: Int)
  * Sleep stages as white pills on hairline rows (row 0 at the top, e.g. Awake), joined by thin connectors, deeper rows
  * drawn brighter so deep sleep stands out on the dark core; or, with [rowColors], as solid bands in the stage colours.
  */
+@Suppress("UnstableCollections", "ComposeUnstableCollections", "CyclomaticComplexMethod")
 @Composable
 fun GlowHypnogram(
     stages: List<GlowStage>,
@@ -626,18 +756,30 @@ fun GlowHypnogram(
 /* ------------------------------------------------------------------------------------------------ */
 
 /**
- * The ghost line of your usual (chart kit): [today] so far as a solid line in [color] ending in a dot, and [usual]
+ * The ghost line of your usual (chart kit): [today] so far as a solid line in the blend of [color] ending in a dot, and [usual]
  * by this time of day as a solid ghost line at 35% white behind it, when there is one. Both are evenly spaced over the same span
  * (a day, say) on a value axis from 0 to [max]; nulls in [today] are the hours still to come.
  */
 @Composable
-fun GhostLine(today: List<Float?>, color: Color, max: Float, modifier: Modifier = Modifier, usual: List<Float>? = null, height: Dp = 56.dp) {
+fun GhostLine(today: List<Float?>, color: Color, max: Float, modifier: Modifier = Modifier, usual: List<Float>? = null, height: Dp = 56.dp) =
+    GhostLine(today, remember(color) { chartBlend(color) }, max, modifier, usual, height)
+
+/** [GhostLine] in [blend]: today's line runs from the first colour to the second, which lands on the end dot. */
+@Suppress("UnstableCollections", "ComposeUnstableCollections")
+@Composable
+fun GhostLine(today: List<Float?>, blend: Blend, max: Float, modifier: Modifier = Modifier, usual: List<Float>? = null, height: Dp = 56.dp) {
     Spacer(
         modifier.fillMaxWidth().height(height).drawWithCache {
             // The shared ghost line geometry ([ghostLineGeometry]), as a widget's chart draws it.
             val g = ghostLineGeometry(today, usual, max, size.width, size.height, density) ?: return@drawWithCache nothing()
             val paths = ghostLinePaths(g, density)
-            onDrawBehind { drawGhostLine(g, paths, color) }
+            val line = blend.chartBrushAcross(g.today.firstOrNull()?.x ?: 0f, g.today.lastOrNull()?.x ?: 1f)
+            onDrawBehind {
+                paths.usual?.let { drawPath(it, Color.White.copy(alpha = GhostLineLook.USUAL_ALPHA), style = paths.usualStroke) }
+                if (g.today.isEmpty()) return@onDrawBehind
+                paths.today?.let { drawPath(it, line, style = paths.todayStroke) }
+                drawCircle(blend.chartSecond, g.endDot, g.today.last())
+            }
         },
     )
 }
@@ -650,7 +792,13 @@ fun GhostLine(today: List<Float?>, color: Color, max: Float, modifier: Modifier 
  * outside it are lit up while those inside stay dim.
  */
 @Composable
-fun TrendDots(values: List<Int?>, modifier: Modifier = Modifier, height: Dp = 52.dp, band: ClosedFloatingPointRange<Float>? = null) {
+fun TrendDots(values: List<Int?>, modifier: Modifier = Modifier, height: Dp = 52.dp, band: ClosedFloatingPointRange<Float>? = null, color: Color = Ink) =
+    TrendDots(values, remember(color) { chartBlend(color) }, modifier, height, band)
+
+/** [TrendDots] in [blend]: days inside your normal dim in the first colour, those outside and today in the second. */
+@Suppress("UnstableCollections", "ComposeUnstableCollections")
+@Composable
+fun TrendDots(values: List<Int?>, blend: Blend, modifier: Modifier = Modifier, height: Dp = 52.dp, band: ClosedFloatingPointRange<Float>? = null) {
     Canvas(modifier.fillMaxWidth().height(height)) {
         val known = values.filterNotNull()
         if (known.isEmpty()) return@Canvas
@@ -661,16 +809,20 @@ fun TrendDots(values: List<Int?>, modifier: Modifier = Modifier, height: Dp = 52
         fun yOf(v: Float) = ring + (size.height - ring * 2) * (1f - (v - lo) / (hi - lo))
         band?.let { b ->
             val y0 = yOf(b.endInclusive)
-            drawRoundRect(Ink.copy(alpha = 0.10f), Offset(0f, y0), Size(size.width, yOf(b.start) - y0), CornerRadius(6.dp.toPx()))
+            drawRoundRect(
+                blend.chart.copy(alpha = ChartInk.NORMAL_BAND_ALPHA), Offset(0f, y0), Size(size.width, yOf(b.start) - y0),
+                CornerRadius(6.dp.toPx()),
+            )
         }
         val pts = values.mapIndexedNotNull { i, v -> v?.let { i to Offset(xOf(i), yOf(it.toFloat())) } }
-        pts.zipWithNext { (_, a), (_, b) -> drawLine(Ink.copy(alpha = 0.25f), a, b, 1.5.dp.toPx()) }
+        pts.zipWithNext { (_, a), (_, b) -> drawLine(blend.chart.copy(alpha = 0.3f), a, b, 1.5.dp.toPx()) }
         pts.forEach { (i, p) ->
             val outside = band != null && values[i]!!.toFloat() !in band
             if (i == values.lastIndex) {
-                drawCircle(Ink.copy(alpha = 0.5f), ring, p, style = Stroke(1.dp.toPx()))
-                drawCircle(Ink, 6.dp.toPx(), p)
-            } else drawCircle(Ink.copy(alpha = if (outside) 0.95f else 0.45f), 4.dp.toPx(), p)
+                drawCircle(blend.chartSecond.copy(alpha = 0.5f), ring, p, style = Stroke(1.dp.toPx()))
+                drawCircle(blend.chartSecond, 6.dp.toPx(), p)
+            } else if (outside) drawCircle(blend.chartSecond, 4.dp.toPx(), p)
+            else drawCircle(blend.chart.copy(alpha = ChartInk.INSIDE_ALPHA), 4.dp.toPx(), p)
         }
     }
 }
@@ -682,12 +834,28 @@ fun TrendDots(values: List<Int?>, modifier: Modifier = Modifier, height: Dp = 52
  * otherwise spread across. Holding scrubs: [onScrub] gets the point under the finger, or null on release, so the
  * headline can follow it (spec 2.7).
  */
+@Suppress("UnstableCollections", "ComposeUnstableCollections")
 @Composable
 internal fun NormalTrend(
     values: List<Float?>,
     // Arrives whole with each day and never changes in place, as before its type moved to presentation.
     @Suppress("UnstableCollections", "ComposeUnstableCollections") levels: List<DetailCopy.Level?>,
     color: Color,
+    modifier: Modifier = Modifier,
+    height: Dp = 230.dp,
+    labels: List<String> = emptyList(),
+    band: ClosedFloatingPointRange<Float>? = null,
+    bandLabel: String? = null,
+    onScrub: ((Int?) -> Unit)? = null,
+) = NormalTrend(values, levels, remember(color) { chartBlend(color) }, modifier, height, labels, band, bandLabel, onScrub)
+
+/** [NormalTrend] in [blend]: the line runs from the first colour to the second at the latest day, outside days lit in the second. */
+@Suppress("UnstableCollections", "ComposeUnstableCollections", "CyclomaticComplexMethod")
+@Composable
+internal fun NormalTrend(
+    values: List<Float?>,
+    @Suppress("UnstableCollections", "ComposeUnstableCollections") levels: List<DetailCopy.Level?>,
+    blend: Blend,
     modifier: Modifier = Modifier,
     height: Dp = 230.dp,
     labels: List<String> = emptyList(),
@@ -737,38 +905,44 @@ internal fun NormalTrend(
                 fun yOf(v: Float) = top + (h - top) * (1f - (v - lo) / (hi - lo))
                 val pts = values.mapIndexedNotNull { i, v -> v?.let { i to Offset(xOf(i), yOf(it)) } }
                 val stroke = 2.4.dp.toPx() * (0.6f + 0.4f * scale)
-                val dim = lerp(color, Color.Black, 0.5f)
+                val lineBrush = blend.chartBrushAcross(pts.firstOrNull()?.second?.x ?: 0f, pts.lastOrNull()?.second?.x ?: size.width)
                 val perDay = labels.size == values.size
                 val dayLabels = m.measureAll(labels, if (perDay) trendLabelText else axisText)
                 onDrawBehind {
                     band?.let { b ->
                         val y0 = yOf(b.endInclusive)
-                        drawRoundRect(color.copy(alpha = NormalBandAlpha), Offset(0f, y0), Size(size.width, yOf(b.start) - y0), CornerRadius(12.dp.toPx()))
+                        drawRoundRect(
+                            blend.chart.copy(alpha = NormalBandAlpha), Offset(0f, y0), Size(size.width, yOf(b.start) - y0),
+                            CornerRadius(12.dp.toPx()),
+                        )
                         if (bandText != null && labelH != null) {
                             val w = bandText.size.width
                             val sw = 14.dp.toPx()
                             val x = size.width - w
-                            drawRoundRect(color.copy(alpha = 0.35f), Offset(x - sw - 6.dp.toPx(), labelH / 2 - 4.dp.toPx()), Size(sw, 8.dp.toPx()), CornerRadius(3.dp.toPx()))
+                            drawRoundRect(
+                                blend.chart.copy(alpha = 0.35f), Offset(x - sw - 6.dp.toPx(), labelH / 2 - 4.dp.toPx()),
+                                Size(sw, 8.dp.toPx()), CornerRadius(3.dp.toPx()),
+                            )
                             text(bandText, size.width, 0f, align = 1f)
                         }
                     }
 
                     pts.zipWithNext { (i, a), (j, b) ->
                         // A missing day between two dots: the line stops there.
-                        if (j - i == 1) drawLine(color.copy(alpha = 0.85f), a, b, stroke, StrokeCap.Round)
+                        if (j - i == 1) drawLine(lineBrush, a, b, stroke, StrokeCap.Round, alpha = 0.85f)
                     }
                     pts.forEach { (i, p) ->
                         when (levels.getOrNull(i)) {
                             org.openstrap.app.presentation.DetailCopy.Level.Above,
                             org.openstrap.app.presentation.DetailCopy.Level.Below,
                             -> {
-                                val lit = lerp(color, Color.White, 0.3f)
-                                drawCircle(lit.copy(alpha = 0.35f), 14.dp.toPx() * scale, p)
-                                drawCircle(lit, 7.dp.toPx() * scale, p)
+                                // Outside your normal: full in the second colour, with a halo.
+                                drawCircle(blend.chartSecond.copy(alpha = ChartInk.END_HALO_ALPHA), 14.dp.toPx() * scale, p)
+                                drawCircle(blend.chartSecond, 7.dp.toPx() * scale, p)
                             }
                             else -> {
-                                drawCircle(dim, 5.dp.toPx() * scale, p)
-                                drawCircle(color, 5.dp.toPx() * scale, p, style = Stroke(2.dp.toPx() * scale.coerceAtLeast(0.6f)))
+                                // Inside it: dim, in the first colour.
+                                drawCircle(blend.chart.copy(alpha = ChartInk.INSIDE_ALPHA), 5.dp.toPx() * scale, p)
                             }
                         }
                     }
@@ -782,7 +956,7 @@ internal fun NormalTrend(
                             val p = Offset(xOf(i), yOf(values[i]!!))
                             guide(p.x, h)
                             drawCircle(Color.Black.copy(alpha = 0.6f), 8.dp.toPx(), p)
-                            drawCircle(Ink, 5.dp.toPx(), p)
+                            drawCircle(blend.chartSecond, 5.dp.toPx(), p)
                         }
                     }
                 }
@@ -798,6 +972,13 @@ internal fun NormalTrend(
  */
 @androidx.compose.runtime.Immutable
 data class Segment(val weight: Float, val color: Color, val filled: Float = 0f, val fill: Color = Color.Unspecified)
+
+/** A bar's corners from [corner] dp: square at 0, a pill at half the [height] or more, else the small 4 dp. */
+private fun barShape(corner: Dp, height: Dp): androidx.compose.ui.graphics.Shape = when {
+    corner <= 0.dp -> androidx.compose.ui.graphics.RectangleShape
+    corner >= height / 2 -> GlowShapes.Pill
+    else -> GlowShapes.Small
+}
 
 /**
  * The segment bar (chart kit): one bar split into parts side by side, [gap] apart, each rounded by [corner] and the
@@ -816,9 +997,9 @@ fun SegmentBar(
     ends: Dp = corner,
 ) {
     if (segments.none { it.weight > 0f }) return
-    val shape = androidx.compose.foundation.shape.RoundedCornerShape(corner)
+    val shape = barShape(corner, height)
     androidx.compose.foundation.layout.Row(
-        modifier.fillMaxWidth().height(height).clip(androidx.compose.foundation.shape.RoundedCornerShape(ends)),
+        modifier.fillMaxWidth().height(height).clip(barShape(ends, height)),
         horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(gap),
     ) {
         segments.forEach { s ->
@@ -869,7 +1050,8 @@ fun Legend(
     val keys: @Composable () -> Unit = {
         items.forEach { (name, color) ->
             androidx.compose.foundation.layout.Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(Modifier.size(8.dp).background(color, swatch))
+                // Deep as a small mark is lightened to 3:1 on glass; the stage bars keep the flat colour.
+                Box(Modifier.size(8.dp).background(if (color == MetricColors.sleepDeep) Blends.SleepDeepMark else color, swatch))
                 Spacer(Modifier.width(6.dp))
                 androidx.compose.material3.Text(
                     name, color = Ink.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary, maxLines = 1,
@@ -894,10 +1076,18 @@ fun Legend(
  * [share] of it. A day toward its goal, an edge card's progress, a stage's share of the night.
  */
 @Composable
-fun FillBar(share: Float, color: Color, modifier: Modifier = Modifier, height: Dp = 4.dp) {
-    val shape = androidx.compose.foundation.shape.RoundedCornerShape(height / 2)
+fun FillBar(share: Float, color: Color, modifier: Modifier = Modifier, height: Dp = 4.dp) =
+    FillBar(share, remember(color) { chartBlend(color) }, modifier, height)
+
+/** [FillBar] in [blend]: the first colour at the start, the second at the end of the fill. */
+@Composable
+fun FillBar(share: Float, blend: Blend, modifier: Modifier = Modifier, height: Dp = 4.dp) {
+    val shape = GlowShapes.Pill
     Box(modifier.fillMaxWidth().height(height).background(Ink.copy(alpha = FILL_TRACK_ALPHA), shape)) {
-        Box(Modifier.fillMaxWidth(share.coerceIn(0f, 1f)).fillMaxHeight().background(color, shape))
+        Box(
+            Modifier.fillMaxWidth(share.coerceIn(0f, 1f)).fillMaxHeight()
+                .background(Brush.horizontalGradient(listOf(blend.chart, blend.chartSecond)), shape),
+        )
     }
 }
 
@@ -910,14 +1100,29 @@ private const val FILL_TRACK_ALPHA = 0.08f
  * ring that runs with a clock redraws without composing again.
  */
 @Composable
-fun ProgressRing(share: () -> Float, color: Color, modifier: Modifier = Modifier, stroke: Dp = 8.dp, track: Float = RING_TRACK_ALPHA) {
+fun ProgressRing(share: () -> Float, color: Color, modifier: Modifier = Modifier, stroke: Dp = 8.dp, track: Float = RING_TRACK_ALPHA) =
+    ProgressRing(share, remember(color) { chartBlend(color) }, modifier, stroke, track)
+
+/** [ProgressRing] in [blend]: along the stroke from the first colour at the top to the second at the end of the value. */
+@Composable
+fun ProgressRing(share: () -> Float, blend: Blend, modifier: Modifier = Modifier, stroke: Dp = 8.dp, track: Float = RING_TRACK_ALPHA) {
     Canvas(modifier) {
         val w = stroke.toPx()
         val at = Offset(w / 2, w / 2)
         val box = Size(size.width - w, size.height - w)
         drawArc(Ink.copy(alpha = track), 0f, FULL_TURN, false, at, box, style = Stroke(w))
-        val sweep = FULL_TURN * share().coerceIn(0f, 1f)
-        if (sweep > 0f) drawArc(color, RING_START, sweep, false, at, box, style = Stroke(w, cap = StrokeCap.Round))
+        val f = share().coerceIn(0f, 1f)
+        val sweep = FULL_TURN * f
+        if (sweep > 0f) {
+            val brush = Brush.sweepGradient(
+                0f to blend.chart, f.coerceAtLeast(0.001f) to blend.chartSecond, 1f to blend.chartSecond,
+                center = Offset(size.width / 2, size.height / 2),
+            )
+            // The gradient starts at 3 o'clock, the ring at the top.
+            rotate(RING_START, Offset(size.width / 2, size.height / 2)) {
+                drawArc(brush, 0f, sweep, false, at, box, style = Stroke(w, cap = StrokeCap.Round))
+            }
+        }
     }
 }
 
@@ -947,6 +1152,20 @@ fun PlainLine(
     smooth: Boolean = true,
     dots: LineDots = LineDots.None,
     stroke: Dp = 2.5.dp,
+) = PlainLine(values, remember(color) { chartBlend(color) }, height, modifier, smooth, dots, stroke)
+
+/** [PlainLine] in [blend]: the first colour at the left, the second at the latest reading, which any dot takes. */
+@Composable
+// The readings arrive whole with each update and never change in place.
+@Suppress("UnstableCollections", "ComposeUnstableCollections")
+fun PlainLine(
+    values: List<Float?>,
+    blend: Blend,
+    height: Dp,
+    modifier: Modifier = Modifier,
+    smooth: Boolean = true,
+    dots: LineDots = LineDots.None,
+    stroke: Dp = 2.5.dp,
 ) {
     val points = values.withIndex().mapNotNull { (i, v) -> v?.let { i to it } }
     if (points.size < 2) return
@@ -968,7 +1187,8 @@ fun PlainLine(
                 if (smooth) lineTo(p.last().x, p.last().y)
             }
             val line = Stroke(stroke.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round)
-            val dot = color.copy(alpha = 1f)
+            val dot = blend.chartSecond
+            val brush = blend.chartBrushAcross(p.first().x, p.last().x)
             val marked = when (dots) {
                 LineDots.None -> emptyList()
                 LineDots.Last -> listOf(p.last())
@@ -978,7 +1198,7 @@ fun PlainLine(
             val r = (if (dots == LineDots.Highest) 3.5.dp else 4.dp).toPx()
             onDrawBehind {
                 if (dots == LineDots.Highest) gridLine(size.height - ChartInk.HAIRLINE_DP * density / 2, Ink.copy(alpha = 0.12f))
-                drawPath(path, color, style = line)
+                drawPath(path, brush, style = line)
                 marked.forEach { drawCircle(dot, r, it) }
             }
         },

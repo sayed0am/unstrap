@@ -65,6 +65,7 @@ import kotlinx.coroutines.withContext
 import org.openstrap.app.data.catching
 import org.openstrap.app.data.Route
 import org.openstrap.app.ui.theme.AppIcons
+import org.openstrap.app.ui.theme.screenLight
 import org.openstrap.app.presentation.EarnedLine
 import org.openstrap.app.ui.workout.FamilySummary
 import org.openstrap.app.ui.workout.PhoneSummary
@@ -204,7 +205,7 @@ private fun ShareScreen(card: StoryCard, route: List<Route.Point>, fileName: Str
     }
 
     WorkoutPage(
-        Color.Transparent, contentPadding, scroll = false,
+        null, contentPadding, scroll = false,
         pinned = {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 val saveLabel = stringResource(
@@ -252,7 +253,7 @@ private fun ShareScreen(card: StoryCard, route: List<Route.Point>, fileName: Str
             val width = height * 9f / 16f
             val density = LocalDensity.current
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Box(Modifier.size(width, height).clip(GlowLayout.TileShape)) {
+                Box(Modifier.size(width, height).clip(GlowLayout.CardShape)) {
                     CompositionLocalProvider(LocalDensity provides Density(density.density * (width / StoryWidth), 1f)) {
                         StoryCardView(card, photo, shown)
                     }

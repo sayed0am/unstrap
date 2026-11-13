@@ -67,6 +67,12 @@ object GlowType {
     /** Axes, times, tags: Sans 500, 11 on 14, tabular so times line up, drawn at [CAPTION_ALPHA] white. */
     val caption = TextStyle(fontFamily = FunnelSans, fontWeight = FontWeight.Medium, fontSize = 11.sp, lineHeight = 14.sp, fontFeatureSettings = "tnum")
 
+    /** Small labels on glass: tags, status lines under a row, the tab bar's names (Glow × Glass boards): Sans 400, 12 on 16. */
+    val label = TextStyle(fontFamily = FunnelSans, fontWeight = FontWeight.Normal, fontSize = 12.sp, lineHeight = 16.sp)
+
+    /** A chip's words, the header battery chip's percent: Sans 400, 14 on 18, tabular. */
+    val chip = TextStyle(fontFamily = FunnelSans, fontWeight = FontWeight.Normal, fontSize = 14.sp, lineHeight = 18.sp, fontFeatureSettings = "tnum")
+
     /** White for [caption] text. */
     const val CAPTION_ALPHA = 0.5f
 

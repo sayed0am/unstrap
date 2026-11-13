@@ -77,6 +77,14 @@ object WorkoutNotification {
         }
     }
 
+    private fun zoneText(line: String?, dot: Boolean, accent: Int): CharSequence {
+        if (line.isNullOrEmpty() || !dot) return line.orEmpty()
+        return android.text.SpannableStringBuilder("\u25CF ").apply {
+            setSpan(android.text.style.ForegroundColorSpan(accent), 0, 1, android.text.Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+            append(line)
+        }
+    }
+
     /** The card for [card] with [actions], opening [open] on a tap. Colorized only counts for a foreground service's. */
     fun build(context: Context, card: WorkoutCard, actions: List<NotificationCompat.Action>, open: PendingIntent): NotificationCompat.Builder {
         val accent = NotificationCopy.accent(card.zone)
@@ -90,17 +98,18 @@ object WorkoutNotification {
             // Empty rather than gone, so it still pushes the bpm to the end.
             setTextViewText(R.id.kcal, if (card.kcalCollapsed) card.kcal else "")
             setTextViewText(R.id.bpm, card.bpm)
-            setTextColor(R.id.bpm, accent)
+            setTextColor(R.id.bpm, 0xFFFFFFFF.toInt())
         }
         val expanded = RemoteViews(context.packageName, R.layout.notification_workout_expanded).apply {
             setInt(R.id.card, "setBackgroundResource", background)
             setChronometer(R.id.time, base, null, card.running)
             setTextViewText(R.id.kcal, if (card.kcalExpanded) card.kcal else "")
             setTextViewText(R.id.bpm, card.bpm)
-            setTextColor(R.id.bpm, accent)
+            setTextColor(R.id.bpm, 0xFFFFFFFF.toInt())
             setTextViewTextSize(R.id.bpm, TypedValue.COMPLEX_UNIT_SP, if (reading) READING_SP else WORD_SP)
-            setTextViewText(R.id.zone, card.zoneLine.orEmpty())
-            setTextColor(R.id.zone, if (card.zoneLine == NotificationCopy.END_QUESTION) 0xFFFFFFFF.toInt() else accent)
+            // The zone is a small category dot in its flat colour, the words stay white (Notification board).
+            setTextViewText(R.id.zone, zoneText(card.zoneLine, card.zone != null && card.zoneLine != NotificationCopy.END_QUESTION, accent))
+            setTextColor(R.id.zone, 0xFFFFFFFF.toInt())
             setTextViewText(R.id.detail, card.detail.orEmpty())
             setViewVisibility(R.id.lines, if (card.zoneLine == null && card.detail == null) View.GONE else View.VISIBLE)
             setImageViewBitmap(R.id.strip, strip(card.zoneSeconds))

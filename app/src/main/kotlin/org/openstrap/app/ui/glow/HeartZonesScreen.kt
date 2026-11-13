@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -37,9 +36,12 @@ import org.openstrap.app.data.Workouts
 import org.openstrap.app.ui.dashboard.ScreenList
 import org.openstrap.app.ui.theme.AppIcons
 import org.openstrap.app.ui.theme.MetricColors
+import org.openstrap.app.ui.device.placeHero
 import org.openstrap.app.ui.workout.HeartZonesCopy
 import org.openstrap.app.ui.workout.ZONE_COLORS
 import org.openstrap.app.ui.workout.ZONE_NAMES
+
+private const val HERO_MID_STOP = 0.5f
 
 /**
  * Heart rate zones (board SettingsHeartZones), from Ready's Your zones and the You page: your max heart rate as the
@@ -59,6 +61,9 @@ fun HeartZonesScreen(
     BackHandler(onBack = onBack)
     var editing by rememberSaveable { mutableStateOf<Int?>(null) }
     var settingMax by rememberSaveable { mutableStateOf(false) }
+    org.openstrap.app.ui.components.PageLight(
+        org.openstrap.app.ui.theme.ScreenLight(org.openstrap.app.ui.theme.Blends.Heart, angle = 185f, strength = 1f, heroCenterY = 260f),
+    )
     ScreenList(contentPadding, gutter = GlowLayout.Gutter) {
         item { PageHeader(HeartZonesCopy.TITLE, onBack) }
         item { MaxHero(max) { settingMax = true } }
@@ -71,7 +76,7 @@ fun HeartZonesScreen(
         }
         item { Text(HeartZonesCopy.NOTE, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary, modifier = Modifier.padding(horizontal = 4.dp)) }
         if (!zones.standard) item {
-            PageButton(HeartZonesCopy.RESET, { onZones(HeartZones.STANDARD) }, Modifier.fillMaxWidth(), icon = AppIcons.ArrowCounterClockwise)
+            org.openstrap.app.ui.device.OutlinePill(HeartZonesCopy.RESET, AppIcons.ArrowCounterClockwise, { onZones(HeartZones.STANDARD) })
         }
     }
     val zone = editing
@@ -82,9 +87,14 @@ fun HeartZonesScreen(
 /** The max as the page's hero: its Doto number on heart red lit from the left, where it comes from, and Set it myself. */
 @Composable
 private fun MaxHero(max: MaxHeartRate?, onSet: () -> Unit) {
-    LitPanel(
-        MetricColors.heart, HeroLight,
-        lightCenter = { Offset(0f, it.height / 2) }, reach = { Size(it.width * HERO_LIGHT_REACH, it.width * HERO_LIGHT_REACH) },
+    val heart = org.openstrap.app.ui.theme.Blends.Heart
+    Column(
+        Modifier.fillMaxWidth().clip(org.openstrap.app.ui.theme.GlowShapes.Card)
+            .placeHero(
+                angle = 90f, 0f to heart.first.copy(alpha = 0.55f), HERO_MID_STOP to heart.second.copy(alpha = 0.20f),
+                1f to Color.White.copy(alpha = 0.05f),
+            )
+            .padding(horizontal = 20.dp, vertical = 18.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Text(HeartZonesCopy.MAX_TITLE, color = Color.White.copy(alpha = 0.8f), style = GlowType.body)
@@ -93,15 +103,9 @@ private fun MaxHero(max: MaxHeartRate?, onSet: () -> Unit) {
             color = if (max != null) Color.White else Color.White.copy(alpha = 0.2f),
         )
         if (max != null) Text(HeartZonesCopy.source(max), color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary)
-        PageButton(HeartZonesCopy.SET_IT, onSet, enabled = max != null, icon = AppIcons.PencilEdit)
+        PageButton(HeartZonesCopy.SET_IT, onSet, Modifier.height(44.dp), enabled = max != null, icon = AppIcons.PencilEdit, onCard = true)
     }
 }
-
-/** How far the max hero's light reaches from the left edge, in card widths. */
-private const val HERO_LIGHT_REACH = 1.1f
-
-/** The max hero's light: heart red at 55% on the edge, 12% halfway out. */
-private val HeroLight = listOf(0f to 0.55f, 0.5f to 0.12f)
 
 /** A zone on the list: its colour as a short bar, its number and name, and its heart rates. */
 @Composable
@@ -112,7 +116,7 @@ private fun ZoneRow(zone: Int, bpm: String, divider: Boolean, onClick: () -> Uni
             .padding(vertical = GlowLayout.RowPadding),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Box(Modifier.width(6.dp).height(34.dp).clip(RoundedCornerShape(3.dp)).background(ZONE_COLORS[zone]))
+        Box(Modifier.width(6.dp).height(34.dp).clip(org.openstrap.app.ui.theme.GlowShapes.Small).background(ZONE_COLORS[zone]))
         Spacer(Modifier.width(14.dp))
         Column(Modifier.weight(1f)) {
             RowName(HeartZonesCopy.zoneName(zone))
