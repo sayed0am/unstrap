@@ -1,0 +1,94 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    
+    <string name="glow_goals_title">Metas y mejores marcas</string>
+    
+    <string name="glow_goals_loading">Cargando...</string>
+    
+    <string name="glow_goals_this_week">Esta semana</string>
+    
+    <string name="glow_goals_goal_button">Meta<xliff:g id="goal" example="4">%1$d</xliff:g></string>
+    
+    <plurals name="glow_goals_of_workouts">
+        <item quantity="one">de<xliff:g id="goal" example="1">%d</xliff:g> workouts</item>
+        <item quantity="other">de<xliff:g id="goal" example="4">%d</xliff:g> workouts</item>
+    </plurals>
+    
+    <plurals name="glow_goals_count_of_goal">
+        <item quantity="one"><xliff:g id="count" example="3">%1$d</xliff:g> of <xliff:g id="goal" example="4">%2$d</xliff:g> workout</item>
+        <item quantity="other"><xliff:g id="count" example="3">%1$d</xliff:g> of <xliff:g id="goal" example="4">%2$d</xliff:g> workouts</item>
+    </plurals>
+    
+    <string name="glow_goals_personal_bests">Mejores marcas personales</string>
+    
+    <string name="glow_goals_no_bests">Tus mejores marcas aparecerán aquí después de tus primeros entrenamientos.</string>
+    
+    <string name="glow_goals_badges_count">Insignias,<xliff:g id="earned" example="5">%1$d</xliff:g> of <xliff:g id="total" example="24">%2$d</xliff:g></string>
+    
+    <string name="glow_goals_all_badges">Todas las insignias</string>
+    
+    <string name="glow_goals_last_week">La semana pasada</string>
+    
+    <string name="glow_goals_celebrations">Celebraciones</string>
+    
+    <string name="glow_goals_earned_count" ns1:ignore="PluralsCandidate"><xliff:g id="earned" example="5">%1$d</xliff:g> of <xliff:g id="total" example="24">%2$d</xliff:g> earned</string>
+    
+    <string name="glow_goals_group_firsts">Primeras veces</string>
+    
+    <string name="glow_goals_group_milestones">Hitos</string>
+    
+    <string name="glow_goals_group_kinds">Algo nuevo</string>
+    
+    <string name="glow_goals_weekly_goal">Meta semanal</string>
+    
+    <string name="glow_goals_sheet_note">Un cambio se aplica a esta semana. Las semanas pasadas conservan la meta que tenían.</string>
+
+    
+    <string name="glow_goals_your_week">Tu semana</string>
+    
+    <string name="glow_goals_goal_met">Meta cumplida</string>
+    
+    <plurals name="glow_goals_weekly_streak">
+        <item quantity="one">Meta cumplida<xliff:g id="weeks" example="1">%d</xliff:g> week in a row</item>
+        <item quantity="other">Meta cumplida<xliff:g id="weeks" example="3">%d</xliff:g> weeks in a row</item>
+    </plurals>
+    
+    <plurals name="glow_goals_short_of_goal">
+        <item quantity="one"><xliff:g id="missing" example="1">%d</xliff:g> workout short of your goal</item>
+        <item quantity="other"><xliff:g id="missing" example="2">%d</xliff:g> workouts short of your goal</item>
+    </plurals>
+    
+    <string name="glow_goals_highlights">Destacados</string>
+    
+    <string name="glow_goals_best"><xliff:g id="best" example="Fastest 5 km">%1$s</xliff:g>, <xliff:g id="value" example="24:10">%2$s</xliff:g></string>
+    
+    <string name="glow_goals_in_all">En total</string>
+    
+    <plurals name="glow_goals_workouts_count">
+        <item quantity="one"><xliff:g id="count" example="1">%d</xliff:g> workout</item>
+        <item quantity="other"><xliff:g id="count" example="4">%d</xliff:g> workouts</item>
+    </plurals>
+    
+    <string name="glow_goals_hours">Horas</string>
+    
+    <string name="glow_goals_distance">Distancia</string>
+    
+    <string name="glow_goals_active_kcal">Kcal activas</string>
+    
+    <string name="glow_goals_next_week">Próxima semana:<xliff:g id="goal" example="4">%1$d</xliff:g></string>
+    
+    <string name="glow_goals_share_week">Compartir semana</string>
+
+    
+    <plurals name="glow_goals_workouts_word">
+        <item quantity="one">entrenamiento</item>
+        <item quantity="other">entrenamientos</item>
+    </plurals>
+    
+    <string name="glow_goals_story_goal"><xliff:g id="workouts" example="workouts">%1$s</xliff:g>, goal <xliff:g id="goal" example="4">%2$d</xliff:g></string>
+    
+    <plurals name="glow_goals_weeks_in_a_row">
+        <item quantity="one"><xliff:g id="weeks" example="1">%d</xliff:g> week in a row</item>
+        <item quantity="other"><xliff:g id="weeks" example="3">%d</xliff:g> weeks in a row</item>
+    </plurals>
+</resources>
