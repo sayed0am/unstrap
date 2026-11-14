@@ -1,0 +1,66 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    
+    <string name="core_badge_first_workout">Primer entrenamiento</string>
+    
+    <string name="core_badge_first_10k_steps">Primer día de 10 000 pasos</string>
+    
+    <string name="core_badge_workouts_10">10 entrenamientos</string>
+    
+    <string name="core_badge_workouts_50">50 entrenamientos</string>
+    
+    <string name="core_badge_workouts_100">100 entrenamientos</string>
+    
+    <string name="core_badge_workouts_500">500 entrenamientos</string>
+    
+    <string name="core_badge_km_100">100 km en total</string>
+    
+    <string name="core_badge_km_500">500 km en total</string>
+    
+    <string name="core_badge_km_1000">1000 km en total</string>
+    
+    <string name="core_badge_steps_1m">Un millón de pasos</string>
+    
+    <string name="core_badge_goal_first">Primera meta semanal cumplida</string>
+    
+    <string name="core_badge_goal_4">Meta cumplida 4 semanas seguidas</string>
+    
+    <string name="core_badge_goal_12">Meta cumplida 12 semanas seguidas</string>
+    
+    <string name="core_badge_goal_26">Meta cumplida 26 semanas seguidas</string>
+    
+    <string name="core_badge_goal_52">Meta cumplida 52 semanas seguidas</string>
+    
+    <string name="core_badge_first_run">Primera carrera</string>
+    
+    <string name="core_badge_first_5k">Primera carrera de 5 km</string>
+    
+    <string name="core_badge_first_10k">Primera carrera de 10 km</string>
+    
+    <string name="core_badge_first_indoor">Primer entrenamiento en interior</string>
+    
+    <string name="core_badge_first_log">Primera sesión de fuerza registrada</string>
+    
+    <string name="core_badge_first_tabata">Primer Tabata</string>
+    
+    <string name="core_badge_first_reps">Primeros intervalos de carrera</string>
+    
+    <string name="core_badge_first_mind">Primera sesión de yoga o calma</string>
+    
+    <string name="core_badge_first_game">Primer juego</string>
+
+    
+    <string name="core_badge_art_run">Carrera</string>
+    
+    <string name="core_badge_art_indoor">En</string>
+    
+    <string name="core_badge_art_log">kg</string>
+    
+    <string name="core_badge_art_tabata">Tab</string>
+    
+    <string name="core_badge_art_reps">Reps</string>
+    
+    <string name="core_badge_art_mind">Om</string>
+    
+    <string name="core_badge_art_game">Reproducir</string>
+</resources>

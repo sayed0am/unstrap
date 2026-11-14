@@ -1,0 +1,61 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    
+    <string name="workout_zones_title">Zonas de frecuencia cardíaca</string>
+    
+    <string name="workout_zones_max_title">Tu frecuencia cardíaca máxima</string>
+    
+    <string name="workout_zones_set_it">Configurarlo yo mismo</string>
+    
+    <string name="workout_zones_learn_it">Aprender de nuevo</string>
+    
+    <string name="workout_zones_note">Las mismas para todos los deportes. Las metas de zona y el tiempo en zonas las usan, y la Carga usa tu máx. Toca una zona para mover sus límites.</string>
+    
+    <string name="workout_zones_you_line_max">Máx.<xliff:g id="bpm" example="192">%1$d</xliff:g> bpm, the same zones for every sport</string>
+    
+    <string name="workout_zones_you_line">Las mismas zonas para todos los deportes</string>
+    
+    <string name="workout_zones_max_row">Frecuencia cardíaca máxima</string>
+    
+    <string name="workout_zones_profile_set"><xliff:g id="bpm" example="185">%1$d</xliff:g> bpm, set by you</string>
+    
+    <string name="workout_zones_profile_worked_out">Calculada a partir de tu edad y entrenamientos</string>
+    
+    <string name="workout_zones_source_set">Configurada por ti</string>
+    
+    <string name="workout_zones_source_learned_on">Aprendida de tus mayores esfuerzos,<xliff:g id="day" example="3 Oct">%1$s</xliff:g></string>
+    
+    <string name="workout_zones_source_learned">Aprendida de tus mayores esfuerzos</string>
+    
+    <string name="workout_zones_source_age">A partir de tu edad, hasta que un esfuerzo intenso muestre más</string>
+    
+    <string name="workout_zones_source_strap">A partir de tu perfil de Zepp, hasta que un esfuerzo intenso muestre más</string>
+    
+    <string name="workout_zones_source_guess">Una estimación inicial. Añade tu edad o configúrala tú mismo.</string>
+    
+    <string name="workout_zones_zone_name">Zona<xliff:g id="zone" example="2">%1$d</xliff:g></string>
+    
+    <string name="workout_zones_bpm_range"><xliff:g id="from" example="115">%1$d</xliff:g> to <xliff:g id="to" example="133">%2$d</xliff:g></string>
+    
+    <string name="workout_zones_bpm_up" ns1:ignore="PluralsCandidate"><xliff:g id="from" example="172">%1$d</xliff:g> and up</string>
+    
+    <string name="workout_zones_starts_at">Comienza en</string>
+    
+    <string name="workout_zones_ends_at">Termina en</string>
+    
+    <string name="workout_zones_edges_first">Mover su fin cambia dónde comienza la zona 2.</string>
+    
+    <string name="workout_zones_edges_last">La zona 5 llega hasta tu máx. Mover su inicio cambia dónde termina la zona 4.</string>
+    
+    <string name="workout_zones_edges_other">Mover un límite también mueve la zona de al lado.</string>
+    
+    <string name="workout_zones_reset">Volver a las zonas habituales</string>
+    
+    <string name="workout_zones_set_title">Tu frecuencia cardíaca máxima</string>
+    
+    <string name="workout_zones_set_note">A partir de una prueba o una carrera que hiciste al máximo. Tus zonas se basan en ella.</string>
+    
+    <string name="workout_zones_set_field">Frecuencia cardíaca máxima</string>
+    
+    <string name="workout_zones_save">Guardar</string>
+</resources>

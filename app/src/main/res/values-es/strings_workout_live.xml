@@ -1,0 +1,379 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="workout_live_figure_active_kcal">kcal activas</string>
+    
+    <string name="workout_live_figure_peak_bpm">BPM máx.</string>
+    
+    <string name="workout_live_figure_avg_bpm">BPM prom.</string>
+    
+    <string name="workout_live_figure_hard_efforts">Esfuerzos intensos</string>
+    
+    <string name="workout_live_figure_km">km</string>
+    
+    <string name="workout_live_figure_m">m</string>
+    
+    <string name="workout_live_figure_km_from_steps">km de pasos</string>
+    
+    <string name="workout_live_figure_m_from_steps">m de pasos</string>
+    
+    <string name="workout_live_figure_avg_kmh">km/h prom.</string>
+    
+    <string name="workout_live_figure_avg_pace">Ritmo prom.</string>
+    
+    <string name="workout_live_unit_kmh">km/h</string>
+    
+    <string name="workout_live_figure_pace_km">Ritmo /km</string>
+    
+    <string name="workout_live_figure_climb">m subidos</string>
+    
+    <string name="workout_live_figure_rounds_done">Rondas completadas</string>
+    
+    <plurals name="workout_live_figure_sets_done">
+        <item quantity="one">Serie completada</item>
+        <item quantity="other">Series completadas</item>
+    </plurals>
+    
+    <string name="workout_live_figure_kg_lifted">kg levantados</string>
+    
+    <string name="workout_live_moving_time">Tiempo en movimiento</string>
+    
+    <string name="workout_live_unit_bpm">BPM</string>
+    
+    <string name="workout_live_bpm"><xliff:g id="bpm" example="142">%1$d</xliff:g> bpm</string>
+    
+    <string name="workout_live_bpm_down"><xliff:g id="bpm" example="118">%1$d</xliff:g> bpm, down <xliff:g id="drop" example="24">%2$d</xliff:g></string>
+
+    
+
+    
+    <string name="workout_live_minimize">Minimizar</string>
+    
+    <string name="workout_live_status_paused">Pausado</string>
+    
+    <string name="workout_live_status_strap_battery">Banda<xliff:g id="percent" example="64">%1$d</xliff:g>%%</string>
+    
+    <string name="workout_live_status_strap">Banda</string>
+    
+    <string name="workout_live_status_total">Total</string>
+    
+    <string name="workout_live_end_workout">Finalizar entrenamiento</string>
+    
+    <string name="workout_live_resume">Reanudar</string>
+    
+    <string name="workout_live_pause">Pausar</string>
+    
+    <string name="workout_live_paused_hint">Mantén presionado Finalizar entrenamiento para terminar. Reanudar continúa donde lo dejaste.</string>
+    
+    <string name="workout_live_hold_to_end">Mantén presionado para terminar</string>
+    
+    <string name="workout_live_hold_to_end_description">Mantén presionado para finalizar el entrenamiento</string>
+    
+    <string name="workout_live_tap_to_light">Toca en cualquier parte para encender la pantalla</string>
+    
+    <string name="workout_live_hold_square_hint">Mantén presionado el cuadrado para terminar</string>
+    
+    <string name="workout_live_lap">Vuelta</string>
+    
+    <string name="workout_live_skip">Omitir</string>
+    
+    <string name="workout_live_view_of">Ver<xliff:g id="view" example="1">%1$d</xliff:g> of <xliff:g id="views" example="2">%2$d</xliff:g></string>
+
+    
+    <string name="workout_live_stopped_car_title">Parece que estás en un auto</string>
+    
+    <string name="workout_live_stopped_title">Parece que te has detenido</string>
+    
+    <string name="workout_live_stopped_car_note">Te moviste por última vez a las<xliff:g id="time" example="18:40">%1$s</xliff:g>. End the <xliff:g id="sport" example="run">%2$s</xliff:g> there, so the drive isn\'t counted?</string>
+    
+    <string name="workout_live_stopped_note">Tu frecuencia cardiaca ha estado cerca del reposo desde<xliff:g id="time" example="18:40">%1$s</xliff:g>. End the <xliff:g id="sport" example="run">%2$s</xliff:g> at <xliff:g id="time_again" example="18:40">%1$s</xliff:g>?</string>
+    
+    <string name="workout_live_stopped_end_at">Finalizar a las<xliff:g id="time" example="18:40">%1$s</xliff:g></string>
+    
+    <string name="workout_live_keep_going">Sigue así</string>
+
+    
+
+    
+    <string name="workout_live_game_start_period">Empezar<xliff:g id="period" example="2nd half">%1$s</xliff:g></string>
+    
+    <string name="workout_live_game_break_left"><xliff:g id="time" example="4:32">%1$s</xliff:g> left</string>
+    
+    <string name="workout_live_game_full_time">Tiempo total</string>
+    
+    <string name="workout_live_effort_of">Esfuerzo<xliff:g id="effort" example="3">%1$d</xliff:g> of 5</string>
+    
+    <string name="workout_live_effort_none">Ningún esfuerzo aún</string>
+    
+    <string name="workout_live_effort">Esfuerzo</string>
+
+    
+
+    
+    <string name="workout_live_reps_title"><xliff:g id="sport" example="Running">%1$s</xliff:g>, intervals</string>
+    
+    <string name="workout_live_reps_plan"><xliff:g id="plan" example="6 × 400 m">%1$s</xliff:g>, <xliff:g id="rest" example="90 s">%2$s</xliff:g> rest</string>
+    
+    <string name="workout_live_rep_length"><xliff:g id="length" example="400">%1$s</xliff:g> <xliff:g id="unit" example="m">%2$s</xliff:g></string>
+    
+    <string name="workout_live_rep_of">Repetición<xliff:g id="rep" example="3">%1$d</xliff:g> of <xliff:g id="reps" example="6">%2$d</xliff:g></string>
+    
+    <string name="workout_live_done_of" ns1:ignore="PluralsCandidate"><xliff:g id="done" example="2">%1$d</xliff:g> of <xliff:g id="total" example="6">%2$d</xliff:g> done</string>
+    
+    <string name="workout_live_warm_up">Calentamiento</string>
+    
+    <plurals name="workout_live_all_reps_done">
+        <item quantity="one"><xliff:g id="reps" example="6">%1$d</xliff:g> rep done</item>
+        <item quantity="other">Todo<xliff:g id="reps" example="6">%1$d</xliff:g> reps done</item>
+    </plurals>
+    
+    <string name="workout_live_then_rest">Luego<xliff:g id="rest" example="90 s">%1$s</xliff:g> rest</string>
+    
+    <string name="workout_live_last_rep">Última repetición</string>
+    
+    <string name="workout_live_rep_next" ns1:ignore="PluralsCandidate">Repetición<xliff:g id="rep" example="3">%1$d</xliff:g> next</string>
+    
+    <plurals name="workout_live_reps_after">
+        <item quantity="one">Luego<xliff:g id="reps" example="6">%1$d</xliff:g> rep</item>
+        <item quantity="other">Luego<xliff:g id="reps" example="6">%1$d</xliff:g> reps</item>
+    </plurals>
+    
+    <string name="workout_live_rep_word"><xliff:g id="length" example="400 m">%1$s</xliff:g> rep</string>
+    
+    <string name="workout_live_phase_rest">Descanso</string>
+    
+    <string name="workout_live_phase_warming_up">Calentando</string>
+    
+    <string name="workout_live_phase_done">Listo</string>
+    
+    <string name="workout_live_unit_m_to_go">m para terminar</string>
+    
+    <string name="workout_live_unit_rest_left">de descanso restante</string>
+    
+    <string name="workout_live_unit_left">restante</string>
+    
+    <string name="workout_live_rep_pace">Ritmo<xliff:g id="time" example="1:52">%1$s</xliff:g> per <xliff:g id="length" example="400 m">%2$s</xliff:g></string>
+    
+    <string name="workout_live_rep_pace_km">Ritmo<xliff:g id="pace" example="4:40">%1$s</xliff:g>/km</string>
+    
+    <string name="workout_live_reps_skip_hint">Toca Omitir para empezar las repeticiones</string>
+    
+    <string name="workout_live_end_or_keep">Mantén presionado el cuadrado para terminar o sigue adelante</string>
+    
+    <string name="workout_live_rep_chip">Repetición<xliff:g id="rep" example="2">%1$d</xliff:g></string>
+    
+    <string name="workout_live_pace_title">Ritmo</string>
+    
+    <string name="workout_live_speed_title">Velocidad</string>
+    
+    <string name="workout_live_unit_per_km">/km</string>
+    
+    <string name="workout_live_avg">Prom.<xliff:g id="average" example="5:42">%1$s</xliff:g></string>
+    
+    <string name="workout_live_splits_description">Parciales por kilómetro:<xliff:g id="times" example="5:42, 5:38">%1$s</xliff:g></string>
+    
+    <string name="workout_live_split_km">Km<xliff:g id="km" example="4">%1$d</xliff:g></string>
+
+    
+    <string name="workout_live_map_show_map">Mostrar el mapa</string>
+    
+    <string name="workout_live_map_route_only">Mostrar solo la ruta, sin mapa</string>
+    
+    <string name="workout_live_map_follow">Seguir mi posición</string>
+
+    
+
+    
+    <string name="workout_live_heart_title">Frecuencia cardíaca</string>
+    
+    <string name="workout_live_heart_of_max"><xliff:g id="percent" example="78">%1$d</xliff:g>%% of max</string>
+    
+    <string name="workout_live_heart_behind">bpm, la línea muestra los últimos 10 min</string>
+    
+    <string name="workout_live_target_zone">Zona objetivo<xliff:g id="zone" example="2">%1$d</xliff:g>. The strap buzzes if you drift</string>
+    
+    <string name="workout_live_target_zones">Zonas objetivo<xliff:g id="from" example="2">%1$d</xliff:g> to <xliff:g id="to" example="3">%2$d</xliff:g>. The strap buzzes if you drift</string>
+    
+    <string name="workout_live_time_target"><xliff:g id="time" example="12:30">%1$s</xliff:g> of <xliff:g id="minutes" example="30">%2$d</xliff:g> min</string>
+    
+    <string name="workout_live_zone_time_none">zona<xliff:g id="zone" example="1">%1$d</xliff:g>: none</string>
+    
+    <string name="workout_live_zone_time_minutes">zona<xliff:g id="zone" example="3">%1$d</xliff:g>: <xliff:g id="minutes" example="12">%2$d</xliff:g> min</string>
+    
+    <string name="workout_live_zone_times_description">Tiempo en cada zona:<xliff:g id="zones" example="zone 1 none, zone 2 4 min">%1$s</xliff:g></string>
+
+    
+
+    
+    <string name="workout_live_done_button">Hecho</string>
+    
+    <string name="workout_live_skip_rest">Omitir descanso</string>
+    
+    <string name="workout_live_round_of">Ronda<xliff:g id="round" example="3">%1$d</xliff:g> of <xliff:g id="rounds" example="8">%2$d</xliff:g></string>
+    
+    <string name="workout_live_last_round">Última ronda</string>
+    
+    <string name="workout_live_phase_work">Trabajo</string>
+    
+    <string name="workout_live_seconds_left_minute">segundos restantes en el minuto</string>
+    
+    <string name="workout_live_seconds_left">segundos restantes</string>
+    
+    <string name="workout_live_round_next" ns1:ignore="PluralsCandidate">Ronda<xliff:g id="round" example="4">%1$d</xliff:g> next</string>
+    
+    <string name="workout_live_heart_rate">Frecuencia cardíaca<xliff:g id="bpm" example="128">%1$d</xliff:g></string>
+    
+    <string name="workout_live_heart_rate_down">Frecuencia cardíaca<xliff:g id="bpm" example="128">%1$d</xliff:g>, down <xliff:g id="drop" example="31">%2$d</xliff:g></string>
+    
+    <string name="workout_live_add_10_s">+10 s</string>
+    
+    <plurals name="workout_live_rounds_after">
+        <item quantity="one">Luego<xliff:g id="rounds" example="8">%1$d</xliff:g> round</item>
+        <item quantity="other">Luego<xliff:g id="rounds" example="8">%1$d</xliff:g> rounds</item>
+    </plurals>
+    
+    <string name="workout_live_rounds_start_hint">Empieza las rondas cuando estés listo</string>
+    
+    <plurals name="workout_live_all_rounds_done">
+        <item quantity="one"><xliff:g id="rounds" example="8">%1$d</xliff:g> round done</item>
+        <item quantity="other">Todo<xliff:g id="rounds" example="8">%1$d</xliff:g> rounds done</item>
+    </plurals>
+    
+    <string name="workout_live_start_rounds">Iniciar rondas</string>
+    
+    <plurals name="workout_live_rounds_done_description">
+        <item quantity="one"><xliff:g id="done" example="3">%1$d</xliff:g> of <xliff:g id="rounds" example="8">%2$d</xliff:g> round done</item>
+        <item quantity="other"><xliff:g id="done" example="3">%1$d</xliff:g> of <xliff:g id="rounds" example="8">%2$d</xliff:g> rounds done</item>
+    </plurals>
+    
+    <string name="workout_live_peaks_title">Pico en cada ronda</string>
+    
+    <string name="workout_live_peaks_description">Frecuencia cardíaca máxima por ronda:<xliff:g id="peaks" example="168, 172, 175">%1$s</xliff:g></string>
+    
+    <string name="workout_live_peaks_bpm"><xliff:g id="peaks" example="168, 172, 175">%1$s</xliff:g> bpm</string>
+    
+    <string name="workout_live_rest_rep_next" ns1:ignore="PluralsCandidate">Descanso, repetición<xliff:g id="rep" example="3">%1$d</xliff:g> next</string>
+    
+    <string name="workout_live_pace_now"><xliff:g id="pace" example="4:40">%1$s</xliff:g>/km now</string>
+    
+    <string name="workout_live_reps_start_hint">Toca Omitir para iniciar las repeticiones</string>
+
+    
+
+    
+    <string name="workout_live_paused_for">Pausado durante</string>
+    
+    <string name="workout_live_paused_heart">Frecuencia cardíaca<xliff:g id="bpm" example="104">%1$d</xliff:g></string>
+    
+    <string name="workout_live_paused_heart_down" ns1:ignore="PluralsCandidate">Frecuencia cardíaca<xliff:g id="bpm" example="104">%1$d</xliff:g>, down <xliff:g id="drop" example="38">%2$d</xliff:g> since you stopped</string>
+    
+    <string name="workout_live_paused_note">La pausa excluye este tiempo de tu ritmo y tus promedios</string>
+
+    
+
+    
+    <string name="workout_live_mind_heart">Frecuencia cardíaca<xliff:g id="bpm" example="68">%1$d</xliff:g>, settling</string>
+    
+    <string name="workout_live_mind_heart_down" ns1:ignore="PluralsCandidate">Frecuencia cardíaca<xliff:g id="bpm" example="68">%1$d</xliff:g>, settling, down <xliff:g id="drop" example="9">%2$d</xliff:g> since you started</string>
+    
+    <string name="workout_live_mind_length">de<xliff:g id="minutes" example="45">%1$d</xliff:g> min</string>
+    
+    <string name="workout_live_mind_length_up">de<xliff:g id="minutes" example="45">%1$d</xliff:g> min, time\'s up</string>
+    
+    <string name="workout_live_mind_open">Sin duración definida</string>
+
+    
+
+    
+    <string name="workout_live_sets_set_done">Serie completada</string>
+    
+    <string name="workout_live_sets_add_30_s">+30 s</string>
+    
+    <string name="workout_live_sets_start_set">Iniciar serie<xliff:g id="set" example="4">%1$d</xliff:g></string>
+    
+    <plurals name="workout_live_sets_all_done">
+        <item quantity="one"><xliff:g id="sets" example="5">%1$d</xliff:g> set done. Hold the square to end, or keep going.</item>
+        <item quantity="other">Todas<xliff:g id="sets" example="5">%1$d</xliff:g> sets done. Hold the square to end, or keep going.</item>
+    </plurals>
+    
+    <string name="workout_live_sets_in_this_set">en esta serie</string>
+    
+    <string name="workout_live_sets_rest_after">Descanso después de<xliff:g id="set" example="set 3 of 5">%1$s</xliff:g></string>
+    
+    <string name="workout_live_sets_ready_first">Listo para la serie 1</string>
+    
+    <string name="workout_live_sets_rest_over">Descanso terminado</string>
+    
+    <string name="workout_live_sets_next_tap_start"><xliff:g id="set" example="Set 4 of 5">%1$s</xliff:g> next. Tap Start when you pick up the weight.</string>
+    
+    <string name="workout_live_sets_rest_title">Descanso</string>
+    
+    <string name="workout_live_sets_after">después<xliff:g id="set" example="set 3 of 5">%1$s</xliff:g></string>
+    
+    <string name="workout_live_sets_next">Siguiente</string>
+    
+    <string name="workout_live_sets_next_set">Serie<xliff:g id="set" example="4">%1$d</xliff:g></string>
+    
+    <string name="workout_live_sets_next_set_exercise">Serie<xliff:g id="set" example="4">%1$d</xliff:g>, <xliff:g id="exercise" example="bench press 10 × 60 kg">%2$s</xliff:g></string>
+    
+    <string name="workout_live_sets_falling_description">Frecuencia cardíaca desde que terminó la serie</string>
+    
+    <plurals name="workout_live_sets_dots_description">
+        <item quantity="one"><xliff:g id="done" example="3">%1$d</xliff:g> set done</item>
+        <item quantity="other"><xliff:g id="done" example="3">%1$d</xliff:g> sets done</item>
+    </plurals>
+    
+    <plurals name="workout_live_sets_dots_description_to_go">
+        <item quantity="one"><xliff:g id="done" example="3">%1$d</xliff:g> set done, <xliff:g id="left" example="2">%2$d</xliff:g> to go</item>
+        <item quantity="other"><xliff:g id="done" example="3">%1$d</xliff:g> sets done, <xliff:g id="left" example="2">%2$d</xliff:g> to go</item>
+    </plurals>
+    
+    <string name="workout_live_sets_name_it">Ponle un nombre</string>
+    
+    <string name="workout_live_sets_row">Serie<xliff:g id="set" example="2">%1$d</xliff:g></string>
+
+    
+    <string name="workout_live_log_title" ns1:ignore="PluralsCandidate">Serie<xliff:g id="set" example="3">%1$d</xliff:g> done</string>
+    
+    <string name="workout_live_log_note_peak_rest"><xliff:g id="time" example="0:51">%1$s</xliff:g>, peak <xliff:g id="bpm" example="148">%2$d</xliff:g> bpm. Rest is running, <xliff:g id="left" example="1:20">%3$s</xliff:g> left.</string>
+    
+    <string name="workout_live_log_note_peak"><xliff:g id="time" example="0:51">%1$s</xliff:g>, peak <xliff:g id="bpm" example="148">%2$d</xliff:g> bpm.</string>
+    
+    <string name="workout_live_log_note_rest"><xliff:g id="time" example="0:51">%1$s</xliff:g>. Rest is running, <xliff:g id="left" example="1:20">%2$s</xliff:g> left.</string>
+    
+    <string name="workout_live_log_note"><xliff:g id="time" example="0:51">%1$s</xliff:g>.</string>
+    
+    <string name="workout_live_log_numbered_set">Serie numerada</string>
+    
+    <string name="workout_live_log_reps">Repeticiones</string>
+    
+    <string name="workout_live_log_fewer_reps">Menos repeticiones</string>
+    
+    <string name="workout_live_log_more_reps">Más repeticiones</string>
+    
+    <string name="workout_live_log_kg">kg</string>
+    
+    <string name="workout_live_log_less_weight">Menos peso</string>
+    
+    <string name="workout_live_log_more_weight">Más peso</string>
+    
+    <string name="workout_live_log_filled">Completado según tu última serie. Cambia solo lo que sea diferente.</string>
+    
+    <string name="workout_live_log_skip">Omitir</string>
+    
+    <string name="workout_live_log_save">Guardar</string>
+    
+    <string name="workout_live_log_next_exercise">Siguiente ejercicio</string>
+
+    
+    <string name="workout_live_exercise_title">Ejercicio</string>
+    
+    <string name="workout_live_exercise_note">Elígela una vez y se mantendrá para las siguientes series.</string>
+    
+    <string name="workout_live_exercise_type">Escribe un nombre</string>
+    
+    <string name="workout_live_exercise_use">Usar este nombre</string>
+    
+    <string name="workout_live_exercise_now">Ahora</string>
+    
+    <string name="workout_live_exercise_no_name">Sin nombre, solo numerar las series</string>
+</resources>

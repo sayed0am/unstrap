@@ -1,0 +1,75 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="glow_share_join"><xliff:g id="first" example="141 avg bpm">%1$s</xliff:g>, <xliff:g id="second" example="320 kcal">%2$s</xliff:g></string>
+
+    
+    <string name="glow_share_stat_time">Tiempo</string>
+    
+    <string name="glow_share_stat_pace">Ritmo</string>
+    
+    <string name="glow_share_stat_avg_bpm">Promedio lpm</string>
+    
+    <string name="glow_share_stat_active_kcal">Calorías activas</string>
+    
+    <string name="glow_share_stat_peak_bpm">Lpm máximas</string>
+    
+    <string name="glow_share_stat_sets">Series</string>
+    
+    <string name="glow_share_stat_work">Trabajo</string>
+    
+    <string name="glow_share_stat_bpm_start">Lpm al inicio</string>
+    
+    <string name="glow_share_stat_bpm_end">Lpm al final</string>
+    
+    <string name="glow_share_stat_load">Carga</string>
+    
+    <string name="glow_share_unit_per_km">/km</string>
+
+    
+    <string name="glow_share_unit_kg">kg</string>
+    
+    <plurals name="glow_share_sets">
+        <item quantity="one"><xliff:g id="count" example="1">%d</xliff:g> set</item>
+        <item quantity="other"><xliff:g id="count" example="4">%d</xliff:g> sets</item>
+    </plurals>
+    
+    <string name="glow_share_row_reps"><xliff:g id="sets" example="5">%1$d</xliff:g> × <xliff:g id="reps" example="10">%2$d</xliff:g></string>
+    
+    <string name="glow_share_row_top"><xliff:g id="sets" example="5 × 10">%1$s</xliff:g>, top <xliff:g id="kg" example="65">%2$s</xliff:g> kg</string>
+
+    
+    <string name="glow_share_unit_reps">repeticiones</string>
+    
+    <string name="glow_share_unit_rounds">rondas</string>
+    
+    <plurals name="glow_share_unit_of_reps">
+        <item quantity="one">de<xliff:g id="planned" example="8">%1$d</xliff:g> rep</item>
+        <item quantity="other">de<xliff:g id="planned" example="8">%1$d</xliff:g> reps</item>
+    </plurals>
+    
+    <plurals name="glow_share_unit_of_rounds">
+        <item quantity="one">de<xliff:g id="planned" example="8">%1$d</xliff:g> round</item>
+        <item quantity="other">de<xliff:g id="planned" example="8">%1$d</xliff:g> rounds</item>
+    </plurals>
+    
+    <string name="glow_share_my_week">Mi semana</string>
+
+    
+    <string name="glow_share_saved">Guardado</string>
+    
+    <string name="glow_share_not_saved">No guardado</string>
+    
+    <string name="glow_share_remove_photo">Eliminar la foto</string>
+    
+    <string name="glow_share_change_photo">Cambiar foto</string>
+    
+    <string name="glow_share_add_photo">Añadir una foto</string>
+    
+    <string name="glow_share_route">Ruta</string>
+    
+    <string name="glow_share_route_off">Desactivado</string>
+    
+    <string name="glow_share_route_line">Línea</string>
+    
+    <string name="glow_share_hide_ends">Ocultar inicio y fin</string>
+</resources>
