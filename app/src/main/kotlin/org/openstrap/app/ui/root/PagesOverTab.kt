@@ -398,6 +398,7 @@ private fun HealthConnectPageHost(hooks: PageHooks, padding: PaddingValues, onBa
         onBack = onBack,
         caloriesMissing = hooks.healthConnect.caloriesMissing,
         onOfferCalories = hooks.healthConnect.offerCalories,
+        offersSkinTemperature = hooks.healthConnect.offersSkinTemperature,
     )
 }
 

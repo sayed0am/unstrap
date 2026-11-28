@@ -306,6 +306,8 @@ object Recovery {
     const val RHR_SD_FLOOR = 2f
     const val BREATH_SD_FLOOR = 0.5f
     const val TEMP_SD_FLOOR = 0.15f
+    /** A handful of readings doesn't describe a night's skin temperature; the strap logs one a minute when worn. */
+    const val MIN_SKIN_READINGS = 30
     const val SPO2_SD_FLOOR = 0.5f
 
     /** Tonight's and the 7-night HRV in the score input; nightly wearable HRV error is larger than the SWC. */

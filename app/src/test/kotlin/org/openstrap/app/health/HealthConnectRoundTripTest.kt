@@ -6,6 +6,7 @@ import androidx.health.connect.client.records.HeartRateRecord
 import androidx.health.connect.client.records.OxygenSaturationRecord
 import androidx.health.connect.client.records.RespiratoryRateRecord
 import androidx.health.connect.client.records.Record
+import androidx.health.connect.client.records.SkinTemperatureRecord
 import androidx.health.connect.client.records.SleepSessionRecord
 import androidx.health.connect.client.records.Vo2MaxRecord
 import androidx.health.connect.client.records.metadata.Device
@@ -22,6 +23,7 @@ import org.openstrap.app.data.db.AppWorkout
 import org.openstrap.app.data.db.BreathRate
 import org.openstrap.app.data.db.HeartRateSample
 import org.openstrap.app.data.db.OpenStrapDatabase
+import org.openstrap.app.data.db.SkinTemperature
 import org.openstrap.app.data.db.SleepEdit
 import org.openstrap.app.data.db.SleepSession
 import org.openstrap.app.data.db.SleepStage
@@ -137,6 +139,63 @@ class HealthConnectRoundTripTest {
         dao.insertSpo2(listOf(0, 1, 70, 79, 80, 100, 101, 127).mapIndexed { i, p -> Spo2Sample(100 * h + i * 60, p) })
         val records = exporter.bloodOxygen(100 * h, 101 * h).map { it as OxygenSaturationRecord }
         assertEquals(listOf(80.0, 100.0), records.map { it.percentage.value })
+    }
+
+    /** A night of [hours] from [start] with a reading a minute at [celsius]. */
+    private suspend fun night(start: Long, celsius: Float, hours: Int = 8, minutes: Int = 40, nap: Boolean = false) {
+        dao.insertSleepSessions(listOf(SleepSession(start, start + hours * h, day = 0, nap = nap)))
+        dao.insertSkinTemperature(List(minutes) { SkinTemperature(start + it * 60, celsius) })
+    }
+
+    private suspend fun skin(from: Long, to: Long) =
+        exporter.skinTemperature(from, to, now = 5_000).map { it as SkinTemperatureRecord }
+
+    @Test fun `skin temperature goes out a night at a time against the usual night`() = runTest {
+        // Seven earlier nights, one of them far off, then the night written: their median is the baseline.
+        listOf(33f, 33.2f, 33.4f, 33.6f, 33.8f, 34f, 39f).forEachIndexed { i, c -> night(100 * h + i * 24 * h, c) }
+        val start = 100 * h + 7 * 24 * h
+        night(start, 35f)
+        // Awake readings, and one at the very end, are not part of the night.
+        dao.insertSkinTemperature(listOf(SkinTemperature(start - 60, 30f), SkinTemperature(start + 8 * h, 30f)))
+        val record = skin(start + 24 * h, start + 25 * h).single()
+        assertEquals("openstrap:skintemp:$start", record.metadata.clientRecordId)
+        assertEquals(5_000L, record.metadata.clientRecordVersion)
+        assertEquals(33.6, record.baseline!!.inCelsius, 0.001)
+        assertEquals(40, record.deltas.size)
+        assertEquals(35.0, record.baseline!!.inCelsius + record.deltas.first().delta.inCelsius, 0.001)
+        assertEquals(SkinTemperatureRecord.MEASUREMENT_LOCATION_WRIST, record.measurementLocation)
+    }
+
+    @Test fun `with under seven earlier nights the night itself counts towards its baseline`() = runTest {
+        night(100 * h, 33f)
+        night(124 * h, 35f)
+        assertEquals(listOf(33.0, 34.0), skin(100 * h, 140 * h).map { it.baseline!!.inCelsius })
+    }
+
+    @Test fun `a night's baseline is the same whatever range is written`() = runTest {
+        repeat(10) { night(100 * h + it * 24 * h, 33f + it * 0.1f) }
+        val last = 100 * h + 9 * 24 * h
+        val whole = skin(100 * h, last + 9 * h).last()
+        val alone = skin(last + 25 * h, last + 26 * h).single()
+        assertEquals(whole.baseline, alone.baseline)
+        assertEquals(whole.metadata.clientRecordId, alone.metadata.clientRecordId)
+    }
+
+    @Test fun `naps, deleted sleeps and nights with few readings send no skin temperature`() = runTest {
+        night(100 * h, 33f, hours = 2, nap = true)
+        night(124 * h, 33f, minutes = 29)
+        night(148 * h, 33f)
+        dao.upsertSleepEdit(SleepEdit(148 * h, nap = false, deleted = true, editedAt = 1))
+        assertTrue(skin(100 * h, 160 * h).isEmpty())
+    }
+
+    @Test fun `a moved night sends the readings of its new times under the strap's id`() = runTest {
+        night(100 * h, 33f, minutes = 120)
+        dao.upsertSleepEdit(SleepEdit(100 * h, nap = false, start = 101 * h, end = 108 * h, editedAt = 1))
+        val record = skin(100 * h, 110 * h).single()
+        assertEquals("openstrap:skintemp:${100 * h}", record.metadata.clientRecordId)
+        assertEquals(Instant.ofEpochSecond(101 * h), record.startTime)
+        assertEquals(60, record.deltas.size)
     }
 
     private fun strap(start: Long, end: Long, sport: Int = 1, vo2max: Int? = null) = Workout(

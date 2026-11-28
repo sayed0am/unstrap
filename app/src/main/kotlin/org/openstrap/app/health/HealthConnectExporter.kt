@@ -29,6 +29,7 @@ import androidx.health.connect.client.records.OxygenSaturationRecord
 import androidx.health.connect.client.records.Record
 import androidx.health.connect.client.records.RespiratoryRateRecord
 import androidx.health.connect.client.records.RestingHeartRateRecord
+import androidx.health.connect.client.records.SkinTemperatureRecord
 import androidx.health.connect.client.records.SleepSessionRecord
 import androidx.health.connect.client.records.StepsRecord
 import androidx.health.connect.client.records.Vo2MaxRecord
@@ -36,6 +37,9 @@ import androidx.health.connect.client.records.metadata.Device
 import androidx.health.connect.client.records.metadata.Metadata
 import androidx.health.connect.client.time.TimeRangeFilter
 import androidx.health.connect.client.units.Percentage
+import androidx.health.connect.client.units.Temperature
+import androidx.health.connect.client.units.TemperatureDelta
+import org.openstrap.app.data.Recovery
 import org.openstrap.app.data.db.HealthDao
 import org.openstrap.app.data.db.SleepStage
 import java.time.Instant
@@ -99,14 +103,16 @@ class HealthConnectExporter(private val context: Context, private val dao: Healt
 
     /**
      * Asked for with [permissions], but not needed: without them everything else is still written and those records
-     * (calories, breathing rate, VO2 max) are left out, so a grant from before them, or one turned off, keeps working.
+     * (calories, breathing rate, VO2 max, skin temperature) are left out, so a grant from before them, or one turned
+     * off, keeps working. Skin temperature is only asked for where this phone's Health Connect has it.
      */
-    val optionalPermissions = setOf(
-        HealthPermission.getWritePermission(ActiveCaloriesBurnedRecord::class),
-        HealthPermission.getWritePermission(TotalCaloriesBurnedRecord::class),
-        HealthPermission.getWritePermission(RespiratoryRateRecord::class),
-        HealthPermission.getWritePermission(Vo2MaxRecord::class),
-    )
+    val optionalPermissions: Set<String>
+        get() = setOf(
+            HealthPermission.getWritePermission(ActiveCaloriesBurnedRecord::class),
+            HealthPermission.getWritePermission(TotalCaloriesBurnedRecord::class),
+            HealthPermission.getWritePermission(RespiratoryRateRecord::class),
+            HealthPermission.getWritePermission(Vo2MaxRecord::class),
+        ) + listOfNotNull(SKIN_TEMPERATURE_PERMISSION.takeIf { skinTemperatureAvailable() })
 
     /** What a write asks Health Connect for: the needed ones with the optional ones, so they are offered in the same screen. */
     val requestedPermissions: Set<String> get() = permissions + optionalPermissions
@@ -122,8 +128,11 @@ class HealthConnectExporter(private val context: Context, private val dao: Healt
             HealthPermission.getReadPermission(RestingHeartRateRecord::class),
         ) + listOfNotNull(HealthPermission.PERMISSION_READ_HEALTH_DATA_HISTORY.takeIf { historyAvailable() })
 
-    private fun historyAvailable() = client.features.getFeatureStatus(HealthConnectFeatures.FEATURE_READ_HEALTH_DATA_HISTORY) ==
-        HealthConnectFeatures.FEATURE_STATUS_AVAILABLE
+    private fun historyAvailable() = has(HealthConnectFeatures.FEATURE_READ_HEALTH_DATA_HISTORY)
+
+    private fun skinTemperatureAvailable() = has(HealthConnectFeatures.FEATURE_SKIN_TEMPERATURE)
+
+    private fun has(feature: Int) = client.features.getFeatureStatus(feature) == HealthConnectFeatures.FEATURE_STATUS_AVAILABLE
 
     fun isAvailable(): Boolean = availability() == HcAvailability.AVAILABLE
 
@@ -194,6 +203,10 @@ class HealthConnectExporter(private val context: Context, private val dao: Healt
             replaced += Vo2MaxRecord::class to TimeRangeFilter.between(Instant.ofEpochSecond(from), Instant.ofEpochSecond(to))
             records += vo2max(from, to)
         }
+        if (writesSkinTemperature(granted)) {
+            replaced += SkinTemperatureRecord::class to sleepRange(from, to)
+            records += skinTemperature(from, to, now)
+        }
 
         for (h in dao.hrvOnce(from, to)) {
             if (h.milliseconds !in 1..200) continue // Health Connect's accepted RMSSD range
@@ -230,14 +243,22 @@ class HealthConnectExporter(private val context: Context, private val dao: Healt
         }
 
     /**
-     * Writes only the sleep in [from, to] again, as [export] does: for a sleep the user moved, deleted or brought back,
-     * which changes nothing else. Returns the number of records written.
+     * Writes only the sleep in [from, to] again, with the skin temperature over it, as [export] does: for a sleep the
+     * user moved, deleted or brought back, which changes nothing else. Returns the number of records written.
      */
     suspend fun exportSleep(from: Long, to: Long, now: Long = System.currentTimeMillis() / 1000): Int {
-        val records = sleep(from, to, now)
-        store.writeSerially(writeLock, records, listOf(SleepSessionRecord::class to sleepRange(from, to)))
+        val records = sleep(from, to, now).toMutableList()
+        val replaced = mutableListOf<Pair<KClass<out Record>, TimeRangeFilter>>(SleepSessionRecord::class to sleepRange(from, to))
+        if (writesSkinTemperature(client.permissionController.getGrantedPermissions())) {
+            replaced += SkinTemperatureRecord::class to sleepRange(from, to)
+            records += skinTemperature(from, to, now)
+        }
+        store.writeSerially(writeLock, records, replaced)
         return records.size
     }
+
+    /** Granted, on a phone whose Health Connect has skin temperature: only then may its records be touched. */
+    private fun writesSkinTemperature(granted: Set<String>) = SKIN_TEMPERATURE_PERMISSION in granted && skinTemperatureAvailable()
 
     /**
      * Sleep that OpenStrap exported earlier may since have changed shape (a nap folded into the night), so its old
@@ -397,6 +418,46 @@ class HealthConnectExporter(private val context: Context, private val dao: Healt
                 metadata = meta("spo2:${o.timestamp}"),
             )
         }
+
+    /**
+     * Skin temperature during sleep: one record per night (naps left out) that [sleepRange] reaches and that has
+     * [Recovery.MIN_SKIN_READINGS] readings, each reading as its change from a baseline. The baseline is the usual
+     * nightly value, the median of the average of each such night in the [Recovery.BASELINE_NIGHTS] days before; with
+     * fewer than [Recovery.SCORED_NIGHTS] of those, the night's own average counts too. It comes from the database
+     * alone, so a night gets the same one whatever range is written, and baseline plus change is the reading as stored.
+     */
+    internal suspend fun skinTemperature(from: Long, to: Long, now: Long): List<Record> {
+        val first = from - 86_400
+        val window = Recovery.BASELINE_NIGHTS * 86_400L
+        val resolved = org.openstrap.app.data.SleepSource(dao).resolvedOnce(first - window, to)
+        // Oldest first, so the nights before one are already in [earlier] with their averages.
+        val earlier = mutableListOf<Pair<Long, Float>>()
+        val records = mutableListOf<Record>()
+        for (r in resolved.sortedBy { it.end }) {
+            val s = r.shown?.takeIf { !it.nap } ?: continue
+            // A reading at the end itself is outside the record: Health Connect rejects it.
+            val readings = dao.skinTemperatureOnce(s.start, s.end - 1)
+            if (readings.size < Recovery.MIN_SKIN_READINGS) continue
+            val average = readings.map { it.celsius }.average().toFloat()
+            if (s.end >= first) {
+                val past = earlier.filter { it.first >= s.end - window }.map { it.second }
+                val usual = if (past.size >= Recovery.SCORED_NIGHTS) past else past + average
+                val baseline = (Recovery.percentile(usual, 0.5f) ?: average).toDouble()
+                records += SkinTemperatureRecord(
+                    startTime = Instant.ofEpochSecond(s.start), startZoneOffset = offset(s.start),
+                    endTime = Instant.ofEpochSecond(s.end), endZoneOffset = offset(s.end),
+                    metadata = meta("skintemp:${r.strap.start}", now),
+                    deltas = readings.map {
+                        SkinTemperatureRecord.Delta(Instant.ofEpochSecond(it.timestamp), TemperatureDelta.celsius(it.celsius - baseline))
+                    },
+                    baseline = Temperature.celsius(baseline),
+                    measurementLocation = SkinTemperatureRecord.MEASUREMENT_LOCATION_WRIST,
+                )
+            }
+            earlier += s.end to average
+        }
+        return records
+    }
 
     /** Breathing rate: one record per stored sample, the value as the strap sent it. */
     internal suspend fun breathing(from: Long, to: Long): List<Record> = dao.breathRateOnce(from, to).map { b ->
@@ -582,6 +643,8 @@ class HealthConnectExporter(private val context: Context, private val dao: Healt
     }
 
     private companion object {
+        val SKIN_TEMPERATURE_PERMISSION = HealthPermission.getWritePermission(SkinTemperatureRecord::class)
+
         /** How far back [import] reads, a year at a time. */
         const val IMPORT_YEARS = 10
     }

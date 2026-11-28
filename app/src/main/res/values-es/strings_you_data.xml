@@ -62,6 +62,8 @@
     <string name="you_hc_open_note">Permisos y datos</string>
     <string name="you_hc_calories_note">Las calorías, la frecuencia respiratoria y el VO2 max quedan fuera hasta que los permitas.</string>
     <string name="you_hc_calories_offer">Permitir calorías, frecuencia respiratoria y VO2 max</string>
+    <string name="you_hc_optional_skin_note">Las calorías, la frecuencia respiratoria, el VO2 max y la temperatura de la piel quedan fuera hasta que los permitas.</string>
+    <string name="you_hc_optional_skin_offer">Permitir temperatura de la piel y más</string>
     <string name="you_hc_install">Instala Health Connect</string>
     <string name="you_hc_install_note">En este teléfono, Health Connect es una aplicación de Play Store. Instálala para copiar tus datos allí.</string>
     <string name="you_hc_store_failed">No se pudo abrir Play Store.</string>

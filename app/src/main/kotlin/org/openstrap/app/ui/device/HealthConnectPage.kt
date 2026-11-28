@@ -59,6 +59,7 @@ fun HealthConnectPage(
     onBack: () -> Unit,
     caloriesMissing: Boolean = false,
     onOfferCalories: () -> Unit = {},
+    offersSkinTemperature: Boolean = false,
 ) {
     BackHandler(onBack = onBack)
     HaloPageList(contentPadding, variant = PageVariant.Settings) {
@@ -67,13 +68,15 @@ fun HealthConnectPage(
         item {
             val now = System.currentTimeMillis() / 1000
             val line = healthConnectLine(auto, now, java.time.ZoneId.systemDefault(), availability = availability)
-            PageGroup(footnote = if (caloriesMissing) stringResource(R.string.you_hc_calories_note) else null) {
+            val note = if (offersSkinTemperature) R.string.you_hc_optional_skin_note else R.string.you_hc_calories_note
+            PageGroup(footnote = if (caloriesMissing) stringResource(note) else null) {
                 SwitchRow(stringResource(R.string.you_hc_auto), line, auto.on, onAuto, divider = false)
             }
         }
         if (caloriesMissing) item {
             PageGroup {
-                ActionRow(stringResource(R.string.you_hc_calories_offer), onOfferCalories, icon = AppIcons.Plus, divider = false)
+                val offer = if (offersSkinTemperature) R.string.you_hc_optional_skin_offer else R.string.you_hc_calories_offer
+                ActionRow(stringResource(offer), onOfferCalories, icon = AppIcons.Plus, divider = false)
             }
         }
         // Copy now and Restore do something now, so they are action rows (HaloHealthConnect board, rules B3).
