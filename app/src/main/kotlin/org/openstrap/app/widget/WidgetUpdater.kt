@@ -81,6 +81,9 @@ class WidgetUpdater(
 ) {
     private val steps = UpdateThrottle(STEPS_EVERY_MS)
 
+    /** Whether the widgets' big numbers are plain digits. */
+    val plainNumbers: Flow<Boolean> get() = settings.plainNumbers
+
     /** The last refresh's read, for the sessions it starts or reloads. */
     @Volatile
     private var fresh: WidgetData? = null
@@ -100,6 +103,7 @@ class WidgetUpdater(
             clockChanges = Today.changes(app),
             bluetoothOff = strap.connection.map { it == ConnectionState.BluetoothOff },
             liveHeartRate = strap.liveHeartRate,
+            plainNumbers = settings.plainNumbers,
             now = { System.currentTimeMillis() / 1000 },
         )
         scope.watchWidgetTriggers(triggers, ::changed, ::stepsChanged)

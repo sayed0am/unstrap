@@ -63,6 +63,8 @@ internal class WidgetTriggers(
     val bluetoothOff: Flow<Boolean> = emptyFlow(),
     /** The strap's live heart rate: while a workout records, Start shows it with its zone. */
     val liveHeartRate: Flow<Int?> = emptyFlow(),
+    /** Whether the big numbers are drawn plain rather than in dots. */
+    val plainNumbers: Flow<Boolean> = emptyFlow(),
     val now: () -> Long,
 )
 
@@ -79,6 +81,7 @@ internal fun CoroutineScope.watchWidgetTriggers(t: WidgetTriggers, changed: (Set
     // moment's name, so neither waits for the next sync to end.
     launch { t.sleepEdits.drop(1).distinctUntilChanged().collect { changed(all) } }
     launch { t.profile.drop(1).distinctUntilChanged().collect { changed(all) } }
+    launch { t.plainNumbers.distinctUntilChanged().drop(1).collect { changed(all) } }
     // The Outdoor or Indoor side last chosen per sport, on Start's tiles.
     launch { t.workoutSides.drop(1).distinctUntilChanged().collect { changed(setOf(WidgetKind.Start)) } }
     // A sync starting while the widgets say the last one is old: their line turns to Syncing (spec 5).

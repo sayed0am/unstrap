@@ -109,6 +109,7 @@ import org.openstrap.app.ui.root.rememberShownDay
 import org.openstrap.app.ui.root.rememberStrapHeader
 import org.openstrap.app.ui.root.rememberTodayMoment
 import org.openstrap.app.ui.root.tabItems
+import org.openstrap.app.ui.glow.draw.LocalPlainNumbers
 import org.openstrap.app.ui.theme.OpenStrapTheme
 import org.openstrap.app.ui.workout.WorkoutsViewModel
 
@@ -136,8 +137,11 @@ class MainActivity : ComponentActivity() {
         // pile the old request on top of where the user had got to.
         if (savedInstanceState == null && !launchedFromHistory(intent)) showWorkoutFromIntent()
         setContent {
+            val plainNumbers by container.settings.plainNumbers.collectAsStateWithLifecycle(false)
             OpenStrapTheme {
-                AppRoot(container, navRequests, previews, pendingStrap)
+                CompositionLocalProvider(LocalPlainNumbers provides plainNumbers) {
+                    AppRoot(container, navRequests, previews, pendingStrap)
+                }
             }
         }
     }

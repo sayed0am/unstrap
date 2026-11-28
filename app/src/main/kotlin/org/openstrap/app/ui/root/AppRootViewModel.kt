@@ -275,6 +275,10 @@ class AppRootViewModel(
     val askToEnd: StateFlow<org.openstrap.app.data.settings.AskToEnd> =
         settings.askToEnd.state(org.openstrap.app.data.settings.AskToEnd())
 
+    val plainNumbers: StateFlow<Boolean> = settings.plainNumbers.state(false)
+
+    fun setPlainNumbers(on: Boolean) = write("plain numbers") { settings.setPlainNumbers(on) }
+
     fun setAskToEnd(a: org.openstrap.app.data.settings.AskToEnd) = write("ask to end") { settings.setAskToEnd(a) }
 
     fun historyBadgesShown() = write("history badges") { settings.historyBadgesShown() }

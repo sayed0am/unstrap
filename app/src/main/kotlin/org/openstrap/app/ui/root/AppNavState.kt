@@ -51,6 +51,7 @@ enum class Page(
     Diagnostics(PageRowKeys.DIAGNOSTICS),
     GoalsAndBests(PageRowKeys.GOALS_AND_BESTS),
     WorkoutSettings(PageRowKeys.WORKOUTS),
+    Appearance(PageRowKeys.APPEARANCE),
     AllBadges,
     WeeklyRecap,
     Strap,

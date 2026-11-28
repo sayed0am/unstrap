@@ -51,6 +51,7 @@ import org.openstrap.app.ui.alarms.AlarmsScreen
 import org.openstrap.app.ui.alarms.AlarmsViewModel
 import org.openstrap.app.ui.alarms.HealthAlertsScreen
 import org.openstrap.app.ui.alarms.PhoneAlertsScreen
+import org.openstrap.app.ui.device.AppearancePage
 import org.openstrap.app.ui.device.WorkoutSettingsScreen
 import org.openstrap.app.ui.components.GrowFromButton
 import org.openstrap.app.ui.components.GrowProgress
@@ -250,6 +251,10 @@ private fun DataPage(
                 onBack = close,
             )
         }
+        Page.Appearance -> {
+            val plainNumbers by hooks.rootVm.plainNumbers.collectAsStateWithLifecycle()
+            AppearancePage(plainNumbers, padding, onPlainNumbers = hooks.rootVm::setPlainNumbers, onBack = close)
+        }
         Page.Diagnostics -> {
             val log by container.strap.log.collectAsStateWithLifecycle()
             DiagnosticsScreen(log, padding, onBack = close)
@@ -293,6 +298,7 @@ private fun YouPageHost(
     val deletedSleep by hooks.dayVm.deletedSleep.collectAsStateWithLifecycle()
     val youMaxHr by hooks.workoutsVm.maxHeartRate.collectAsStateWithLifecycle()
     val askToEnd by hooks.rootVm.askToEnd.collectAsStateWithLifecycle()
+    val plainNumbers by hooks.rootVm.plainNumbers.collectAsStateWithLifecycle()
     // The Sleep goal row's own sheet, a small picker in place of the five goals.
     var sleepGoalOpen by rememberSaveable { mutableStateOf(false) }
     // Permissions can be taken back in Health Connect while away: the row says so on return.
@@ -310,6 +316,8 @@ private fun YouPageHost(
         onGoalsAndBests = { open(Page.GoalsAndBests) },
         askToEnd = askToEnd,
         onWorkouts = { open(Page.WorkoutSettings) },
+        plainNumbers = plainNumbers,
+        onAppearance = { open(Page.Appearance) },
         healthConnectAuto = hcAuto,
         healthConnectAvailability = hcAvailability,
         onHealthConnect = { open(Page.HealthConnect) },

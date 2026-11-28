@@ -6,6 +6,16 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
+import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import org.openstrap.app.ui.glow.draw.DotLayout
+import org.openstrap.app.ui.glow.draw.LocalPlainNumbers
+import org.openstrap.app.ui.glow.draw.plainBaseline
+import org.openstrap.app.ui.glow.draw.plainNumberPaint
+import org.openstrap.app.ui.glow.draw.plainText
 import androidx.compose.material3.Text
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.text.TextStyle
@@ -43,12 +53,34 @@ fun DotMatrixText(
     // The shared dot geometry ([dotLayout]), as a widget's number draws it.
     val dotDp = (dot.dot * scale).value
     val box = dotLayout(text, dotDp, 1f)
+    if (LocalPlainNumbers.current) {
+        PlainNumber(text, box, color, modifier)
+        return
+    }
     Canvas(
         modifier
             .size(box.width.dp, box.height.dp)
             .semantics { contentDescription = text },
     ) {
         drawDots(dotLayout(text, dotDp, density), color)
+    }
+}
+
+/** [text] as plain digits in [box]'s height and at most its width ([LocalPlainNumbers]). */
+@Composable
+private fun PlainNumber(text: String, box: DotLayout, color: Color, modifier: Modifier = Modifier) {
+    val context = LocalContext.current
+    val density = LocalDensity.current.density
+    val shown = plainText(text)
+    val paint = remember(context, shown, box.width, box.height, color, density) {
+        plainNumberPaint(context, shown, box.height * density, box.width * density, color)
+    }
+    Canvas(
+        modifier
+            .size((paint.measureText(shown) / density).dp, box.height.dp)
+            .semantics { contentDescription = text },
+    ) {
+        drawIntoCanvas { it.nativeCanvas.drawText(shown, 0f, plainBaseline(paint, size.height), paint) }
     }
 }
 
