@@ -19,6 +19,9 @@
     </plurals>
     <string name="workout_start_end_rest_early">Terminar el descanso antes</string>
     <string name="workout_start_end_rest_note">Cuando bajes de %1$d lpm</string>
+    <string name="workout_start_track_sets">Registrar series</string>
+    <string name="workout_start_track_sets_note">Cuenta las series y cronometra el descanso</string>
+    <string name="workout_start_sets_off_note">Tiempo y zonas de frecuencia cardíaca</string>
     <string name="workout_start_log_sets">Registra repeticiones y peso</string>
     <string name="workout_start_log_sets_note">Una tarjeta rápida después de cada serie</string>
     <string name="workout_start_games_status">El teléfono puede quedarse en tu bolsa</string>

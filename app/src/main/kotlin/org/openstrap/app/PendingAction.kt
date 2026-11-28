@@ -39,6 +39,7 @@ internal sealed interface PendingAction {
             is StartPlan -> with(action.plan) {
                 arrayListOf(
                     START_PLAN, sportType, askToEnd, target?.code, useGps, keepRoute, rest?.code, setsTarget, logSets, structure,
+                    trackSets,
                     action.saved?.encode(),
                 )
             }
@@ -62,6 +63,7 @@ internal sealed interface PendingAction {
                             setsTarget = next() as? Int,
                             logSets = next() as? Boolean ?: false,
                             structure = next() as? String,
+                            trackSets = next() as? Boolean ?: true,
                         ),
                         (next() as? String)?.let(SportSettings::parse),
                     )

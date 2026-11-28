@@ -54,6 +54,8 @@ sealed interface WorkoutState {
         /** Strength: the exercise the next sets are of, null for numbered sets; and a log card after each set. */
         val exercise: String? = null,
         val logSets: Boolean = false,
+        /** Strength: false when this workout was started with sets not tracked. */
+        val trackSets: Boolean = true,
         /**
          * A structured workout ([org.openstrap.app.data.Structure]): its rounds so far, which say the phase
          * ([org.openstrap.app.data.Phases]), and the seconds added to the rest under way (+10 s).
@@ -87,7 +89,7 @@ sealed interface WorkoutState {
             org.openstrap.app.data.Phases.phase(s, rounds, { t -> WorkoutRecorder.activeSeconds(workout, minOf(t, now)) }, restExtra)
         }
         val paused: Boolean get() = workout.pausedAt != null
-        val strength: Boolean get() = workout.sportType in org.openstrap.app.data.SportTypes.STRENGTH
+        val strength: Boolean get() = trackSets && workout.sportType in org.openstrap.app.data.SportTypes.STRENGTH
         /** A set under way. */
         val inSet: Boolean get() = sets.lastOrNull()?.let { it.end == null } == true
         val resting: Boolean get() = restUntil != null
@@ -327,12 +329,13 @@ class WorkoutSession(
             // A restart mustn't ask at once about a stop it can't see the start of.
             askSince = now
             val restUntil = sets.lastOrNull()?.takeIf { it.end != null && it.restEnd == null }?.let { it.end!! + restRule(w).seconds }
-            // Logging is the sport's setting at its start, which Ready saved then.
-            val log = catching { settings.sportSettings.first()[org.openstrap.app.data.Workouts.tileType(w.sportType)]?.log }
-                .onFailure { log("workout: sport settings not read: $it") }.getOrNull() == true
+            // Tracking and logging sets are the sport's settings at its start, which Ready saved then.
+            val saved = catching { settings.sportSettings.first()[org.openstrap.app.data.Workouts.tileType(w.sportType)] }
+                .onFailure { log("workout: sport settings not read: $it") }.getOrNull()
             begin(w, maxHr) {
                 it.copy(
-                    sets = sets, restUntil = restUntil, exercise = sets.lastOrNull()?.exercise, logSets = log, rounds = rounds,
+                    sets = sets, restUntil = restUntil, exercise = sets.lastOrNull()?.exercise, logSets = saved?.log == true,
+                    trackSets = saved?.trackSets != false, rounds = rounds,
                     restExtra = kept?.restExtra ?: 0,
                 )
             }
@@ -351,6 +354,8 @@ class WorkoutSession(
         from: Long? = null, seed: List<Pair<Long, Int>> = emptyList(), seedSteps: Int? = null,
         /** Strength: a log card after each set. Rounds or periods ([AppWorkout.structure]). */
         logSets: Boolean = false, structure: String? = null,
+        /** Strength: false records no sets or rest. */
+        trackSets: Boolean = true,
     ): Deferred<StartResult> = scope.async {
         // The row's own write failing counts too: nothing was started then.
         catching {
@@ -384,7 +389,7 @@ class WorkoutSession(
                 askSince = w.start
                 minimized.value = false
                 // Half started is not started: begin undid what it took, and the row goes too.
-                val begun = catching { begin(w, maxHeartRate(), seed) { it.copy(logSets = logSets) } }.onFailure {
+                val begun = catching { begin(w, maxHeartRate(), seed) { it.copy(logSets = logSets, trackSets = trackSets) } }.onFailure {
                     log("workout not started: $it")
                     catching { dao.deleteAppWorkout(w.start) }.onFailure { e -> log("workout row not removed: ${e.message}") }
                 }

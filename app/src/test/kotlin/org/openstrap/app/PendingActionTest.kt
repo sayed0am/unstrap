@@ -51,6 +51,12 @@ class PendingActionTest {
         assertEquals(PendingAction.StartPlan(plan, saved), recreated(PendingAction.StartPlan(plan, saved)))
     }
 
+    @Test fun `a strength plan with sets off keeps them off after a recreate`() {
+        val plan = WorkoutPlan(sportType = 52, trackSets = false)
+        val saved = SportSettings(trackSets = false)
+        assertEquals(PendingAction.StartPlan(plan, saved), recreated(PendingAction.StartPlan(plan, saved)))
+    }
+
     @Test fun `a plain plan with nothing set and nothing to save comes back as it was`() {
         val plan = WorkoutPlan(sportType = 24)
         assertEquals(PendingAction.StartPlan(plan, null), recreated(PendingAction.StartPlan(plan, null)))

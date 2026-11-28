@@ -41,6 +41,12 @@
     <string name="workout_start_end_rest_early">End rest early</string>
     <!-- Under End rest early: the heart rate it ends at. -->
     <string name="workout_start_end_rest_note">Once you\'re under <xliff:g id="bpm" example="110">%1$d</xliff:g> bpm</string>
+    <!-- A switch: strength with sets and rest; off records only time and heart rate. One line. -->
+    <string name="workout_start_track_sets">Track sets</string>
+    <!-- Under Track sets. -->
+    <string name="workout_start_track_sets_note">Count sets and time the rest</string>
+    <!-- Strength's note with Track sets off. -->
+    <string name="workout_start_sets_off_note">Time and heart rate zones</string>
     <!-- A switch: a card after each set to note its reps and weight. One line. -->
     <string name="workout_start_log_sets">Log reps and weight</string>
     <!-- Under Log reps and weight. -->

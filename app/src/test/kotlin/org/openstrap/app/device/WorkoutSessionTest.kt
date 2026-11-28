@@ -22,6 +22,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -405,6 +406,23 @@ class WorkoutSessionTest {
         s.restore()
         assertEquals(20L, s.recording().restExtra)
         assertEquals(WorkoutRecorder.Kcal(50f, 120f), s.kcal.value)
+    }
+
+    @Test
+    fun aRestartKeepsSetsOffForStrength() {
+        val t0 = clock.now - 600
+        val settings = SettingsStore(context)
+        runBlocking {
+            db.healthDao().upsertAppWorkout(AppWorkout(start = t0, end = null, sportType = 52))
+            settings.setSportSettings(52, org.openstrap.app.data.SportSettings(trackSets = false))
+        }
+        try {
+            val s = session(settings = settings)
+            s.restore()
+            assertFalse(s.recording().strength)
+        } finally {
+            runBlocking { settings.setSportSettings(52, org.openstrap.app.data.SportSettings()) }
+        }
     }
 
     @Test

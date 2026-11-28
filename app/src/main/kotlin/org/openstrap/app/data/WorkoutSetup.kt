@@ -24,6 +24,8 @@ data class SportSettings(
      * ([WorkoutSetup.plan]). Kept so older lines still read.
      */
     val keepRoute: Boolean = true,
+    /** Strength: sets, rest and their buzz; off records only time and heart rate. */
+    val trackSets: Boolean = true,
     /** Strength: how rest ends ([Strength.Rest.code]) and the sets planned, null for open. */
     val rest: String? = null,
     val sets: Int? = null,
@@ -38,6 +40,7 @@ data class SportSettings(
         "p=${bit(gps)}",
         // "m", not the old "k": every saved line had k=0 from when the route was off unless turned on, so those read as on now.
         "m=${bit(keepRoute)}",
+        "t=${bit(trackSets)}",
         rest?.let { "r=$it" },
         sets?.let { "s=$it" },
         "l=${bit(log)}",
@@ -61,6 +64,7 @@ data class SportSettings(
                 askToEnd = flag("a", d.askToEnd),
                 gps = flag("p", d.gps),
                 keepRoute = flag("m", d.keepRoute),
+                trackSets = flag("t", d.trackSets),
                 rest = fields["r"]?.takeIf { Strength.Rest.parse(it) != null },
                 sets = fields["s"]?.toIntOrNull()?.takeIf { it in Strength.SETS },
                 log = flag("l", d.log),
@@ -80,6 +84,8 @@ data class WorkoutPlan(
     val target: WorkoutTarget? = null,
     val useGps: Boolean = false,
     val keepRoute: Boolean = false,
+    /** Strength: whether sets are tracked; true for every other sport. */
+    val trackSets: Boolean = true,
     val rest: Strength.Rest? = null,
     val setsTarget: Int? = null,
     /** Strength: a log card after each set. */
@@ -140,13 +146,15 @@ object WorkoutSetup {
         val sport = Workouts.sidesOf(type)?.type(indoor == true) ?: type
         val gps = Workouts.gpsOffered(type, indoor) && location
         val strength = sport in SportTypes.STRENGTH
+        val sets = strength && settings.trackSets
         // Only a goal Ready would offer now: a distance where there is one, and no kcal goal (Ready has none to show).
         val hasDistance = gps || sport in SportTypes.ON_FOOT
         val goal = WorkoutTarget.parse(settings.goal)?.takeIf { offered(it, hasDistance = hasDistance, kcal = false) }
         return WorkoutPlan(
             sportType = sport, askToEnd = settings.askToEnd, target = goal, useGps = gps, keepRoute = gps,
-            rest = (Strength.Rest.parse(settings.rest) ?: Strength.Rest.DEFAULT).takeIf { strength },
-            setsTarget = settings.sets.takeIf { strength }, logSets = strength && settings.log,
+            trackSets = !strength || settings.trackSets,
+            rest = (Strength.Rest.parse(settings.rest) ?: Strength.Rest.DEFAULT).takeIf { sets },
+            setsTarget = settings.sets.takeIf { sets }, logSets = sets && settings.log,
             // HIIT's rounds, or a run's reps.
             structure = Structure.parse(settings.structure)?.takeIf { Structure.fits(it, sport) }?.code,
         )

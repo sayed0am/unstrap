@@ -139,7 +139,7 @@ fun GlowWorkoutLiveScreen(
                     family == Workouts.Family.Distance && r.workout.useGps ->
                         LiveDistanceScreen(r, liveHeartRate, recent, stats, connection, contentPadding, controls, route,
                             history, onLap, liveView, onLiveView, kcal, onSkip, split, compact)
-                    family == Workouts.Family.Strength -> LiveStrengthScreen(
+                    r.strength -> LiveStrengthScreen(
                         r, liveHeartRate, remember(history, recent) { WorkoutCopy.readings(history, recent) }, connection, contentPadding,
                         controls, exercises,
                         onStartSet, onSetDone, onExtendRest, onExercise, onLogSet, compact,
@@ -156,8 +156,8 @@ fun GlowWorkoutLiveScreen(
                             r, liveHeartRate, remember(history, recent) { WorkoutCopy.readings(history, recent) }, stats, zoneSeconds,
                             connection, contentPadding, controls, kcal, onSkip, split, compact,
                         )
-                    // Indoor cardio, a distance sport without GPS, and HIIT's Free, which has no timer: heart rate only, laps mark
-                    // the rounds.
+                    // Indoor cardio, a distance sport without GPS, strength without sets, and HIIT's Free, which has no timer:
+                    // heart rate only, laps mark the rounds.
                     else -> LiveIndoorScreen(r, liveHeartRate, recent, stats, zoneSeconds, connection, contentPadding,
                         controls, onLap, kcal, split, compact)
                 }
