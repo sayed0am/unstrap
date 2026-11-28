@@ -149,6 +149,19 @@ class WidgetTriggersTest {
         assertEquals(listOf(all, all), changed)
     }
 
+    @Test fun `switching to plain numbers or back redraws every widget`() {
+        val plain = MutableStateFlow(false)
+        val t = WidgetTriggers(goals, sides, snapshot, sync, steps, ended, workout, sleepEdits, profiles, clock, plainNumbers = plain) { NOW }
+        scope.watchWidgetTriggers(t, { changed += it }, { stepPushes++ })
+        scope.runCurrent()
+        assertEquals(emptyList<Set<WidgetKind>>(), changed)
+        plain.value = true
+        scope.runCurrent()
+        plain.value = false
+        scope.runCurrent()
+        assertEquals(listOf(all, all), changed)
+    }
+
     @Test fun `a sync ending, live steps and a workout reach the widgets`() {
         watch()
         ended.tryEmit(Unit)

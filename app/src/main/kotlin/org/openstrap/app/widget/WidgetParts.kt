@@ -87,7 +87,10 @@ import org.openstrap.app.ui.glow.draw.GlowStyle
 import org.openstrap.app.ui.glow.draw.drawGlow
 import org.openstrap.app.ui.glow.draw.renderToBitmap
 import org.openstrap.app.ui.glow.draw.WeekBarsLook
+import kotlinx.coroutines.flow.first
+import org.openstrap.app.ui.glow.draw.LocalPlainNumbers
 import org.openstrap.app.ui.glow.draw.dotLayout
+import org.openstrap.app.ui.glow.draw.renderPlainNumber
 import org.openstrap.app.ui.glow.draw.renderDots
 import java.time.LocalDate
 import java.time.LocalTime
@@ -158,6 +161,8 @@ abstract class LoadingWidget<T>(internal val kind: WidgetKind) : GlanceAppWidget
             status.value = statusLine(data)
             return true
         }
+        // Read before the first draw, so a widget set to plain numbers never shows dots first.
+        val plainNumbers = widgets.plainNumbers.first()
         launch {
             WidgetRefresh.version(kind).collectLatest {
                 var tries = 0
@@ -169,7 +174,10 @@ abstract class LoadingWidget<T>(internal val kind: WidgetKind) : GlanceAppWidget
             val line by status.collectAsState()
             val sizes by resized.collectAsState()
             val value = data
-            CompositionLocalProvider(LocalStatusLine provides line, LocalResized provides sizes) {
+            val plain by widgets.plainNumbers.collectAsState(plainNumbers)
+            CompositionLocalProvider(
+                LocalStatusLine provides line, LocalResized provides sizes, LocalPlainNumbers provides plain,
+            ) {
                 if (value != null) Content(value) else LoadingCard()
             }
         }
@@ -760,14 +768,18 @@ internal fun WaitingContent(title: String, line: String?, f: WidgetFrame) {
     line?.let { Text(it, style = WidgetType.secondary, maxLines = 4) }
 }
 
-/** [text] in white dots [dot] dp across, read out as [description]: the widget's one dotted number (spec 3). */
+/**
+ * [text] in white dots [dot] dp across, read out as [description]: the widget's one dotted number (spec 3). Plain
+ * digits in the same box with [LocalPlainNumbers].
+ */
 @Composable
 internal fun DotNumber(text: String, dot: Float, density: Float, description: String?) {
     val layout = dotLayout(text, dot, 1f)
+    val bitmap = if (LocalPlainNumbers.current) renderPlainNumber(LocalContext.current, text, layout, density) else null
     Image(
-        ImageProvider(renderDots(text, dot, density)),
+        ImageProvider(bitmap ?: renderDots(text, dot, density)),
         contentDescription = description,
-        modifier = GlanceModifier.size(layout.width.dp, layout.height.dp),
+        modifier = GlanceModifier.size(bitmap?.let { (it.width / density).dp } ?: layout.width.dp, layout.height.dp),
         contentScale = ContentScale.FillBounds,
     )
 }

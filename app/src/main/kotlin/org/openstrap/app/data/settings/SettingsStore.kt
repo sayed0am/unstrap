@@ -437,6 +437,15 @@ class SettingsStore private constructor(private val store: DataStore<Preferences
     val todayHiddenNames: Flow<List<String>?> = read { prefs -> prefs[todayHidden]?.split(',')?.filter { it.isNotEmpty() } }
     val todayPinnedNames: Flow<List<String>?> = read { prefs -> prefs[todayPinned]?.split(',')?.filter { it.isNotEmpty() } }
 
+    private val plainNumbersKey = androidx.datastore.preferences.core.booleanPreferencesKey(SettingsKeys.PLAIN_NUMBERS)
+
+    /** The big numbers as plain digits rather than dots, in the app and the widgets. Off by default. */
+    val plainNumbers: Flow<Boolean> = read { it[plainNumbersKey] ?: false }
+
+    suspend fun setPlainNumbers(on: Boolean) {
+        store.edit { it[plainNumbersKey] = on }
+    }
+
     private val goalMomentKey = androidx.datastore.preferences.core.booleanPreferencesKey(SettingsKeys.CELEBRATE_GOAL)
     private val weeklyRecapKey = androidx.datastore.preferences.core.booleanPreferencesKey(SettingsKeys.WEEKLY_RECAP)
     private val goalMomentWeekKey = longPreferencesKey(SettingsKeys.GOAL_MOMENT_WEEK)
@@ -920,6 +929,7 @@ object SettingsKeys {
     const val GOAL_WORKOUTS_WEEK = "goal_workouts_week"
     const val TODAY_HIDDEN = "today_hidden"
     const val TODAY_PINNED = "today_pinned"
+    const val PLAIN_NUMBERS = "plain_numbers"
     const val CELEBRATE_GOAL = "celebrate_goal"
     const val WEEKLY_RECAP = "weekly_recap"
     const val GOAL_MOMENT_WEEK = "goal_moment_week"

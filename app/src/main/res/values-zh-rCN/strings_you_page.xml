@@ -19,8 +19,12 @@
     <string name="you_row_diagnostics">诊断</string>
     <string name="you_row_sample_data">添加示例数据</string>
     <string name="you_row_sample_data_note">仅开发版和演示版</string>
+    <string name="you_row_appearance">外观</string>
+    <string name="you_appearance_dot_numbers">点阵数字</string>
+    <string name="you_row_plain_numbers">普通数字</string>
+    <string name="you_row_plain_numbers_note">大号数字用常规字体显示，而非点阵</string>
     <string name="you_section_your_data">你的数据</string>
-    <string name="you_section_help">帮助</string>
+    <string name="you_section_app">应用</string>
     <plurals name="you_goals_and_bests_line">
         <item quantity="other">每周 %1$d 次锻炼</item>
     </plurals>

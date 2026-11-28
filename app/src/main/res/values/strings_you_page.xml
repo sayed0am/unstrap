@@ -37,9 +37,14 @@
     <string name="you_row_sample_data">Add sample data</string>
     <!-- Under the sample data row. -->
     <string name="you_row_sample_data_note">Dev and demo apps only</string>
+    <!-- The You page's Appearance row and page: its title, the row's value for dots, the switch and the line under it. -->
+    <string name="you_row_appearance">Appearance</string>
+    <string name="you_appearance_dot_numbers">Dot numbers</string>
+    <string name="you_row_plain_numbers">Plain numbers</string>
+    <string name="you_row_plain_numbers_note">Big numbers in regular digits instead of dots</string>
     <!-- Section labels over the You page's panels, a few words. -->
     <string name="you_section_your_data">Your data</string>
-    <string name="you_section_help">Help</string>
+    <string name="you_section_app">App</string>
     <!-- Under the Goals and bests row: the weekly workout goal, then what else the page holds. -->
     <plurals name="you_goals_and_bests_line">
         <item quantity="one">%1$d workout a week</item>

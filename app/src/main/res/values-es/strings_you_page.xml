@@ -19,8 +19,12 @@
     <string name="you_row_diagnostics">Diagnóstico</string>
     <string name="you_row_sample_data">Añadir datos de ejemplo</string>
     <string name="you_row_sample_data_note">Solo en las apps de desarrollo y demostración</string>
+    <string name="you_row_appearance">Apariencia</string>
+    <string name="you_appearance_dot_numbers">Números de puntos</string>
+    <string name="you_row_plain_numbers">Números normales</string>
+    <string name="you_row_plain_numbers_note">Los números grandes en cifras normales en lugar de puntos</string>
     <string name="you_section_your_data">Tus datos</string>
-    <string name="you_section_help">Ayuda</string>
+    <string name="you_section_app">Aplicación</string>
     <plurals name="you_goals_and_bests_line">
         <item quantity="one">%1$d entrenamiento a la semana</item>
         <item quantity="many">%1$d entrenamientos a la semana</item>

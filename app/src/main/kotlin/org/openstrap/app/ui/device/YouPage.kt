@@ -116,6 +116,9 @@ fun YouPage(
     /** "Ask to end when I stop", said on the Workouts row, which opens the Workouts settings page. */
     askToEnd: org.openstrap.app.data.settings.AskToEnd,
     onWorkouts: () -> Unit,
+    /** The big numbers as plain digits rather than dots, said on the Appearance row, which opens that page. */
+    plainNumbers: Boolean,
+    onAppearance: () -> Unit,
     /** Auto sync to Health Connect, said on its row; the row opens the Health Connect page. */
     healthConnectAuto: HealthConnectAuto,
     /** Whether Health Connect is there or can be installed, for the row's stopped wording. */
@@ -193,11 +196,17 @@ fun YouPage(
             }
         }
         item {
-            PageGroup(heading = stringResource(R.string.you_section_help)) {
+            PageGroup(heading = stringResource(R.string.you_section_app)) {
                 val now = remember(updates) { System.currentTimeMillis() / 1000 }
                 NavRow(
+                    stringResource(R.string.you_row_appearance),
+                    stringResource(if (plainNumbers) R.string.you_row_plain_numbers else R.string.you_appearance_dot_numbers),
+                    onClick = onAppearance, below = true, divider = false,
+                    icon = AppIcons.SlidersHorizontal, selected = selected == PageRowKeys.APPEARANCE,
+                )
+                NavRow(
                     stringResource(R.string.you_row_updates), UpdateCopy.summary(updates, installedVersion, now), onClick = onUpdates,
-                    below = true, divider = false,
+                    below = true,
                     icon = AppIcons.ArrowCircleUp, selected = selected == PageRowKeys.UPDATES, dot = updateWaiting,
                 )
                 NavRow(
