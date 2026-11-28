@@ -19,6 +19,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.health.connect.client.PermissionController
+import androidx.health.connect.client.permission.HealthPermission
+import androidx.health.connect.client.records.SkinTemperatureRecord
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
@@ -51,10 +53,12 @@ internal class HealthConnectActions(
     /** Auto sync on or off. */
     val auto: (Boolean) -> Unit,
     /**
-     * True while Health Connect is there and the optional permissions (calories, breathing rate, VO2 max) are not
-     * granted: the page offers them again.
+     * True while Health Connect is there and the optional permissions (calories, breathing rate, VO2 max, skin
+     * temperature) are not granted: the page offers them again.
      */
     val caloriesMissing: Boolean,
+    /** Skin temperature is among the optional permissions: this phone's Health Connect has it. */
+    val offersSkinTemperature: Boolean,
     /** Asks for just the optional permissions. */
     val offerCalories: () -> Unit,
 )
@@ -70,6 +74,8 @@ private val HC_NOT_GRANTED: String get() = Strings.app.get(R.string.day_hc_not_g
 internal fun hcMissingMessage(availability: HcAvailability): String =
     if (availability == HcAvailability.INSTALLABLE) HC_INSTALL_FIRST else HC_UNAVAILABLE
 
+private val SKIN_TEMPERATURE = HealthPermission.getWritePermission(SkinTemperatureRecord::class)
+
 /**
  * The Health Connect decisions are the root view model's, the launchers stay here because they need the activity.
  * The write permissions are asked for the manual copy and for turning auto sync on, and which one asked survives the
@@ -80,8 +86,13 @@ internal fun rememberHealthConnectActions(rootVm: AppRootViewModel, deviceVm: De
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var caloriesMissing by remember { mutableStateOf(false) }
+    var offersSkinTemperature by remember { mutableStateOf(false) }
     val refreshCalories: () -> Unit = {
-        scope.launch { caloriesMissing = catching { rootVm.healthConnectOptional() }.getOrNull() is HcState.Needs }
+        scope.launch {
+            val needed = catching { rootVm.healthConnectOptional() }.getOrNull() as? HcState.Needs
+            caloriesMissing = needed != null
+            offersSkinTemperature = needed != null && SKIN_TEMPERATURE in needed.permissions
+        }
     }
     // Read again on every return to the app, since the grant can change in Health Connect's own screen.
     LifecycleResumeEffect(Unit) {
@@ -94,7 +105,7 @@ internal fun rememberHealthConnectActions(rootVm: AppRootViewModel, deviceVm: De
         hcForAuto = false
         scope.launch {
             // The needed ones may have been granted before, outside what this screen returns. The optional ones
-            // (calories, breathing rate, VO2 max) may stay off.
+            // (calories, breathing rate, VO2 max, skin temperature) may stay off.
             when {
                 !rootVm.healthConnectWriteGranted(granted) -> Toast.makeText(context, HC_NOT_GRANTED, Toast.LENGTH_LONG).show()
                 auto -> deviceVm.setAutoHealthConnect(true)
@@ -122,7 +133,7 @@ internal fun rememberHealthConnectActions(rootVm: AppRootViewModel, deviceVm: De
     // The manual copy, or turning auto sync on ([forAuto]): with the write permissions, asked for first when missing.
     val write: (Boolean) -> Unit = { forAuto ->
         scope.launch {
-            // The optional permissions (calories, breathing rate, VO2 max) are asked for only along with the needed ones.
+            // The optional permissions (calories, breathing and the rest) are asked for only along with the needed ones.
             when (val hc = rootVm.healthConnectWrite()) {
                 HcState.Unavailable -> Toast.makeText(context, HC_UNAVAILABLE, Toast.LENGTH_LONG).show()
                 HcState.Installable -> Toast.makeText(context, HC_INSTALL_FIRST, Toast.LENGTH_LONG).show()
@@ -139,6 +150,7 @@ internal fun rememberHealthConnectActions(rootVm: AppRootViewModel, deviceVm: De
         export = { write(false) },
         auto = { on -> if (on) write(true) else deviceVm.setAutoHealthConnect(false) },
         caloriesMissing = caloriesMissing,
+        offersSkinTemperature = offersSkinTemperature,
         offerCalories = {
             scope.launch {
                 when (val hc = rootVm.healthConnectOptional()) {

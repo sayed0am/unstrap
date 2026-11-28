@@ -99,6 +99,9 @@
     <!-- The note and button when the optional permissions (calories, breathing rate, VO2 max) are off: asks for just those. -->
     <string name="you_hc_calories_note">Calories, breathing rate and VO2 max are left out until you allow them.</string>
     <string name="you_hc_calories_offer">Allow calories, breathing rate and VO2 max</string>
+    <!-- The same two, on a phone whose Health Connect also takes skin temperature. -->
+    <string name="you_hc_optional_skin_note">Calories, breathing rate, VO2 max and skin temperature are left out until you allow them.</string>
+    <string name="you_hc_optional_skin_offer">Allow skin temperature and more</string>
     <!-- Where Health Connect is a Play Store app that's missing or out of date: the button, and why. -->
     <string name="you_hc_install">Install Health Connect</string>
     <string name="you_hc_install_note">On this phone Health Connect is an app from the Play Store. Install it to copy your data there.</string>

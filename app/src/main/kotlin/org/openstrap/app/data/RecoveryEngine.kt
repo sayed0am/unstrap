@@ -767,8 +767,7 @@ class RecoveryEngine(private val dao: HealthDao) {
             hrvSamples = rmssd.size,
             hrMinutes = sleepHr.size,
             nadirTime = Recovery.lowestAverage(sleepHr, 10)?.first,
-            // A handful of readings doesn't describe a night; the strap logs one a minute when worn.
-            skinTemperature = skinValues.takeIf { it.size >= 30 }?.mean(),
+            skinTemperature = skinValues.takeIf { it.size >= Recovery.MIN_SKIN_READINGS }?.mean(),
             breathRate = breath.filter { inSleep(it.timestamp) }.map { it.perMinute.toFloat() }.mean(),
             spo2 = spo2Values.takeIf { it.size >= MIN_SPO2_READINGS }?.mean(),
             // Events per hour need a real night to divide by.
