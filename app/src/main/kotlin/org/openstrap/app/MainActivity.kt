@@ -417,7 +417,7 @@ private fun AppRoot(
     val gates = rememberPermissionGates(pendingStrap, { WorkoutLocation.granted(container.app) }) { (plan, saved) ->
         container.workout.start(
             plan.sportType, plan.askToEnd, plan.target, plan.useGps, plan.keepRoute, plan.rest, plan.setsTarget,
-            logSets = plan.logSets, structure = plan.structure,
+            logSets = plan.logSets, structure = plan.structure, trackSets = plan.trackSets,
         )
         saved?.let { s -> rootVm.saveSportSettings(plan.sportType, s) }
         nav.workoutStarted()

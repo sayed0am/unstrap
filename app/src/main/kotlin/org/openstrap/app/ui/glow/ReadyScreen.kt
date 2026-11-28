@@ -118,6 +118,7 @@ fun GlowWorkoutReadyScreen(
     // The level End rest early turns back on at, and the sets Plan opens on after Open.
     val belowLevel = rememberSaveable(key, settings.rest) { lastRest.belowBpm ?: StartCopy.DEFAULT_BELOW }
     var planSets by rememberSaveable(key, settings.sets) { mutableStateOf(settings.sets ?: StartCopy.DEFAULT_SETS) }
+    var trackSets by rememberSaveable(key, settings.trackSets) { mutableStateOf(settings.trackSets) }
     var log by rememberSaveable(key, settings.log) { mutableStateOf(settings.log) }
     // HIIT's rounds (Tabata unless last time was another), or a game's periods; null is Free, or free play.
     var structureCode by rememberSaveable(key, settings.structure, structure) {
@@ -138,6 +139,7 @@ fun GlowWorkoutReadyScreen(
     val useGps = outdoor && locationOn
     val strength = family == Workouts.Family.Strength
     val mind = family == Workouts.Family.MindBody
+    val tracking = strength && trackSets
     val hasDistance = useGps || type in SportTypes.ON_FOOT
     val kinds = WorkoutSetup.goalKinds(type, hasDistance)
     // A kind that doesn't fit the side now (a distance indoors on a bike) shows as no goal.
@@ -186,12 +188,14 @@ fun GlowWorkoutReadyScreen(
             onStart(
                 WorkoutPlan(
                     type, settings.askToEnd, goal.takeIf { !strength }, useGps, keepRoute = useGps,
-                    rest.takeIf { strength }, sets.takeIf { strength }, logSets = strength && log, structure = rounds?.code,
+                    trackSets = !strength || trackSets, rest = rest.takeIf { tracking }, setsTarget = sets.takeIf { tracking },
+                    logSets = tracking && log, structure = rounds?.code,
                 ),
                 settings.copy(
                     goal = if (strength) settings.goal else goal?.code, gps = true,
                     rest = if (strength) rest.code else settings.rest, sets = if (strength) sets else settings.sets,
-                    log = if (strength) log else settings.log, structure = rounds?.code,
+                    log = if (strength) log else settings.log, trackSets = if (strength) trackSets else settings.trackSets,
+                    structure = rounds?.code,
                 ),
             )
         }
@@ -212,10 +216,10 @@ fun GlowWorkoutReadyScreen(
                     type, kinds, kind, draft, { draft = it }, useGps, hasDistance, lastPace, maxHeartRate, nowMillis, last, look,
                     onYourZones, saved.filter { Workouts.tileType(it.sport) == key },
                 ) { name, reps -> onSaveIntervals(name, reps.code) }
-                Workouts.Family.Strength -> StrengthGoal(
+                Workouts.Family.Strength -> if (trackSets) StrengthGoal(
                     sets, { sets = it; if (it != null) planSets = it }, planSets, restSeconds, { restSeconds = it },
                     nowMillis, last, look,
-                )
+                ) else LastTimeHero(cardio = false, last, look, StartCopy.SETS_OFF_NOTE)
                 Workouts.Family.Intervals -> HiitGoal(rounds, { structureCode = it?.code }, settings.structure, last, look)
                 Workouts.Family.MindBody -> MindGoal(draft, { draft = it }, nowMillis, last, look)
                 Workouts.Family.Games -> GamesGoal(
@@ -223,7 +227,7 @@ fun GlowWorkoutReadyScreen(
                 )
             }
             // With no goal the hero is last time already.
-            if (!showsLastTime(family, kind, sets, rounds, draft)) ReadyLastRow(last)
+            if (!showsLastTime(family, kind, sets.takeIf { trackSets }, rounds, draft)) ReadyLastRow(last)
             if (pair != null) {
                 OutdoorRow(
                     indoor != true,
@@ -237,7 +241,7 @@ fun GlowWorkoutReadyScreen(
                 LocationOffRow(turnOnLocation)
             }
             ReadySwitches(
-                strength, log, { log = it }, restBelow, { restBelow = it }, belowLevel,
+                strength, trackSets, { trackSets = it }, log, { log = it }, restBelow, { restBelow = it }, belowLevel,
                 rounds?.takeIf { family == Workouts.Family.Intervals }, { structureCode = it.code },
             )
         }
@@ -255,13 +259,15 @@ private fun LocationOffRow(onTurnOn: () -> Unit) = ReadyRows {
 }
 
 /**
- * The switches at the end: strength's Log reps and weight and End rest early ([restBelow], back on at [belowLevel]),
- * and HIIT's Warm up first for its [rounds]. Nothing for the rest.
+ * The switches at the end: strength's Track sets, with Log reps and weight and End rest early ([restBelow], back on at
+ * [belowLevel]) while it is on, and HIIT's Warm up first for its [rounds]. Nothing for the rest.
  */
 @Suppress("LongParameterList")
 @Composable
 private fun ReadySwitches(
     strength: Boolean,
+    trackSets: Boolean,
+    onTrackSets: (Boolean) -> Unit,
     log: Boolean,
     onLog: (Boolean) -> Unit,
     restBelow: Int?,
@@ -273,7 +279,10 @@ private fun ReadySwitches(
     if (!strength && rounds == null) return
     ReadyRows {
         if (strength) {
-            SwitchRow(StartCopy.LOG_SETS, StartCopy.LOG_SETS_NOTE, log, onLog, divider = false)
+            SwitchRow(StartCopy.TRACK_SETS, StartCopy.TRACK_SETS_NOTE, trackSets, onTrackSets, divider = false)
+        }
+        if (strength && trackSets) {
+            SwitchRow(StartCopy.LOG_SETS, StartCopy.LOG_SETS_NOTE, log, onLog)
             SwitchRow(
                 StartCopy.END_REST_EARLY, StartCopy.endRestNote(restBelow ?: belowLevel), restBelow != null,
                 { onRestBelow(if (it) belowLevel else null) },

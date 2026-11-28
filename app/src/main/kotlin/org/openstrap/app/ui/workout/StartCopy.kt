@@ -59,6 +59,10 @@ object StartCopy {
     /** The level End rest early turns on at when none was chosen before. */
     const val DEFAULT_BELOW = 110
 
+    val TRACK_SETS: String get() = Strings.app.get(R.string.workout_start_track_sets)
+    val TRACK_SETS_NOTE: String get() = Strings.app.get(R.string.workout_start_track_sets_note)
+    /** Strength's hero with sets not tracked, before there is a last time. */
+    val SETS_OFF_NOTE: String get() = Strings.app.get(R.string.workout_start_sets_off_note)
     val LOG_SETS: String get() = Strings.app.get(R.string.workout_start_log_sets)
     val LOG_SETS_NOTE: String get() = Strings.app.get(R.string.workout_start_log_sets_note)
 

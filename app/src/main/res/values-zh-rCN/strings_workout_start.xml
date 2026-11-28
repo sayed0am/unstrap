@@ -17,6 +17,9 @@
     </plurals>
     <string name="workout_start_end_rest_early">提前结束休息</string>
     <string name="workout_start_end_rest_note">当心率低于 %1$d bpm 时</string>
+    <string name="workout_start_track_sets">记录组数</string>
+    <string name="workout_start_track_sets_note">统计组数并为休息计时</string>
+    <string name="workout_start_sets_off_note">时间和心率区间</string>
     <string name="workout_start_log_sets">记录次数和重量</string>
     <string name="workout_start_log_sets_note">每组结束后弹出快捷记录卡片</string>
     <string name="workout_start_games_status">手机可以放在包里</string>

@@ -45,7 +45,7 @@ class WorkoutSetupTest {
 
     @Test
     fun settingsRoundTrip() {
-        val s = SportSettings(goal = "d:5000", askToEnd = false, gps = false, keepRoute = true, rest = "r:90:110", sets = 5, log = true, structure = "t:20/10x8")
+        val s = SportSettings(goal = "d:5000", askToEnd = false, gps = false, keepRoute = true, trackSets = false, rest = "r:90:110", sets = 5, log = true, structure = "t:20/10x8")
         assertEquals(s, SportSettings.parse(s.encode()))
         assertEquals(SportSettings(), SportSettings.parse(SportSettings().encode()))
     }
@@ -131,6 +131,16 @@ class WorkoutSetupTest {
         assertEquals(Strength.Rest(120, 110), lift.rest)
         assertEquals(4, lift.setsTarget)
         assertFalse(lift.useGps)
+    }
+
+    @Test
+    fun strengthWithSetsOffStartsWithoutSetsRestOrLog() {
+        // Lines saved before the switch track sets.
+        assertTrue(SportSettings.parse("a=1|p=1|m=1|l=1").trackSets)
+        val off = SportSettings(trackSets = false, rest = "r:120:110", sets = 4, log = true)
+        assertEquals(WorkoutPlan(52, trackSets = false), WorkoutSetup.plan(52, off, emptyMap(), location = true))
+        // Only strength has sets to turn off.
+        assertTrue(WorkoutSetup.plan(1, off, emptyMap(), location = true).trackSets)
     }
 
     @Test
